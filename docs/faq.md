@@ -178,7 +178,7 @@ Add this to your Claude Desktop config:
   "mcpServers": {
     "pump-sdk": {
       "command": "node",
-      "args": ["/path/to/pump-fun-sdk/mcp-server/dist/index.js"]
+      "args": ["/path/to/pumpkit/mcp-server/dist/index.js"]
     }
   }
 }

@@ -103,7 +103,7 @@ bot.launch();
 | [`@pumpkit/tracker`](packages/tracker/) | Group call-tracking bot with leaderboards & PNL cards | ✅ Ready |
 | [`@pumpkit/web`](packages/web/) | Frontend dashboard and documentation site | 🚧 Coming Soon |
 
-> **npm:** Packages will be published to npm soon. See [npm docs](docs/npm.md) for details.
+> **npm:** Packages will be published to npm under the `@pumpkit` scope. See [npm Packages](docs/npm-packages.md) for the publishing roadmap.
 
 ## Features
 
@@ -160,52 +160,72 @@ Consolidates 3 existing production bots into one:
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — System design, module boundaries, data flow
+### Getting Started
 - [Getting Started](docs/getting-started.md) — Setup, configuration, first bot
+- [Development](docs/development.md) — Local environment, commands, debugging
+- [Architecture](docs/architecture.md) — System design, module boundaries, data flow
+- [Deployment](docs/deployment.md) — Railway, Docker, Vercel setup
+- [FAQ](docs/faq.md) — Common questions and troubleshooting
+
+### Package Docs
 - [Core API](docs/core-api.md) — `@pumpkit/core` module reference
 - [Monitor Bot](docs/monitor-bot.md) — Feature spec, commands, configuration
 - [Tracker Bot](docs/tracker-bot.md) — Feature spec, commands, configuration
-- [Deployment](docs/deployment.md) — Railway, Docker, Vercel setup
-- [Contributing](CONTRIBUTING.md) — How to contribute
+- [npm Packages](docs/npm.md) — Publishing roadmap (coming soon)
 
-### Protocol & Reference
+### Pump Protocol Reference
+- [Protocol Overview](docs/pump-protocol/) — All 9 official protocol specs + IDLs
+- [Bonding Curve Math](docs/guides/bonding-curve-math.md) — Constant-product formula, buy/sell calculations
+- [Fee Tiers](docs/guides/fee-tiers.md) — Market-cap-based dynamic fee selection
+- [Fee Sharing](docs/guides/fee-sharing.md) — Multi-shareholder fee distribution
+- [Social Fees](docs/guides/social-fees.md) — GitHub identity-based fee sharing
+- [Cashback](docs/guides/cashback.md) — Trader cashback opt-in system
+- [Token Incentives](docs/guides/token-incentives.md) — Volume-based PUMP rewards
+- [Mayhem Mode](docs/guides/mayhem-mode.md) — Alternate vault routing, Token2022
+- [Events Reference](docs/guides/events-reference.md) — 20+ on-chain event types
+- [Analytics](docs/guides/analytics.md) — Price impact, graduation progress, market cap
+- [End-to-End Workflow](docs/guides/end-to-end-workflow.md) — Full token lifecycle
 
-- [Events Reference](docs/events-reference.md) — All 20+ PumpFun on-chain event types
-- [Fee Sharing](docs/fee-sharing.md) — Shareholder configuration and distribution
-- [Fee Tiers](docs/fee-tiers.md) — Market cap-based fee calculation
-- [Cashback](docs/cashback.md) — Cashback accumulation and claiming
-- [Channel Bot Architecture](docs/channel-bot-architecture.md) — Deep dive into event detection patterns
-- [Analytics](docs/analytics.md) — Price impact, graduation progress, token pricing
-- [RPC Best Practices](docs/rpc-best-practices.md) — Connection management and fallback
-- [Error Handling](docs/errors.md) — Error types and validation patterns
-- [End-to-End Workflow](docs/end-to-end-workflow.md) — Full token lifecycle
-- [FAQ](docs/faq.md) — Common issues and CU optimization
-- [npm Packages](docs/npm.md) — Coming soon
+### Reference
+- [Glossary](docs/glossary.md) — Key terms and definitions
+- [Code Examples](docs/examples.md) — Practical code samples
+- [Error Reference](docs/errors.md) — Custom error classes and fixes
+- [RPC Best Practices](docs/rpc-best-practices.md) — Provider selection, batching, rate limiting
+- [Security Guide](docs/guides/security.md) — Crypto library rules, key management
 
 ### Tutorials
 
-9 hands-on guides in [tutorials/](tutorials/):
+22 hands-on guides in [tutorials/](tutorials/):
 
 | Tutorial | Topic |
 |----------|-------|
-| [Telegram Bot Patterns](tutorials/18-telegram-bot.md) | Interactive DM bot with grammy |
-| [Channel Bot Setup](tutorials/22-channel-bot-setup.md) | Read-only broadcast feed |
-| [Monitoring Claims](tutorials/16-monitoring-claims.md) | Fee claim monitoring architecture |
-| [WebSocket Feeds](tutorials/21-websocket-realtime-feeds.md) | Real-time token data |
-| [Event Parsing](tutorials/29-event-parsing-analytics.md) | Decoding on-chain events |
-| [AI Enrichment](tutorials/39-channel-bot-ai-enrichment.md) | GitHub + AI-powered cards |
-| [Trading Bot](tutorials/11-trading-bot.md) | Condition-based trading patterns |
+| [Create Token](tutorials/01-create-token.md) | Launch a token on bonding curve |
+| [Buy Tokens](tutorials/02-buy-tokens.md) | Purchase tokens via bonding curve |
+| [Sell Tokens](tutorials/03-sell-tokens.md) | Sell tokens back for SOL |
+| [Create & Buy](tutorials/04-create-and-buy.md) | Atomic create + first buy |
+| [Bonding Curve Math](tutorials/05-bonding-curve-math.md) | Price calculation formulas |
+| [Migration](tutorials/06-migration.md) | Token graduation to AMM |
 | [Fee Sharing](tutorials/07-fee-sharing.md) | Shareholder setup |
+| [Token Incentives](tutorials/08-token-incentives.md) | Volume-based rewards |
+| [Fee System](tutorials/09-fee-system.md) | Tiered fee calculations |
+| [Working with PDAs](tutorials/10-working-with-pdas.md) | Program Derived Addresses |
+| [Trading Bot](tutorials/11-trading-bot.md) | Condition-based trading patterns |
+| [Decoding Accounts](tutorials/15-decoding-accounts.md) | Parse on-chain account data |
+| [Monitoring Claims](tutorials/16-monitoring-claims.md) | Fee claim monitoring architecture |
+| [Telegram Bot](tutorials/18-telegram-bot.md) | Interactive DM bot with grammy |
+| [MCP Server](tutorials/20-mcp-server-ai-agents.md) | AI agent integration |
+| [WebSocket Feeds](tutorials/21-websocket-realtime-feeds.md) | Real-time token data |
+| [Channel Bot Setup](tutorials/22-channel-bot-setup.md) | Read-only broadcast feed |
+| [Event Parsing](tutorials/29-event-parsing-analytics.md) | Decoding on-chain events |
 | [Error Handling](tutorials/33-error-handling-patterns.md) | Validation and error classes |
+| [Security Auditing](tutorials/37-security-auditing-verification.md) | Security audit checklist |
+| [AI Enrichment](tutorials/39-channel-bot-ai-enrichment.md) | GitHub + AI-powered cards |
 
-### Protocol Specs
-
-Official Pump protocol documentation in [docs/protocol/](docs/protocol/):
-- Pump Program (bonding curve state, instructions)
-- PumpSwap AMM (pool state, swap instructions)
-- Fee Program (dynamic fee tiers)
-- Creator Fees, Cashback, and more
-- Anchor IDL files for all 3 programs
+### Community
+- [Contributing](CONTRIBUTING.md) — How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards
+- [Security Policy](SECURITY.md) — Vulnerability reporting
+- [Changelog](CHANGELOG.md) — Release history
 
 ## Origins
 

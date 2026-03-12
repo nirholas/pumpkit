@@ -64,6 +64,106 @@ DELETE /api/v1/webhooks/:id   → Remove webhook
 - Minimal, data-dense dashboard style
 - Card-based event feed (similar to Telegram message cards)
 
+### Data Models
+
+These are the key TypeScript interfaces the UI should render:
+
+```typescript
+// Bot health status
+interface BotStatus {
+  name: "monitor" | "tracker" | "channel" | "claim";
+  status: "online" | "offline" | "error";
+  uptime: number;           // seconds
+  lastEvent: string;        // ISO timestamp
+  version: string;
+  activeCalls?: number;     // tracker only
+  watchedWallets?: number;  // monitor only
+}
+
+// Monitor events (from SSE stream)
+interface MonitorEvent {
+  id: string;
+  type: "claim" | "launch" | "graduation" | "whale" | "cto" | "distribution";
+  timestamp: string;        // ISO timestamp
+  mint?: string;            // token mint address
+  creator?: string;         // creator address
+  amountSol?: number;       // SOL amount (display only, use string for precision)
+  txSignature: string;      // Solana transaction signature
+}
+
+// Tracker leaderboard entry (from tracker API / DB)
+interface LeaderboardEntry {
+  rank: number;
+  username: string;
+  telegramId: number;
+  totalCalls: number;
+  avgMultiplier: number;
+  winRate: number;          // 0-100%
+  points: number;
+  tier: "Amateur" | "Novice" | "Contender" | "Guru" | "Oracle";
+}
+
+// Active call (tracker)
+interface ActiveCall {
+  id: number;
+  tokenAddress: string;
+  tokenName: string;
+  tokenSymbol: string;
+  chain: "solana" | "ethereum" | "base" | "bsc";
+  callerUsername: string;
+  entryPrice: number;
+  currentPrice: number;
+  athPrice: number;
+  multiplier: number;
+  calledAt: string;         // ISO timestamp
+}
+
+// Watched wallet (monitor)
+interface WatchedWallet {
+  address: string;
+  label?: string;
+  addedAt: string;
+  lastClaim?: string;
+  totalClaims: number;
+}
+```
+
+### Page Mockups
+
+**Home Dashboard:**
+```
+┌─────────────────────────────────────────────────────┐
+│  PumpKit Dashboard                    [Monitor] [Tracker]  │
+├─────────────────────────────────────────────────────┤
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
+│  │ Monitor  │ │ Tracker  │ │ Channel  │ │ Claim    │     │
+│  │ ● Online │ │ ● Online │ │ ○ Off    │ │ ● Online │     │
+│  │ 2h 14m   │ │ 5h 02m   │ │ —        │ │ 1h 33m   │     │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
+│                                                           │
+│  Recent Activity                                          │
+│  ┌──────────────────────────────────────────────────┐    │
+│  │ 🎓 Graduation  BONK → AMM    2 min ago          │    │
+│  │ 💰 Fee Claim   0.5 SOL       5 min ago          │    │
+│  │ 🐋 Whale Buy   120 SOL       8 min ago          │    │
+│  │ 🚀 Launch      $NEWTOKEN     12 min ago         │    │
+│  └──────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+```
+
+**Tracker Leaderboard:**
+```
+┌─────────────────────────────────────────────────────┐
+│  Leaderboard    [24h] [7d] [30d] [All]              │
+├─────────────────────────────────────────────────────┤
+│  #  User          Calls  Avg×   Win%   Points  Tier │
+│  1  @CryptoKing   42     8.3×   71%    156    🏆   │
+│  2  @SolanaSniper  38     6.1×   65%    112    🥈   │
+│  3  @DeFiDegen    35     4.7×   60%     89    🥉   │
+│  ...                                                │
+└─────────────────────────────────────────────────────┘
+```
+
 ## Development
 
 ```bash
