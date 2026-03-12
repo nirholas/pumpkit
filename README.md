@@ -105,6 +105,16 @@ bot.launch();
 
 > **npm:** Packages will be published to npm under the `@pumpkit` scope. See [npm Packages](docs/npm.md) for the publishing roadmap.
 
+## Live Bots
+
+Production bots running on Telegram, powered by PumpKit:
+
+| Bot | Link | Description |
+|-----|------|-------------|
+| **PumpFun Claims** | [@pumpfunclaims](https://t.me/pumpfunclaims) | Channel feed — broadcasts first fee claims by GitHub-assigned developers |
+| **Migrated PumpFun** | [@migratedpumpfun](https://t.me/migratedpumpfun) | Channel feed — tracks token graduations from bonding curve to PumpSwap AMM |
+| **Cryptocurrency Vision** | [@cryptocurrencyvisionbot](https://t.me/cryptocurrencyvisionbot) | Interactive bot — PumpFun token analytics, whale alerts, and market insights |
+
 ## Features
 
 ### Monitor Bot (`@pumpkit/monitor`)

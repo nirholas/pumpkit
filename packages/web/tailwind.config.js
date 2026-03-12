@@ -35,6 +35,8 @@ export default {
       boxShadow: {
         'tg': '0 1px 2px rgba(0, 0, 0, 0.3)',
         'tg-lg': '0 2px 8px rgba(0, 0, 0, 0.4)',
+        'glow-green': '0 0 12px rgba(0, 230, 118, 0.2)',
+        'glow-blue': '0 0 12px rgba(94, 181, 247, 0.2)',
       },
     },
   },

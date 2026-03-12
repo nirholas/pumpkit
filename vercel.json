@@ -2,5 +2,5 @@
   "buildCommand": "npx turbo build --filter=@pumpkit/web",
   "outputDirectory": "packages/web/dist",
   "installCommand": "npm install",
-  "framework": "vite"
+  "framework": null
 }

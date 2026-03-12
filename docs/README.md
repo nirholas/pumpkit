@@ -54,6 +54,40 @@ Deep dives into specific protocol topics:
 | [Support](support.md) | Getting help, bug reports, feature requests |
 | [Roadmap](roadmap.md) | Where PumpKit is headed |
 
+## Additional Docs
+
+| Doc | Description |
+|-----|-------------|
+| [Migration](migration.md) | SDK version upgrade guide with breaking changes |
+| [Ecosystem](ecosystem.md) | Complete ecosystem overview — SDK, bots, dashboards, tools |
+| [PumpOS Guide](pumpos-guide.md) | PumpOS web desktop with 169 Pump-Store apps |
+| [Admin Operations](admin-operations.md) | Protocol admin operations |
+| [AMM Trading](amm-trading.md) | PumpSwap AMM trading guide |
+| [CLI Guide](cli-guide.md) | Command-line interface reference |
+| [DeFi Agents](defi-agents.md) | AI DeFi agent integration |
+| [SDK Integration](sdk-integration.md) | SDK integration patterns |
+| [Channel Bot Architecture](channel-bot-architecture.md) | Channel bot system design |
+| [Performance](performance.md) | Benchmarks and optimization tips |
+| [Testing](testing.md) | Test patterns and fixtures |
+
+## Community & About
+
+| Doc | Description |
+|-----|-------------|
+| [Adopters](adopters.md) | Community members using PumpKit in production |
+| [Governance](governance.md) | BDFL governance model & decision process |
+| [Vision](vision.md) | Project vision & AI agent thesis |
+| [Article: Pump Fun SDK](article-pump-fun-sdk.md) | Deep-dive article about the SDK ecosystem |
+
+## External References
+
+Large reference documents kept in the parent repo:
+
+| Doc | Description |
+|-----|-------------|
+| [Solana Docs Reference](../../docs/solana-official-llms.txt.md) | 3,800+ Solana documentation links |
+| [SolanaAppKit](../../docs/solanaappkit.md) | Mobile DeFi integration guide |
+
 ## Tutorials
 
 30 hands-on guides: [tutorials/](../tutorials/)

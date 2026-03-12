@@ -1,9 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.base.json"],
+  "globalPassThroughEnv": [
+    "VERCEL_TARGET_ENV",
+    "VERCEL_ENV",
+    "VERCEL_URL",
+    "VERCEL_GIT_COMMIT_SHA"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["NODE_ENV"]
     },
     "dev": {
       "cache": false,

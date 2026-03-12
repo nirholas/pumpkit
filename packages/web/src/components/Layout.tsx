@@ -11,6 +11,8 @@ const channels = [
   { path: '/dashboard', label: 'Live Feed', emoji: '📡', preview: 'Real-time token events', unread: true },
   { path: '/create', label: 'Token Launch', emoji: '🪙', preview: 'How tokens work on PumpFun', unread: false },
   { path: '/docs', label: 'Docs', emoji: '📖', preview: 'Guides, API reference, tutorials', unread: false },
+  { path: '/docs/browse', label: 'Browse Docs', emoji: '📄', preview: 'All guides & reference docs', unread: false },
+  { path: '/tutorials', label: 'Tutorials', emoji: '📚', preview: '45 hands-on coding tutorials', unread: false },
   { path: '/packages', label: 'Packages', emoji: '📦', preview: 'core, monitor, tracker, claim…', unread: false },
 ];
 
@@ -18,7 +20,18 @@ export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [search, setSearch] = useState('');
-  const current = channels.find((c) => c.path === location.pathname) ?? channels[0]!;
+  // Find the best matching channel — prefer longest path match
+  const current = (() => {
+    let best = channels[0]!;
+    for (const c of channels) {
+      if (c.path === '/') {
+        if (location.pathname === '/') best = c;
+      } else if (location.pathname === c.path || location.pathname.startsWith(c.path + '/')) {
+        if (c.path.length > best.path.length || best.path === '/') best = c;
+      }
+    }
+    return best;
+  })();
   const { watches, loading: watchesLoading, add: addWatch, remove: removeWatch } = useWatches();
   const { health } = useHealth();
 
@@ -98,7 +111,7 @@ export function Layout() {
             <p className="text-zinc-500 text-sm text-center py-8">No channels match</p>
           ) : (
             filteredChannels.map((ch) => {
-              const active = location.pathname === ch.path;
+              const active = ch.path === current.path;
               return (
                 <Link
                   key={ch.path}
