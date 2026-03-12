@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -16,6 +17,23 @@ const packages = [
   { name: '@pumpkit/claim', desc: 'Fee claim tracker by token CA or X handle', ready: true },
   { name: '@pumpkit/tracker', desc: 'Group call-tracking bot with leaderboards & PNL cards', ready: true },
 ];
+
+const QUICK_START = `git clone https://github.com/nirholas/pumpkit.git
+cd pumpkit && npm install
+cp packages/monitor/.env.example packages/monitor/.env
+npm run dev --workspace=@pumpkit/monitor`;
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="absolute top-2 right-2 text-xs bg-tg-input/80 hover:bg-tg-input text-zinc-400 hover:text-tg-blue px-2 py-1 rounded transition"
+    >
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  );
+}
 
 function IncomingBubble({ children, time }: { children: React.ReactNode; time: string }) {
   return (
@@ -47,7 +65,7 @@ function OutgoingBubble({ children, time }: { children: React.ReactNode; time: s
 
 export function Home() {
   return (
-    <div className="flex flex-col gap-3 p-4 max-w-3xl mx-auto pb-20">
+    <div className="flex flex-col gap-3 p-4 max-w-3xl mx-auto pb-20 bubble-stagger">
       {/* Date separator */}
       <div className="text-center">
         <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">
@@ -57,11 +75,14 @@ export function Home() {
 
       {/* 1. Hero Message (outgoing) */}
       <OutgoingBubble time="12:00">
-        <p className="text-3xl mb-2">🚀</p>
-        <p className="text-lg font-semibold mb-1">
-          Build your own PumpFun Telegram bot in hours, not weeks
-        </p>
-        <p className="text-sm text-zinc-300 mb-3">
+        <div className="text-center mb-3">
+          <p className="text-4xl mb-2">🚀</p>
+          <p className="text-xl font-bold bg-gradient-to-r from-pump-green via-tg-blue to-pump-purple bg-clip-text text-transparent animate-shimmer">
+            Build your own PumpFun Telegram bot
+          </p>
+          <p className="text-sm text-zinc-400 mt-1">in hours, not weeks</p>
+        </div>
+        <p className="text-sm text-zinc-300 mb-3 text-center">
           PumpKit is the open-source TypeScript framework for Solana token bots.
         </p>
         <div className="grid grid-cols-2 gap-2 mt-2">
@@ -69,13 +90,13 @@ export function Home() {
             href="https://github.com/nirholas/pumpkit"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
             ⭐ Star on GitHub
           </a>
           <Link
             to="/docs"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
             📖 Read the Docs
           </Link>
@@ -97,7 +118,7 @@ export function Home() {
         <p className="text-sm font-medium mb-3 text-zinc-300">✨ What you can build</p>
         <div className="grid grid-cols-2 gap-2">
           {features.map((f) => (
-            <div key={f.title} className="bg-tg-bubble-in/60 rounded-lg px-3 py-2">
+            <div key={f.title} className="bg-tg-bubble-in/60 rounded-lg px-3 py-2 card-hover cursor-default">
               <p className="text-base mb-0.5">{f.emoji} <span className="text-sm font-medium">{f.title}</span></p>
               <p className="text-xs text-zinc-400">{f.desc}</p>
             </div>
@@ -108,11 +129,9 @@ export function Home() {
       {/* 4. Quick Start Code Snippet (incoming) */}
       <IncomingBubble time="12:03">
         <p className="text-sm mb-2">⚡ Quick start — four commands and you&apos;re live:</p>
-        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto">
-          <pre className="font-mono text-sm text-zinc-300 whitespace-pre">{`git clone https://github.com/nirholas/pumpkit.git
-cd pumpkit && npm install
-cp packages/monitor/.env.example packages/monitor/.env
-npm run dev --workspace=@pumpkit/monitor`}</pre>
+        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
+          <CopyButton text={QUICK_START} />
+          <pre className="font-mono text-sm text-zinc-300 whitespace-pre">{QUICK_START}</pre>
         </div>
       </IncomingBubble>
 
@@ -123,7 +142,7 @@ npm run dev --workspace=@pumpkit/monitor`}</pre>
           {packages.map((pkg) => (
             <div
               key={pkg.name}
-              className="bg-tg-bubble-in/40 border border-tg-border rounded-lg px-3 py-2"
+              className="bg-tg-bubble-in/40 border border-tg-border rounded-lg px-3 py-2 card-hover"
             >
               <div className="flex items-center justify-between mb-0.5">
                 <span className="font-mono text-sm font-medium text-tg-blue">{pkg.name}</span>
@@ -140,20 +159,20 @@ npm run dev --workspace=@pumpkit/monitor`}</pre>
       {/* 6. CTA Footer (incoming) */}
       <IncomingBubble time="12:05">
         <p className="text-sm mb-3">
-          Ready to build? Start with the docs or check out the create coin tutorial →
+          Ready to build? Start with the docs or check out the token launch guide →
         </p>
         <div className="grid grid-cols-2 gap-2 mt-2">
           <Link
             to="/create"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
-            Create Coin →
+            🪙 Token Guide
           </Link>
           <Link
             to="/docs"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-4 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
-            View Docs →
+            📖 View Docs
           </Link>
         </div>
       </IncomingBubble>

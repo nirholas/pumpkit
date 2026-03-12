@@ -1,4 +1,17 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="absolute top-2 right-2 text-xs bg-tg-input/80 hover:bg-tg-input text-zinc-400 hover:text-tg-blue px-2 py-1 rounded transition"
+    >
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  );
+}
 
 function BotBubble({ children, time }: { children: React.ReactNode; time?: string }) {
   return (
@@ -66,7 +79,7 @@ const features = [
 
 export function CreateCoin() {
   return (
-    <div className="flex flex-col gap-3 p-4 max-w-3xl mx-auto pb-20">
+    <div className="flex flex-col gap-3 p-4 max-w-3xl mx-auto pb-20 bubble-stagger">
       {/* Date separator */}
       <div className="text-center">
         <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">
@@ -88,7 +101,7 @@ export function CreateCoin() {
         <p className="text-sm font-medium mb-3 text-zinc-300">🔄 Token Lifecycle</p>
         <div className="grid grid-cols-2 gap-2">
           {lifecycle.map((step) => (
-            <div key={step.title} className="bg-tg-bubble-in/60 rounded-lg p-3">
+            <div key={step.title} className="bg-tg-bubble-in/60 rounded-lg p-3 card-hover cursor-default">
               <p className="text-xl mb-1">{step.emoji}</p>
               <p className={`text-sm font-semibold ${step.color}`}>{step.title}</p>
               <p className="text-xs text-zinc-400 mt-0.5">{step.desc}</p>
@@ -141,10 +154,10 @@ export function CreateCoin() {
           </div>
           {/* Fake inline buttons */}
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <span className="bg-tg-input text-pump-green text-xs rounded-lg px-3 py-2 text-center font-medium">
+            <span className="bg-tg-input text-pump-green text-xs rounded-lg px-3 py-2 text-center font-medium hover:brightness-125 transition cursor-pointer">
               Buy
             </span>
-            <span className="bg-tg-input text-pump-pink text-xs rounded-lg px-3 py-2 text-center font-medium">
+            <span className="bg-tg-input text-pump-pink text-xs rounded-lg px-3 py-2 text-center font-medium hover:brightness-125 transition cursor-pointer">
               Sell
             </span>
           </div>
@@ -160,7 +173,22 @@ export function CreateCoin() {
 
       <BotBubble time="14:03">
         <p className="text-sm font-medium mb-2">⚡ Create a token in ~10 lines:</p>
-        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto">
+        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
+          <CopyButton text={`import { PUMP_SDK } from "@nirholas/pump-sdk";
+import { Keypair } from "@solana/web3.js";
+
+const mint = Keypair.generate();
+
+const instructions = await PUMP_SDK.createV2Instruction({
+  mint: mint.publicKey,
+  name: "PumpKitty",
+  symbol: "KITTY",
+  uri: "https://arweave.net/metadata.json",
+  creator: wallet.publicKey,
+  user: wallet.publicKey,
+  mayhemMode: false,
+  cashback: true,
+});`} />
           <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`import { PUMP_SDK } from "@nirholas/pump-sdk";
 import { Keypair } from "@solana/web3.js";
 
@@ -185,7 +213,13 @@ const instructions = await PUMP_SDK.createV2Instruction({
       {/* 5. Code — Buy Tokens */}
       <UserBubble time="14:04">
         <p className="text-sm font-medium mb-2">📈 Buy tokens on the bonding curve:</p>
-        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto">
+        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
+          <CopyButton text={`import { OnlinePumpSdk } from "@nirholas/pump-sdk";
+import BN from "bn.js";
+
+const online = new OnlinePumpSdk(connection);
+const global = await online.fetchGlobal();
+const state = await online.fetchBuyState(mint, user);`} />
           <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`import { OnlinePumpSdk } from "@nirholas/pump-sdk";
 import BN from "bn.js";
 
@@ -211,7 +245,15 @@ const buyIxs = await PUMP_SDK.buyInstructions({
       {/* 6. Code — Fee Sharing */}
       <BotBubble time="14:05">
         <p className="text-sm font-medium mb-2">🔄 Set up fee sharing (split revenue):</p>
-        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto">
+        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
+          <CopyButton text={`const feeIx = await PUMP_SDK.createFeeSharingConfig({
+  mint,
+  shareholders: [
+    { address: creator, shareBps: 7000 },
+    { address: partner, shareBps: 3000 },
+  ],
+  user: wallet.publicKey,
+});`} />
           <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`const feeIx = await PUMP_SDK.createFeeSharingConfig({
   mint,
   shareholders: [
@@ -234,7 +276,7 @@ const buyIxs = await PUMP_SDK.buyInstructions({
       <UserBubble time="14:06">
         <div className="grid grid-cols-2 gap-2">
           {features.map((f) => (
-            <div key={f.title} className="bg-tg-bubble-in/60 rounded-lg px-3 py-2.5">
+            <div key={f.title} className="bg-tg-bubble-in/60 rounded-lg px-3 py-2.5 card-hover cursor-default">
               <p className="text-base mb-0.5">{f.emoji} <span className="text-sm font-medium">{f.title}</span></p>
               <p className="text-xs text-zinc-400">{f.desc}</p>
             </div>
@@ -245,7 +287,17 @@ const buyIxs = await PUMP_SDK.buyInstructions({
       {/* 8. Telegram Bot Integration */}
       <BotBubble time="14:07">
         <p className="text-sm font-medium mb-2">🤖 Wire it into a Telegram bot:</p>
-        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto">
+        <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
+          <CopyButton text={`import { createBot } from '@pumpkit/core';
+
+const bot = createBot({
+  token: process.env.BOT_TOKEN!,
+  commands: {
+    launch: async (ctx) => {
+      ctx.reply("🚀 Token launched!");
+    },
+  },
+});`} />
           <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`// With PumpKit's bot framework:
 import { createBot } from '@pumpkit/core';
 
@@ -272,13 +324,13 @@ const bot = createBot({
         <div className="grid grid-cols-3 gap-2">
           <Link
             to="/docs"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
             📖 Docs
           </Link>
           <Link
             to="/packages"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
             📦 Packages
           </Link>
@@ -286,7 +338,7 @@ const bot = createBot({
             href="https://github.com/nirholas/pumpkit"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-110 transition"
+            className="bg-tg-input text-tg-blue text-sm rounded-lg px-3 py-2 text-center hover:brightness-125 transition active:scale-[0.98]"
           >
             ⭐ GitHub
           </a>
