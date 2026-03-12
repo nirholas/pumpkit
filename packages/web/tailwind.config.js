@@ -4,24 +4,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: {
-          primary: '#0a0a0f',
-          card: '#12121a',
-          sidebar: '#0e0e16',
+        // Telegram-inspired palette
+        tg: {
+          bg: '#17212b',          // main background (dark mode)
+          sidebar: '#0e1621',     // sidebar / left panel
+          chat: '#0e1621',        // chat area background
+          header: '#17212b',      // top bar
+          input: '#242f3d',       // input fields / cards
+          hover: '#202b36',       // hover state
+          border: '#1c2733',      // subtle borders
+          blue: '#5eb5f7',        // telegram blue (links, accent)
+          green: '#4fae4e',       // online / success
+          bubble: '#2b5278',      // outgoing message bubble
+          'bubble-in': '#182533', // incoming message bubble
         },
-        border: '#1e1e2e',
-        accent: {
-          green: '#22c55e',
-          blue: '#3b82f6',
-          purple: '#a855f7',
-          orange: '#f97316',
-          red: '#ef4444',
-          cyan: '#06b6d4',
+        // PumpFun accent colors
+        pump: {
+          green: '#00e676',       // buy / success / launch
+          pink: '#ff6b9d',        // sell / hot
+          yellow: '#ffd54f',      // warnings / trending
+          purple: '#b388ff',      // graduation
+          orange: '#ff9100',      // whale
+          cyan: '#00e5ff',        // info
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'SF Mono', 'monospace'],
+      },
+      boxShadow: {
+        'tg': '0 1px 2px rgba(0, 0, 0, 0.3)',
+        'tg-lg': '0 2px 8px rgba(0, 0, 0, 0.4)',
       },
     },
   },
