@@ -19,7 +19,7 @@ PumpKit gives you production-tested building blocks so you can ship a bot in hou
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────┐
 │                  @pumpkit/core                    │
 │                                                   │
 │  bot/       grammy scaffolding, command router    │
@@ -31,11 +31,11 @@ PumpKit gives you production-tested building blocks so you can ship a bot in hou
 │  health/    HTTP health check server              │
 │  logger/    Leveled console logger                │
 │  api/       REST + SSE + webhook server           │
-│  social/    Twitter/X + GitHub integrations        │
+│  social/    Twitter/X + GitHub integrations       │
 │  types/     Shared event & program types          │
-└──────────┬────────────────────────┬──────────────┘
+└──────────┬────────────────────────┬───────────────┘
            │                        │
-    ┌──────▼──────┐          ┌──────▼──────┐
+    ┌──────▼───────┐          ┌──────▼───────┐
     │  @pumpkit/   │          │  @pumpkit/   │
     │   monitor    │          │   tracker    │
     │              │          │              │
