@@ -6,6 +6,8 @@ import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
 import { Docs } from './pages/Docs';
 import { Packages } from './pages/Packages';
+import { CreateCoin } from './pages/CreateCoin';
+import { NotFound } from './pages/NotFound';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -17,6 +19,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="docs" element={<Docs />} />
           <Route path="packages" element={<Packages />} />
+          <Route path="create" element={<CreateCoin />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>

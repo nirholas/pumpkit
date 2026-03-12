@@ -4,7 +4,7 @@ import { StatsBar } from '../components/StatsBar';
 import { StatusDot } from '../components/StatusDot';
 import { useEventStream } from '../hooks/useEventStream';
 import type { FeedEvent } from '../components/EventCard';
-import type { EventType } from '../types';
+import type { EventType, PumpEvent } from '../types';
 
 // ── Mock data (fallback when API is not available) ──────
 
@@ -92,19 +92,20 @@ function useMockFeed() {
 }
 
 /** Convert SSE PumpEvent to FeedEvent for EventCard */
-function toFeedEvent(e: { type: string; txSignature: string; timestamp: string; [k: string]: unknown }, i: number): FeedEvent {
+function toFeedEvent(e: PumpEvent, i: number): FeedEvent {
+  const rec = e as unknown as Record<string, unknown>;
   return {
     id: `sse-${e.txSignature}-${i}`,
     type: e.type as EventType,
     timestamp: e.timestamp,
     txSignature: e.txSignature,
-    tokenName: (e.tokenName as string) ?? (e.name as string) ?? 'Unknown',
-    tokenSymbol: (e.tokenSymbol as string) ?? (e.symbol as string) ?? '???',
-    creator: (e.creator as string) ?? (e.claimerWallet as string) ?? (e.wallet as string) ?? '',
-    amountSol: (e.amountSol as number) ?? 0,
-    direction: e.direction as 'buy' | 'sell' | undefined,
-    newCreator: e.newCreator as string | undefined,
-    shareholders: e.shareholders as { address: string; amount: number }[] | undefined,
+    tokenName: (rec.tokenName as string) ?? (rec.name as string) ?? 'Unknown',
+    tokenSymbol: (rec.tokenSymbol as string) ?? (rec.symbol as string) ?? '???',
+    creator: (rec.creator as string) ?? (rec.claimerWallet as string) ?? (rec.wallet as string) ?? '',
+    amountSol: (rec.amountSol as number) ?? 0,
+    direction: rec.direction as 'buy' | 'sell' | undefined,
+    newCreator: rec.newCreator as string | undefined,
+    shareholders: rec.shareholders as { address: string; amount: number }[] | undefined,
     isNew: true,
   };
 }

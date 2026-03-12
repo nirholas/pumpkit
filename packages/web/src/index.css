@@ -56,3 +56,86 @@ code {
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
+
+/* Fade-in for page messages */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+/* Staggered entrance for chat bubbles */
+.bubble-stagger > * {
+  opacity: 0;
+  animation: fadeIn 0.4s ease-out both;
+}
+.bubble-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.bubble-stagger > *:nth-child(2) { animation-delay: 80ms; }
+.bubble-stagger > *:nth-child(3) { animation-delay: 160ms; }
+.bubble-stagger > *:nth-child(4) { animation-delay: 240ms; }
+.bubble-stagger > *:nth-child(5) { animation-delay: 320ms; }
+.bubble-stagger > *:nth-child(6) { animation-delay: 400ms; }
+.bubble-stagger > *:nth-child(7) { animation-delay: 480ms; }
+.bubble-stagger > *:nth-child(8) { animation-delay: 560ms; }
+.bubble-stagger > *:nth-child(9) { animation-delay: 640ms; }
+.bubble-stagger > *:nth-child(10) { animation-delay: 720ms; }
+.bubble-stagger > *:nth-child(11) { animation-delay: 800ms; }
+.bubble-stagger > *:nth-child(12) { animation-delay: 880ms; }
+
+/* Pulsing glow for live indicators */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(0, 230, 118, 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Gradient shimmer for hero elements */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Smooth card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Copy button flash */
+@keyframes copyFlash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.animate-copy-flash {
+  animation: copyFlash 0.3s ease-out;
+}
+
+/* Typing dots animation */
+@keyframes typingDot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+.typing-dot:nth-child(1) { animation: typingDot 1.4s ease-in-out infinite 0s; }
+.typing-dot:nth-child(2) { animation: typingDot 1.4s ease-in-out infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: typingDot 1.4s ease-in-out infinite 0.4s; }
+
+/* Hide scrollbar for TOC nav */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
