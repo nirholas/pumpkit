@@ -16,7 +16,7 @@ const packages = [
       '🏥 HTTP health check server',
       '📊 Leveled console logger',
     ],
-    install: 'npm install @pumpkit/core (coming soon)',
+    install: 'npm install @pumpkit/core',
     code: `import { createBot, createHealthServer } from '@pumpkit/core';
 
 const bot = createBot({
@@ -178,12 +178,7 @@ export function Packages() {
             >
               📖 Read the Docs
             </Link>
-            <Link
-              to="/create"
-              className="bg-tg-blue/20 text-tg-blue text-xs px-3 py-1.5 rounded-full hover:bg-tg-blue/30 transition"
-            >
-              🪙 Create Coin
-            </Link>
+
             <a
               href="https://github.com/nirholas/pumpkit"
               target="_blank"

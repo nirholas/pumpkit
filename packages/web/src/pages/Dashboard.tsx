@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EventCard } from '../components/EventCard';
+import { StatsBar } from '../components/StatsBar';
+import { StatusDot } from '../components/StatusDot';
+import { useEventStream } from '../hooks/useEventStream';
 import type { FeedEvent } from '../components/EventCard';
 import type { EventType } from '../types';
 
-// ── Mock data ───────────────────────────────────────────
+// ── Mock data (fallback when API is not available) ──────
 
 const MOCK_TOKENS = [
   { name: 'PumpKitty', symbol: 'KITTY', creator: '7xKp...3nRm' },
@@ -16,7 +19,7 @@ const MOCK_TOKENS = [
   { name: 'WenLambo', symbol: 'WEN', creator: '6eJy...9cDp' },
 ];
 
-const EVENT_TYPES: EventType[] = ['launch', 'whale', 'graduation', 'claim', 'cto'];
+const EVENT_TYPES: EventType[] = ['launch', 'whale', 'graduation', 'claim', 'cto', 'distribution'];
 
 function randomElement<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]!;
@@ -44,21 +47,24 @@ function generateEvent(timestamp: Date, isNew: boolean): FeedEvent {
     amountSol: type === 'whale' ? randomSol(10, 200) : randomSol(0.5, 15),
     direction: type === 'whale' ? (Math.random() > 0.4 ? 'buy' : 'sell') : undefined,
     newCreator: type === 'cto' ? randomElement(MOCK_TOKENS).creator : undefined,
+    shareholders: type === 'distribution'
+      ? Array.from({ length: 2 + Math.floor(Math.random() * 2) }, () => ({
+          address: randomElement(MOCK_TOKENS).creator,
+          amount: randomSol(0.1, 5),
+        }))
+      : undefined,
     isNew,
   };
 }
-
-// ── useMockFeed hook ────────────────────────────────────
 
 function useMockFeed() {
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Generate initial batch on mount
   useEffect(() => {
     const now = Date.now();
     const initial: FeedEvent[] = [];
-    const count = 8 + Math.floor(Math.random() * 5); // 8-12
+    const count = 8 + Math.floor(Math.random() * 5);
     for (let i = 0; i < count; i++) {
       const ts = new Date(now - (count - i) * 20_000 - Math.random() * 10_000);
       initial.push(generateEvent(ts, false));
@@ -66,7 +72,6 @@ function useMockFeed() {
     setEvents(initial);
   }, []);
 
-  // Auto-add events at random 3-5s intervals
   const scheduleNext = useCallback(() => {
     const delay = 3000 + Math.random() * 2000;
     timerRef.current = setTimeout(() => {
@@ -86,6 +91,24 @@ function useMockFeed() {
   return events;
 }
 
+/** Convert SSE PumpEvent to FeedEvent for EventCard */
+function toFeedEvent(e: { type: string; txSignature: string; timestamp: string; [k: string]: unknown }, i: number): FeedEvent {
+  return {
+    id: `sse-${e.txSignature}-${i}`,
+    type: e.type as EventType,
+    timestamp: e.timestamp,
+    txSignature: e.txSignature,
+    tokenName: (e.tokenName as string) ?? (e.name as string) ?? 'Unknown',
+    tokenSymbol: (e.tokenSymbol as string) ?? (e.symbol as string) ?? '???',
+    creator: (e.creator as string) ?? (e.claimerWallet as string) ?? (e.wallet as string) ?? '',
+    amountSol: (e.amountSol as number) ?? 0,
+    direction: e.direction as 'buy' | 'sell' | undefined,
+    newCreator: e.newCreator as string | undefined,
+    shareholders: e.shareholders as { address: string; amount: number }[] | undefined,
+    isNew: true,
+  };
+}
+
 // ── Filter config ───────────────────────────────────────
 
 const FILTERS: { key: EventType | 'all'; label: string }[] = [
@@ -95,21 +118,31 @@ const FILTERS: { key: EventType | 'all'; label: string }[] = [
   { key: 'graduation', label: '🎓 Graduations' },
   { key: 'claim', label: '💰 Claims' },
   { key: 'cto', label: '👑 CTO' },
+  { key: 'distribution', label: '💎 Distributions' },
 ];
 
 // ── Dashboard ───────────────────────────────────────────
 
 export function Dashboard() {
-  const events = useMockFeed();
+  const { events: sseEvents, status } = useEventStream();
+  const mockEvents = useMockFeed();
   const [filter, setFilter] = useState<EventType | 'all'>('all');
 
-  const filtered = filter === 'all' ? events : events.filter((e) => e.type === filter);
+  // Use SSE events when connected and receiving data, otherwise mock
+  const isLive = status === 'connected' && sseEvents.length > 0;
+  const feedEvents: FeedEvent[] = isLive
+    ? sseEvents.map(toFeedEvent)
+    : mockEvents;
+
+  const filtered = filter === 'all' ? feedEvents : feedEvents.filter((e) => e.type === filter);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-65px)]">
+    <div className="flex flex-col h-[calc(100vh-3.5rem-2.75rem)]">
       {/* Filter bar */}
       <div className="sticky top-0 z-10 bg-tg-chat/95 backdrop-blur-sm border-b border-tg-border px-4 py-2">
-        <div className="flex gap-2 overflow-x-auto max-w-3xl mx-auto">
+        <div className="flex gap-2 overflow-x-auto max-w-3xl mx-auto items-center">
+          <StatusDot status={status} />
+          <div className="w-px h-5 bg-tg-border mx-1" />
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -129,10 +162,13 @@ export function Dashboard() {
       {/* Event feed */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2 p-4 max-w-3xl mx-auto">
-          {/* Date separator */}
+          {/* Stats bar */}
+          <StatsBar events={feedEvents} connected={isLive} />
+
+          {/* Mode indicator */}
           <div className="text-center py-2">
             <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">
-              Today
+              {isLive ? 'Live Feed' : 'Demo Mode'}
             </span>
           </div>
 
@@ -147,7 +183,9 @@ export function Dashboard() {
       {/* Bottom info bar */}
       <div className="border-t border-tg-border px-4 py-2 text-center">
         <span className="text-xs text-zinc-500">
-          Simulated feed &bull; Connect your bot for live data
+          {isLive
+            ? `Live stream \u2022 ${sseEvents.length} events received`
+            : 'Simulated feed \u2022 Set VITE_API_URL to connect your bot'}
         </span>
       </div>
     </div>

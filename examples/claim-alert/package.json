@@ -1,0 +1,21 @@
+{
+  "name": "@pumpkit/example-claim-alert",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal fee claim notification bot using PumpKit",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@pumpkit/core": "workspace:*",
+    "grammy": "^1.30.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

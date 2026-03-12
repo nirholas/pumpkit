@@ -18,13 +18,38 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "dotenv": "^16.4.7"
   },
+  "peerDependencies": {
+    "@nirholas/pump-sdk": "^1.0.0",
+    "@solana/web3.js": "^1.98.0",
+    "better-sqlite3": "^11.0.0",
+    "grammy": "^1.35.0"
+  },
+  "peerDependenciesMeta": {
+    "grammy": {
+      "optional": true
+    },
+    "@solana/web3.js": {
+      "optional": true
+    },
+    "@nirholas/pump-sdk": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.13.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
   }
 }

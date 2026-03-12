@@ -1,49 +1,55 @@
 # @pumpkit/web
 
-> **Coming Soon** — Frontend dashboard and documentation site for PumpKit.
+> Frontend dashboard and documentation site for PumpKit — styled as a Telegram chat interface.
 
-## Planned Features
+## Features
 
-### Documentation Site
-- Landing page with project overview
-- Package API docs (auto-generated from TypeScript)
-- Tutorial browser with code examples
-- Interactive architecture diagrams
+### Pages
 
-### Bot Dashboard
-- Real-time event feed (connects to monitor bot API)
-- Watch management UI (add/remove wallets)
-- Claim history with filtering and search
-- Bot status and health monitoring
-- SSE stream visualization
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Home | Project overview, feature grid, package cards, quick start |
+| `/create` | Create Coin | Interactive token creation form (demo/marketing) |
+| `/dashboard` | Live Feed | Real-time event feed with filters and stats |
+| `/docs` | Documentation | Getting started, architecture, packages, API, tutorials, FAQ |
+| `/packages` | Packages | Detailed showcase of all 5 PumpKit packages |
 
-### Analytics
-- Token launch timeline
-- Fee claim charts
-- Whale trade activity
-- Graduation tracker
+### Telegram-Style UI
 
-## Tech Stack (Planned)
+- Dark chat interface with message bubbles (incoming/outgoing)
+- Sidebar with channel-style navigation
+- Cosmetic message input bar
+- Inline keyboard buttons for CTAs
+- Date separators and timestamps
+
+## Tech Stack
 
 | Tool | Purpose |
 |------|---------|
 | **Vite** | Build tool and dev server |
-| **React** or **Solid** | UI framework (TBD) |
-| **Tailwind CSS** | Styling |
-| **Vercel** | Deployment |
+| **React 19** | UI framework |
+| **React Router 7** | Client-side routing |
+| **Tailwind CSS 3** | Styling with `tg-*` and `pump-*` color tokens |
 
-## For the Agent Building This
+## Development
 
-Key resources to reference:
+```bash
+cd packages/web
+npm run dev      # Start Vite dev server
+npm run build    # Production build (tsc + vite)
+npm run preview  # Preview production build
+```
 
-1. **Monitor API endpoints** — See [packages/monitor/src/api/](../monitor/src/api/) for the REST API + SSE the dashboard should connect to
-2. **Example dashboards** — See [examples/](../../examples/) for standalone HTML dashboard patterns from the original project
-3. **Bot data types** — See [packages/monitor/src/api/types.ts](../monitor/src/api/types.ts) for API response shapes
-4. **Event types** — See [docs/events-reference.md](../../docs/events-reference.md) for all event types the UI should display
-5. **Design reference** — The existing live dashboards use dark theme, neon accents, card layouts
-6. **SSE streaming** — [packages/monitor/src/api/claimBuffer.ts](../monitor/src/api/claimBuffer.ts) implements the SSE endpoint
+## API Integration
 
-### API Endpoints to Consume
+The dashboard can connect to a running `@pumpkit/monitor` bot API.
+Set the `VITE_API_URL` environment variable to enable live data:
+
+```bash
+VITE_API_URL=http://localhost:3000 npm run dev
+```
+
+### Monitor API Endpoints
 
 ```
 GET  /api/v1/health           → Bot status, uptime, connected wallets
@@ -56,119 +62,30 @@ POST /api/v1/webhooks         → Register webhook URL
 DELETE /api/v1/webhooks/:id   → Remove webhook
 ```
 
-### Design Direction
+Without `VITE_API_URL`, the dashboard displays a simulated event feed for demonstration.
 
-- Dark theme (crypto standard)
-- Real-time updates (SSE/WebSocket)
-- Mobile-responsive
-- Minimal, data-dense dashboard style
-- Card-based event feed (similar to Telegram message cards)
+## Project Structure
 
-### Data Models
-
-These are the key TypeScript interfaces the UI should render:
-
-```typescript
-// Bot health status
-interface BotStatus {
-  name: "monitor" | "tracker" | "channel" | "claim";
-  status: "online" | "offline" | "error";
-  uptime: number;           // seconds
-  lastEvent: string;        // ISO timestamp
-  version: string;
-  activeCalls?: number;     // tracker only
-  watchedWallets?: number;  // monitor only
-}
-
-// Monitor events (from SSE stream)
-interface MonitorEvent {
-  id: string;
-  type: "claim" | "launch" | "graduation" | "whale" | "cto" | "distribution";
-  timestamp: string;        // ISO timestamp
-  mint?: string;            // token mint address
-  creator?: string;         // creator address
-  amountSol?: number;       // SOL amount (display only, use string for precision)
-  txSignature: string;      // Solana transaction signature
-}
-
-// Tracker leaderboard entry (from tracker API / DB)
-interface LeaderboardEntry {
-  rank: number;
-  username: string;
-  telegramId: number;
-  totalCalls: number;
-  avgMultiplier: number;
-  winRate: number;          // 0-100%
-  points: number;
-  tier: "Amateur" | "Novice" | "Contender" | "Guru" | "Oracle";
-}
-
-// Active call (tracker)
-interface ActiveCall {
-  id: number;
-  tokenAddress: string;
-  tokenName: string;
-  tokenSymbol: string;
-  chain: "solana" | "ethereum" | "base" | "bsc";
-  callerUsername: string;
-  entryPrice: number;
-  currentPrice: number;
-  athPrice: number;
-  multiplier: number;
-  calledAt: string;         // ISO timestamp
-}
-
-// Watched wallet (monitor)
-interface WatchedWallet {
-  address: string;
-  label?: string;
-  addedAt: string;
-  lastClaim?: string;
-  totalClaims: number;
-}
 ```
-
-### Page Mockups
-
-**Home Dashboard:**
-```
-┌─────────────────────────────────────────────────────┐
-│  PumpKit Dashboard                    [Monitor] [Tracker]  │
-├─────────────────────────────────────────────────────┤
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
-│  │ Monitor  │ │ Tracker  │ │ Channel  │ │ Claim    │     │
-│  │ ● Online │ │ ● Online │ │ ○ Off    │ │ ● Online │     │
-│  │ 2h 14m   │ │ 5h 02m   │ │ —        │ │ 1h 33m   │     │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
-│                                                           │
-│  Recent Activity                                          │
-│  ┌──────────────────────────────────────────────────┐    │
-│  │ 🎓 Graduation  BONK → AMM    2 min ago          │    │
-│  │ 💰 Fee Claim   0.5 SOL       5 min ago          │    │
-│  │ 🐋 Whale Buy   120 SOL       8 min ago          │    │
-│  │ 🚀 Launch      $NEWTOKEN     12 min ago         │    │
-│  └──────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────┘
-```
-
-**Tracker Leaderboard:**
-```
-┌─────────────────────────────────────────────────────┐
-│  Leaderboard    [24h] [7d] [30d] [All]              │
-├─────────────────────────────────────────────────────┤
-│  #  User          Calls  Avg×   Win%   Points  Tier │
-│  1  @CryptoKing   42     8.3×   71%    156    🏆   │
-│  2  @SolanaSniper  38     6.1×   65%    112    🥈   │
-│  3  @DeFiDegen    35     4.7×   60%     89    🥉   │
-│  ...                                                │
-└─────────────────────────────────────────────────────┘
-```
-
-## Development
-
-```bash
-# From monorepo root
-npm run dev --workspace=@pumpkit/web
+src/
+├── main.tsx                  # Entry point + React Router config
+├── index.css                 # Tailwind directives + animations
+├── types.ts                  # Shared type definitions
+├── components/
+│   ├── Layout.tsx            # Telegram-style shell (sidebar + top bar + input bar)
+│   ├── EventCard.tsx         # Event feed cards (6 event types)
+│   └── StatsBar.tsx          # Feed statistics bar
+├── pages/
+│   ├── Home.tsx              # Landing page
+│   ├── CreateCoin.tsx        # Token creation form
+│   ├── Dashboard.tsx         # Live event feed
+│   ├── Docs.tsx              # Documentation
+│   └── Packages.tsx          # Package showcase
+├── hooks/
+│   └── useEventStream.ts    # SSE connection with auto-reconnect
+└── lib/
+    ├── api.ts                # REST API client
+    └── types.ts              # API response types
 ```
 
 ## License

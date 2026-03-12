@@ -1,7 +1,7 @@
-import type { BaseEvent } from '../lib/types';
+import type { FeedEvent } from './EventCard';
 
 interface StatsBarProps {
-  events: BaseEvent[];
+  events: FeedEvent[];
   connected: boolean;
 }
 

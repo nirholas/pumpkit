@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 
 const channels = [
   { path: '/', label: 'PumpKit', emoji: '🚀', preview: 'Create your own PumpFun bot', unread: false },
-  { path: '/create', label: 'Create Coin', emoji: '🪙', preview: 'Launch a token on PumpFun', unread: true },
   { path: '/dashboard', label: 'Live Feed', emoji: '📡', preview: 'Real-time token events', unread: true },
   { path: '/docs', label: 'Docs', emoji: '📖', preview: 'Guides, API reference, tutorials', unread: false },
   { path: '/packages', label: 'Packages', emoji: '📦', preview: 'core, monitor, tracker, claim…', unread: false },
@@ -12,7 +11,16 @@ const channels = [
 export function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [search, setSearch] = useState('');
   const current = channels.find((c) => c.path === location.pathname) ?? channels[0]!;
+
+  const filteredChannels = search
+    ? channels.filter(
+        (ch) =>
+          ch.label.toLowerCase().includes(search.toLowerCase()) ||
+          ch.preview.toLowerCase().includes(search.toLowerCase()),
+      )
+    : channels;
 
   return (
     <div className="h-screen flex overflow-hidden bg-tg-bg">
@@ -34,6 +42,8 @@ export function Layout() {
             <input
               type="text"
               placeholder="Search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-full px-4 py-1.5 outline-none focus:ring-1 focus:ring-tg-blue/40"
             />
           </div>
@@ -41,7 +51,7 @@ export function Layout() {
 
         {/* Channel list */}
         <nav className="flex-1 overflow-y-auto py-1">
-          {channels.map((ch) => {
+          {filteredChannels.map((ch) => {
             const active = location.pathname === ch.path;
             return (
               <Link

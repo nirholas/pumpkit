@@ -16,7 +16,7 @@ A single-page dashboard that connects to the `@pumpkit/monitor` REST API and dis
 - Hero: "PumpKit" logo, tagline "Open-source PumpFun bot framework", CTA buttons (GitHub, Docs, Dashboard)
 - Package cards: core, monitor, channel, claim, tracker — each with description + npm status badge
 - Quick start code snippet (the `createBot` example from README)
-- Footer: MIT license, GitHub link, npm link (coming soon)
+- Footer: MIT license, GitHub link, npm link
 
 ### 2. Dashboard (`/dashboard`)
 
@@ -75,7 +75,7 @@ A single-page dashboard that connects to the `@pumpkit/monitor` REST API and dis
 - Claim Bot
 - Tutorials
 - FAQ
-- npm (Coming Soon)
+- npm Packages
 
 ## Design Tokens
 
