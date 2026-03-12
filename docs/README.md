@@ -50,11 +50,14 @@ Deep dives into specific protocol topics:
 | [Code Examples](reference/examples.md) | 20+ practical code samples |
 | [Error Reference](reference/errors.md) | Custom SDK error classes and fixes |
 | [RPC Best Practices](reference/rpc-best-practices.md) | Provider selection, batching, rate limiting |
+| [Troubleshooting](troubleshooting.md) | Common issues and solutions |
+| [Support](support.md) | Getting help, bug reports, feature requests |
+| [Roadmap](roadmap.md) | Where PumpKit is headed |
 
 ## Tutorials
 
-19 hands-on guides: [tutorials/](../tutorials/)
+30 hands-on guides: [tutorials/](../tutorials/)
 
-## Live Dashboards
+## Examples
 
-Reference implementations: [live/](../live/)
+Reference implementations and dashboards: [examples/](../examples/)
