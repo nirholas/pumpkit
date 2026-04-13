@@ -1,6 +1,6 @@
 # Getting Started with PumpKit
 
-> Build your own PumpFun Telegram bot in minutes.
+> Build your own PumpFun bot in minutes.
 
 ## Prerequisites
 
