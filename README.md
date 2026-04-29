@@ -1,4 +1,4 @@
-# PumpKit 
+# PumpKit  
 
 > Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts — build your own or use ours.
 >
