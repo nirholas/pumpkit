@@ -20,6 +20,7 @@ import {
     CLAIM_INSTRUCTIONS,
     MONITORED_PROGRAM_IDS,
     PUMPFUN_FEE_ACCOUNT,
+    PUMP_FEE_RECIPIENT_SET,
 } from './types.js';
 import { log } from './logger.js';
 
@@ -30,7 +31,7 @@ const SYSTEM_ACCOUNTS = new Set([
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
     'So11111111111111111111111111111111111111112',
-    PUMPFUN_FEE_ACCOUNT,
+    ...PUMP_FEE_RECIPIENT_SET,
     ...MONITORED_PROGRAM_IDS,
 ]);
 
@@ -291,15 +292,14 @@ export class RpcClaimMonitor {
         if (!signerKey) return null;
         const claimerWallet = signerKey.toBase58();
 
-        // Determine amount from fee account balance decrease
+        // Determine amount from fee account balance decrease (any known fee recipient)
         let amountLamports = 0;
-        const feeIdx = this.findIndex(accountKeys, PUMPFUN_FEE_ACCOUNT);
-        if (
-            feeIdx >= 0 &&
-            preBalances[feeIdx] !== undefined &&
-            postBalances[feeIdx] !== undefined
-        ) {
-            amountLamports = preBalances[feeIdx]! - postBalances[feeIdx]!;
+        for (let i = 0; i < accountKeys.length; i++) {
+            const key = accountKeys.get(i);
+            if (!key) continue;
+            if (!PUMP_FEE_RECIPIENT_SET.has(key.toBase58())) continue;
+            const delta = (preBalances[i] ?? 0) - (postBalances[i] ?? 0);
+            if (delta > amountLamports) amountLamports = delta;
         }
         // Fallback: signer's balance increase + tx fee
         if (
@@ -337,13 +337,4 @@ export class RpcClaimMonitor {
         };
     }
 
-    private findIndex(
-        keys: { get(i: number): PublicKey | undefined; length: number },
-        target: string,
-    ): number {
-        for (let i = 0; i < keys.length; i++) {
-            if (keys.get(i)?.toBase58() === target) return i;
-        }
-        return -1;
-    }
 }

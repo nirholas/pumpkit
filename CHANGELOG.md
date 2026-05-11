@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Pump program upgrade (April 28 2025)** — Added 8 new fee recipient addresses from the breaking pump program upgrade. `PUMP_FEE_RECIPIENTS` and `PUMP_FEE_RECIPIENT_SET` are now exported from `@pumpkit/core`, `claim`, and `channel` packages. The claim monitor detects fee balance changes across all recipients, and protocol-account filtering in the monitor is updated accordingly.
+
 ### Added
 
 - **Monorepo setup** — Turborepo with `packages/*` workspaces

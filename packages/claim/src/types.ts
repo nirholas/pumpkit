@@ -16,6 +16,22 @@ export const MONITORED_PROGRAM_IDS = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP
 
 export const PUMPFUN_FEE_ACCOUNT = 'CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbCJ5GEFDM97zC';
 
+export const PUMP_FEE_RECIPIENTS = [
+    '5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD',
+    '9M4giFFMxmFGXtc3feFzRai56WbBqehoSeRE5GK7gf7',
+    'GXPFM2caqTtQYC2cJ5yJRi9VDkpsYZXzYdwYpGnLmtDL',
+    '3BpXnfJaUTiwXnJNe7Ej1rcbzqTTQUvLShZaWazebsVR',
+    '5cjcW9wExnJJiqgLjq7DEG75Pm6JBgE1hNv4B2vHXUW6',
+    'EHAAiTxcdDwQ3U4bU6YcMsQGaekdzLS3B5SmYo46kJtL',
+    '5eHhjP8JaYkz83CWwvGU2uMUXefd3AazWGx4gpcuEEYD',
+    'A7hAgCzFw14fejgCp387JUJRMNyz4j89JKnhtKU8piqW',
+] as const;
+
+export const PUMP_FEE_RECIPIENT_SET = new Set<string>([
+    PUMPFUN_FEE_ACCOUNT,
+    ...PUMP_FEE_RECIPIENTS,
+]);
+
 // ============================================================================
 // Claim Instruction Discriminators
 // ============================================================================
