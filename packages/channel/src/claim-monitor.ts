@@ -156,10 +156,17 @@ export class ClaimMonitor {
 
         log.info('Claim monitor: monitoring %d programs', this.programPubkeys.length);
 
-        // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking)
-        this.socialFeeIndex.bootstrap(this.rpc).catch((err: unknown) => {
-            log.warn('SocialFeeIndex bootstrap error: %s', err);
-        });
+        // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking).
+        // Opt-in: the gPA scan can return hundreds of MB once the SharingConfig set is large,
+        // which OOMs small containers. Default off — live events keep the index current for
+        // new claims; historical PDAs resolve once they next emit an event.
+        if (process.env.SOCIAL_FEE_BOOTSTRAP === 'true') {
+            this.socialFeeIndex.bootstrap(this.rpc).catch((err: unknown) => {
+                log.warn('SocialFeeIndex bootstrap error: %s', err);
+            });
+        } else {
+            log.info('SocialFeeIndex: bootstrap disabled (set SOCIAL_FEE_BOOTSTRAP=true to enable); using live events only');
+        }
 
         if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
             try {
