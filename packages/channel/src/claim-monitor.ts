@@ -5,6 +5,7 @@
  * Two modes: WebSocket (real-time) or HTTP polling (fallback).
  */
 
+import { PUMP_SDK, getQuoteInfo } from '@nirholas/pump-sdk';
 import {
     Connection,
     LAMPORTS_PER_SOL,
@@ -28,7 +29,6 @@ import {
     PUMP_PROGRAM_ID,
     PUMP_AMM_PROGRAM_ID,
     PUMP_FEE_PROGRAM_ID,
-    QUOTE_MINT_INFO,
     WSOL_MINT,
     type InstructionDef,
 } from './types.js';
@@ -436,8 +436,9 @@ export class ClaimMonitor {
         let recipientWallet: string | undefined;
         let socialFeePda: string | undefined;
         let lifetimeClaimedLamports: number | undefined;
-        // V2 quote-mint awareness. `amount_claimed` in the events is in base units
-        // of the quote mint (lamports for SOL, micro-USDC for USDC, etc.).
+        // `amount_claimed` in V2 events is in base units of the quote mint
+        // (lamports for SOL, micro-USDC for USDC, etc.). The SDK decoder
+        // surfaces it as `quoteMint`; we default to WSOL when absent.
         let quoteMint: string | undefined;
         let lifetimeClaimedRaw: bigint | undefined;
 
@@ -460,120 +461,49 @@ export class ClaimMonitor {
             if (!b64) continue;
             try {
                 const bytes = Buffer.from(b64, 'base64');
+                if (bytes.length < 8) continue;
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
 
-                // DistributeCreatorFeesEvent: disc=a537817004b3ca28
-                // V1 layout: disc(8) + timestamp(8) + mint(32) + bondingCurve(32) + sharingConfig(32) + admin(32) + shareholders(4+n*34) + distributed(8)
-                // V2 layout (post-2026-05-21): ... + distributed(8) + quote_mint(32)
                 if (disc === 'a537817004b3ca28' && def.claimType === 'distribute_creator_fees') {
-                    // Extract mint from event data (bytes 8+8=16..48)
-                    if (bytes.length >= 48) {
-                        const mintBytes = bytes.subarray(16, 48);
-                        tokenMint = new PublicKey(mintBytes).toBase58();
-                    }
-                    // Locate `distributed` by walking the shareholders vec rather than reading
-                    // from the end (V2 has a trailing quote_mint that would otherwise be misread).
-                    const SHARE_VEC_OFFSET = 8 + 8 + 32 + 32 + 32 + 32; // 144
-                    if (bytes.length >= SHARE_VEC_OFFSET + 4) {
-                        const shareCount = bytes.readUInt32LE(SHARE_VEC_OFFSET);
-                        const distributedOffset = SHARE_VEC_OFFSET + 4 + shareCount * 34;
-                        if (bytes.length >= distributedOffset + 8) {
-                            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                            amountLamports = Number(view.getBigUint64(distributedOffset, true));
-                            const qmOffset = distributedOffset + 8;
-                            if (bytes.length >= qmOffset + 32) {
-                                quoteMint = new PublicKey(bytes.subarray(qmOffset, qmOffset + 32)).toBase58();
-                            }
-                        }
-                    }
-                }
-
-                // CollectCreatorFeeEvent: disc=7a027f010ebf0caf
-                // V1 layout: disc(8) + timestamp(8) + creator(32) + creatorFee(8)
-                // V2 layout (post-2026-05-21): ... + quote_mint(32)
-                if (disc === '7a027f010ebf0caf') {
+                    const ev = PUMP_SDK.decodeDistributeCreatorFeesEvent(bytes);
+                    tokenMint = ev.mint.toBase58();
+                    amountLamports = Number(ev.distributed);
+                    quoteMint = pubkeyToBase58OrUndefined(ev.quoteMint);
+                } else if (disc === '7a027f010ebf0caf') {
+                    const ev = PUMP_SDK.decodeCollectCreatorFeeEvent(bytes);
+                    amountLamports = Number(ev.creatorFee);
+                    quoteMint = pubkeyToBase58OrUndefined(ev.quoteMint);
+                } else if (disc === 'e2d6f62107f293e5') {
+                    const ev = PUMP_SDK.decodeClaimCashbackEvent(bytes);
+                    amountLamports = Number(ev.amount);
+                } else if (disc === 'e8f5c2eeeada3a59') {
+                    // CollectCoinCreatorFeeEvent (PumpAMM) — no SDK decoder yet.
+                    // Layout: disc(8) + timestamp(8) + coinCreator(32) + coinCreatorFee(8) + …
                     if (bytes.length >= 56) {
                         const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
                         amountLamports = Number(view.getBigUint64(48, true));
                     }
-                    if (bytes.length >= 88) {
-                        quoteMint = new PublicKey(bytes.subarray(56, 88)).toBase58();
-                    }
-                }
-
-                // ClaimCashbackEvent: disc=e2d6f62107f293e5
-                // Layout: disc(8) + user(32) + amount(8) + timestamp(8) + totalClaimed(8) + totalCashbackEarned(8)
-                if (disc === 'e2d6f62107f293e5') {
-                    if (bytes.length >= 48) {
-                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                        amountLamports = Number(view.getBigUint64(40, true));
-                    }
-                }
-
-                // CollectCoinCreatorFeeEvent: disc=e8f5c2eeeada3a59
-                // Layout: disc(8) + timestamp(8) + coinCreator(32) + coinCreatorFee(8) + ...
-                if (disc === 'e8f5c2eeeada3a59') {
-                    if (bytes.length >= 56) {
-                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                        amountLamports = Number(view.getBigUint64(48, true));
-                    }
-                }
-
-                // SocialFeePdaClaimed: disc=3212c141edd2eaec
-                // V1 layout: disc(8) + timestamp(8) + user_id(string: 4-byte LE len + N) + platform(u8)
-                //            + social_fee_pda(32) + recipient(32) + social_claim_authority(32)
-                //            + amount_claimed(u64) + claimable_before(u64) + lifetime_claimed(u64)
-                //            + recipient_balance_before(u64) + recipient_balance_after(u64)
-                // V2 trailing fields (post-2026-05-21): quote_mint(pubkey) + lifetime_stable_claimed(u64)
-                if (disc === '3212c141edd2eaec' && def.claimType === 'claim_social_fee_pda') {
-                    let offset = 16; // skip disc(8) + timestamp(8)
-                    // user_id: Borsh string = 4-byte LE length prefix + UTF-8 bytes
-                    if (bytes.length >= offset + 4) {
-                        const uidLen = bytes.readUInt32LE(offset);
-                        offset += 4;
-                        if (bytes.length >= offset + uidLen) {
-                            githubUserId = Buffer.from(bytes.subarray(offset, offset + uidLen)).toString('utf8');
-                            offset += uidLen;
-                        }
-                    }
-                    // platform: u8
-                    if (bytes.length >= offset + 1) {
-                        socialPlatform = bytes[offset]!;
-                        offset += 1;
-                    }
-                    // social_fee_pda: pubkey(32)
-                    if (bytes.length >= offset + 32) {
-                        socialFeePda = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
-                        offset += 32;
-                    }
-                    // recipient: pubkey(32)
-                    if (bytes.length >= offset + 32) {
-                        recipientWallet = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
-                        offset += 32;
-                    }
-                    // social_claim_authority: pubkey(32) — skip
-                    offset += 32;
-                    // amount_claimed: u64
-                    if (bytes.length >= offset + 8) {
-                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                        amountLamports = Number(view.getBigUint64(offset, true));
-                        offset += 8;
-                    }
-                    // claimable_before: u64 — skip
-                    offset += 8;
-                    // lifetime_claimed: u64
-                    if (bytes.length >= offset + 8) {
-                        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-                        lifetimeClaimedLamports = Number(view.getBigUint64(offset, true));
-                        lifetimeClaimedRaw = view.getBigUint64(offset, true);
-                        offset += 8;
-                    }
-                    // V2 only: recipient_balance_before(8) + recipient_balance_after(8) + quote_mint(32)
-                    // skip the two balance fields and read quote_mint
-                    if (bytes.length >= offset + 8 + 8 + 32) {
-                        offset += 16; // skip recipient_balance_before + recipient_balance_after
-                        quoteMint = new PublicKey(bytes.subarray(offset, offset + 32)).toBase58();
-                    }
+                } else if (disc === '3212c141edd2eaec' && def.claimType === 'claim_social_fee_pda') {
+                    // SocialFeePdaClaimed — SDK's TS type omits the V2 trailing
+                    // quote_mint / lifetime_stable_claimed fields, but the IDL
+                    // (and the runtime decoder) include them, so cast to read.
+                    const ev = PUMP_SDK.decodeSocialFeePdaClaimedEvent(bytes) as {
+                        userId: string;
+                        platform: number;
+                        socialFeePda: PublicKey;
+                        recipient: PublicKey;
+                        amountClaimed: { toString(): string };
+                        lifetimeClaimed: { toString(): string };
+                        quoteMint?: PublicKey;
+                    };
+                    githubUserId = ev.userId;
+                    socialPlatform = ev.platform;
+                    socialFeePda = ev.socialFeePda.toBase58();
+                    recipientWallet = ev.recipient.toBase58();
+                    amountLamports = Number(ev.amountClaimed.toString());
+                    lifetimeClaimedRaw = BigInt(ev.lifetimeClaimed.toString());
+                    lifetimeClaimedLamports = Number(lifetimeClaimedRaw);
+                    quoteMint = pubkeyToBase58OrUndefined(ev.quoteMint);
                 }
             } catch { /* skip unparseable log lines */ }
         }
@@ -659,7 +589,7 @@ export class ClaimMonitor {
         // Resolve quote-currency metadata. Defaults to SOL when the event predates V2 or
         // the quote_mint field couldn't be read; that preserves V1 behavior exactly.
         const resolvedQuoteMint = quoteMint ?? WSOL_MINT;
-        const quoteInfo = QUOTE_MINT_INFO[resolvedQuoteMint] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+        const quoteInfo = getQuoteInfo(new PublicKey(resolvedQuoteMint));
         const quoteDivisor = Math.pow(10, quoteInfo.decimals);
         const amountQuote = amountLamports / quoteDivisor;
         const lifetimeClaimedQuote = lifetimeClaimedRaw != null
@@ -712,5 +642,12 @@ function maskRpcUrl(url: string): string {
     } catch {
         return url.slice(0, 30);
     }
+}
+
+// Returns base58 for a non-default pubkey, or undefined for missing/PublicKey.default —
+// the SDK uses `PublicKey.default` to mark V1 (pre-quote-mint) events.
+function pubkeyToBase58OrUndefined(pk: PublicKey | undefined): string | undefined {
+    if (!pk || pk.equals(PublicKey.default)) return undefined;
+    return pk.toBase58();
 }
 
