@@ -5,7 +5,7 @@
  */
 
 import type { PumpEvent } from '../types.js';
-import { bold, code, formatSol, link, pumpFunToken, shortenAddress, solscanTx } from './links.js';
+import { bold, code, formatQuoteAmount, formatSol, link, pumpFunToken, shortenAddress, solscanTx } from './links.js';
 
 export interface ClaimEventData extends PumpEvent {
     type: 'claim';
@@ -15,6 +15,9 @@ export interface ClaimEventData extends PumpEvent {
     tokenSymbol?: string;
     amountLamports: number;
     claimType: 'creator_fee' | 'cashback' | 'social_fee';
+    /** Optional quote mint (V2 events). When set, `amountLamports` is interpreted
+     *  in base units of this mint — micro-USDC for USDC, lamports for SOL. */
+    quoteMint?: string;
 }
 
 export interface LaunchEventData extends PumpEvent {
@@ -59,6 +62,8 @@ export interface FeeDistEventData extends PumpEvent {
     tokenSymbol?: string;
     shareholders: Array<{ address: string; amountLamports: number }>;
     totalLamports: number;
+    /** Optional quote mint (V2 events). Interprets shareholder/total amounts. */
+    quoteMint?: string;
 }
 
 /** Format a fee claim notification */
@@ -69,7 +74,7 @@ export function formatClaim(event: ClaimEventData): string {
         '🤝 Social Fee';
 
     const lines = [
-        bold(`💰 Fee Claimed — ${formatSol(event.amountLamports)}`),
+        bold(`💰 Fee Claimed — ${formatQuoteAmount(event.amountLamports, event.quoteMint)}`),
         '',
         `${typeLabel}`,
         `Token: ${event.tokenName ?? 'Unknown'} (${code(event.tokenSymbol ?? event.tokenMint)})`,
@@ -155,11 +160,11 @@ export function formatFeeDistribution(event: FeeDistEventData): string {
         : code(shortenAddress(event.tokenMint));
 
     const shareholderLines = event.shareholders.map(
-        (s) => `  • ${code(shortenAddress(s.address))}: ${formatSol(s.amountLamports)}`
+        (s) => `  • ${code(shortenAddress(s.address))}: ${formatQuoteAmount(s.amountLamports, event.quoteMint)}`
     );
 
     const lines = [
-        bold(`💎 Fee Distribution — ${formatSol(event.totalLamports)}`),
+        bold(`💎 Fee Distribution — ${formatQuoteAmount(event.totalLamports, event.quoteMint)}`),
         '',
         `Token: ${tokenLabel}`,
         '',

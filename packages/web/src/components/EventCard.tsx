@@ -9,10 +9,24 @@ export interface FeedEvent {
   tokenSymbol: string;
   creator: string;
   amountSol: number;
+  /** Quote-amount expressed in whole units of the quote currency (V2 events only).
+   *  When set, `quoteTicker` describes the currency — display this instead of `amountSol`. */
+  amountQuote?: number;
+  /** Ticker for the quote currency, e.g. "SOL" or "USDC". V2 events only. */
+  quoteTicker?: string;
   direction?: 'buy' | 'sell';
   newCreator?: string;
   shareholders?: { address: string; amount: number }[];
   isNew?: boolean;
+}
+
+/** Pick the ticker + numeric amount to render. V2 events use `amountQuote`/`quoteTicker`;
+ *  legacy V1 events fall back to `amountSol`. */
+export function pickAmount(e: FeedEvent): { amount: number; ticker: string; isStable: boolean } {
+  if (e.quoteTicker && typeof e.amountQuote === 'number') {
+    return { amount: e.amountQuote, ticker: e.quoteTicker, isStable: e.quoteTicker === 'USDC' };
+  }
+  return { amount: e.amountSol, ticker: 'SOL', isStable: false };
 }
 
 const avatarConfig: Record<string, { emoji: string; bg: string }> = {
@@ -81,12 +95,13 @@ function EventContent({ event }: { event: FeedEvent }) {
       );
     case 'whale': {
       const isBuy = event.direction === 'buy';
+      const { amount, ticker, isStable } = pickAmount(event);
       return (
         <>
           <p className="text-sm text-zinc-200 font-medium">
             🐋 Whale {isBuy ? 'Buy' : 'Sell'} —{' '}
             <span className={isBuy ? 'text-pump-green' : 'text-pump-pink'}>
-              {event.amountSol.toFixed(1)} SOL
+              {amount.toFixed(isStable ? 2 : 1)} {ticker}
             </span>
           </p>
           <p className="text-sm text-zinc-300 mt-1">
@@ -97,22 +112,25 @@ function EventContent({ event }: { event: FeedEvent }) {
         </>
       );
     }
-    case 'graduation':
+    case 'graduation': {
+      const { amount, ticker, isStable } = pickAmount(event);
       return (
         <>
           <p className="text-sm text-zinc-200 font-medium">🎓 Token Graduated!</p>
           <p className="text-sm text-zinc-300 mt-1">
             {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>) migrated to PumpSwap AMM
           </p>
-          <p className="text-xs text-zinc-400">Liquidity: {event.amountSol.toFixed(1)} SOL</p>
+          <p className="text-xs text-zinc-400">Liquidity: {amount.toFixed(isStable ? 2 : 1)} {ticker}</p>
           <InlineButtons labels={['View Pool', 'Trade']} event={event} />
         </>
       );
-    case 'claim':
+    }
+    case 'claim': {
+      const { amount, ticker, isStable } = pickAmount(event);
       return (
         <>
           <p className="text-sm text-zinc-200 font-medium">
-            💰 Fee Claimed — <span className="text-pump-green">{event.amountSol.toFixed(1)} SOL</span>
+            💰 Fee Claimed — <span className="text-pump-green">{amount.toFixed(isStable ? 2 : 1)} {ticker}</span>
           </p>
           <p className="text-sm text-zinc-300 mt-1">
             Creator {event.creator} claimed fees from {event.tokenName} (

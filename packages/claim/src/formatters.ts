@@ -125,7 +125,12 @@ export function formatClaimNotification(
     const typeLabel = event.claimLabel || (event.isCashback ? 'Cashback Claim' : 'Creator Fee Claim');
 
     const shortWallet = shortAddr(event.claimerWallet);
-    const solAmount = event.amountSol.toFixed(4);
+    // Quote-aware amount: V2 events carry `amountQuote` + `quoteTicker` (SOL or USDC).
+    // V1 events fall back to amountSol (lamports / 1e9).
+    const ticker = event.quoteTicker ?? 'SOL';
+    const rawAmount = event.amountQuote ?? event.amountSol;
+    // USDC is reported to 2dp like a dollar value; SOL keeps 4dp precision.
+    const amountDisplay = event.isStableQuote ? rawAmount.toFixed(2) : rawAmount.toFixed(4);
 
     // Token info line
     let tokenLine: string;
@@ -190,7 +195,7 @@ export function formatClaimNotification(
     return (
         `${emoji} <b>${typeLabel} Detected!</b>\n\n` +
         `👤 <b>Claimer:</b> <code>${shortWallet}</code>\n` +
-        `💰 <b>Amount:</b> ${solAmount} SOL\n` +
+        `💰 <b>Amount:</b> ${amountDisplay} ${ticker}\n` +
         `${tokenLine}\n` +
             `${twitterLine}` +
         `${caLine}` +

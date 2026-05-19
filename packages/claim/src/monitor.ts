@@ -32,6 +32,11 @@ interface RelayFeeClaimMessage {
     isCashback: boolean;
     programId: string;
     claimLabel: string;
+    // V2 quote-mint fields (forwarded from the relay when present).
+    quoteMint?: string;
+    quoteTicker?: string;
+    isStableQuote?: boolean;
+    amountQuote?: number;
 }
 
 interface RelayStatusMessage {
@@ -124,11 +129,17 @@ export class ClaimMonitor {
                         isCashback: claim.isCashback,
                         programId: claim.programId,
                         claimLabel: claim.claimLabel,
+                        quoteMint: claim.quoteMint,
+                        quoteTicker: claim.quoteTicker,
+                        isStableQuote: claim.isStableQuote,
+                        amountQuote: claim.amountQuote,
                     };
 
                     this.claimsDetected++;
-                    log.info('Relay claim: %s %.4f SOL (%s)',
-                        event.claimType, event.amountSol, event.tokenMint.slice(0, 8));
+                    const ticker = event.quoteTicker ?? 'SOL';
+                    const amount = event.amountQuote ?? event.amountSol;
+                    log.info('Relay claim: %s %.4f %s (%s)',
+                        event.claimType, amount, ticker, event.tokenMint.slice(0, 8));
                     this.onClaim(event);
                 }
                 // Ignore heartbeat, status, token-launch — we only care about claims

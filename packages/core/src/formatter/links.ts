@@ -56,6 +56,30 @@ export function formatSol(lamports: number | bigint): string {
     return `${sol.toFixed(sol < 1 ? 4 : 2)} SOL`;
 }
 
+// Quote-mint awareness for the 2026-05-21 V2 rollout. Pump V2 events carry a
+// trailing `quote_mint` pubkey; the `amount` they emit is in base units of
+// that mint (lamports for SOL, micro-USDC for USDC, etc.).
+export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+export const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+export const QUOTE_MINT_INFO: Record<string, { ticker: string; decimals: number; isStable: boolean }> = {
+    [WSOL_MINT]: { ticker: 'SOL', decimals: 9, isStable: false },
+    [USDC_MINT]: { ticker: 'USDC', decimals: 6, isStable: true },
+};
+
+/**
+ * Quote-mint-aware amount formatter. Converts a `u64` base-units amount
+ * (lamports / micro-USDC / etc.) into a display string with the right ticker.
+ *
+ * Defaults to SOL when `quoteMint` is omitted, preserving V1 behavior.
+ */
+export function formatQuoteAmount(baseUnits: number | bigint, quoteMint?: string): string {
+    const info = QUOTE_MINT_INFO[quoteMint ?? WSOL_MINT] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+    const amount = Number(baseUnits) / Math.pow(10, info.decimals);
+    const precision = info.isStable ? 2 : (amount < 1 ? 4 : 2);
+    return `${amount.toFixed(precision)} ${info.ticker}`;
+}
+
 /** Format number with commas: 1234567 → "1,234,567" */
 export function formatNumber(n: number): string {
     return n.toLocaleString('en-US');

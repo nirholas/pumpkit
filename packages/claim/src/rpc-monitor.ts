@@ -21,6 +21,8 @@ import {
     MONITORED_PROGRAM_IDS,
     PUMPFUN_FEE_ACCOUNT,
     PUMP_FEE_RECIPIENT_SET,
+    QUOTE_MINT_INFO,
+    WSOL_MINT,
 } from './types.js';
 import { log } from './logger.js';
 
@@ -267,10 +269,13 @@ export class RpcClaimMonitor {
             const event = this.extractClaim(signature, tx, matched, accountKeys);
             if (event) {
                 this.claimsDetected++;
+                const ticker = event.quoteTicker ?? 'SOL';
+                const amount = event.amountQuote ?? event.amountSol;
                 log.info(
-                    'Claim: %s %.4f SOL (%s)',
+                    'Claim: %s %.4f %s (%s)',
                     event.claimType,
-                    event.amountSol,
+                    amount,
+                    ticker,
                     event.tokenMint.slice(0, 8),
                 );
                 this.onClaim(event);
@@ -292,24 +297,37 @@ export class RpcClaimMonitor {
         if (!signerKey) return null;
         const claimerWallet = signerKey.toBase58();
 
-        // Determine amount from fee account balance decrease (any known fee recipient)
-        let amountLamports = 0;
-        for (let i = 0; i < accountKeys.length; i++) {
-            const key = accountKeys.get(i);
-            if (!key) continue;
-            if (!PUMP_FEE_RECIPIENT_SET.has(key.toBase58())) continue;
-            const delta = (preBalances[i] ?? 0) - (postBalances[i] ?? 0);
-            if (delta > amountLamports) amountLamports = delta;
+        // V2 quote-mint awareness. `amount_claimed` in the events is in base units
+        // of the quote mint (lamports for SOL, micro-USDC for USDC, etc.). When
+        // we can parse the event amount from the log we trust it; otherwise we
+        // fall back to lamport balance-delta below (SOL-only, V1 behavior).
+        let amountBaseUnits = 0;
+        let quoteMint: string | undefined;
+        const parsed = parseClaimEventFromLogs(meta.logMessages ?? [], def.claimType);
+        if (parsed) {
+            amountBaseUnits = parsed.amount;
+            quoteMint = parsed.quoteMint;
         }
-        // Fallback: signer's balance increase + tx fee
-        if (
-            amountLamports <= 0 &&
-            preBalances[0] !== undefined &&
-            postBalances[0] !== undefined
-        ) {
-            amountLamports = postBalances[0]! - preBalances[0]! + meta.fee;
+
+        // Fallback for SOL-paired V1 events without parseable log data:
+        // determine lamports from fee-recipient balance decrease.
+        if (amountBaseUnits === 0) {
+            for (let i = 0; i < accountKeys.length; i++) {
+                const key = accountKeys.get(i);
+                if (!key) continue;
+                if (!PUMP_FEE_RECIPIENT_SET.has(key.toBase58())) continue;
+                const delta = (preBalances[i] ?? 0) - (postBalances[i] ?? 0);
+                if (delta > amountBaseUnits) amountBaseUnits = delta;
+            }
+            if (
+                amountBaseUnits <= 0 &&
+                preBalances[0] !== undefined &&
+                postBalances[0] !== undefined
+            ) {
+                amountBaseUnits = postBalances[0]! - preBalances[0]! + meta.fee;
+            }
+            if (amountBaseUnits < 0) amountBaseUnits = 0;
         }
-        if (amountLamports <= 0) amountLamports = 0;
 
         // Find token mint (first non-system account)
         let tokenMint = '';
@@ -322,19 +340,132 @@ export class RpcClaimMonitor {
             break;
         }
 
+        // Resolve quote-currency metadata. Defaults to SOL when the event predates V2
+        // or the quote_mint field couldn't be read — preserves V1 behavior.
+        const resolvedQuoteMint = quoteMint ?? WSOL_MINT;
+        const quoteInfo = QUOTE_MINT_INFO[resolvedQuoteMint] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+        const quoteDivisor = Math.pow(10, quoteInfo.decimals);
+        const amountQuote = amountBaseUnits / quoteDivisor;
+        // amountSol is meaningful only when the quote is actually SOL. For USDC claims
+        // we leave it 0 and downstream code branches on isStableQuote / quoteTicker.
+        const amountSol = quoteInfo.isStable ? 0 : amountBaseUnits / LAMPORTS_PER_SOL;
+
         return {
             txSignature: signature,
             slot: tx.slot,
             timestamp: blockTime,
             claimerWallet,
             tokenMint,
-            amountSol: amountLamports / LAMPORTS_PER_SOL,
-            amountLamports,
+            amountSol,
+            amountLamports: amountBaseUnits,
             claimType: def.claimType,
             isCashback: def.claimType === 'claim_cashback',
             programId: def.programId,
             claimLabel: def.label,
+            quoteMint: resolvedQuoteMint,
+            quoteTicker: quoteInfo.ticker,
+            isStableQuote: quoteInfo.isStable,
+            amountQuote,
         };
     }
 
+}
+
+// ============================================================================
+// Event-data parsing (Anchor `Program data:` log lines)
+// ============================================================================
+
+/**
+ * Parses Anchor-emitted event records from `meta.logMessages` to extract the
+ * fee amount and (for V2 events only) the trailing `quote_mint` pubkey.
+ *
+ * Returns `null` when no matching event is found — caller falls back to
+ * lamport balance deltas (V1, SOL-only behavior).
+ */
+function parseClaimEventFromLogs(
+    logMessages: string[],
+    claimType: ClaimType,
+): { amount: number; quoteMint?: string } | null {
+    for (const line of logMessages) {
+        if (!line.includes('Program data:')) continue;
+        const b64 = line.split('Program data: ')[1]?.trim();
+        if (!b64) continue;
+
+        try {
+            const bytes = Buffer.from(b64, 'base64');
+            if (bytes.length < 8) continue;
+            const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
+            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+            // DistributeCreatorFeesEvent: a537817004b3ca28
+            // V1 layout: disc(8) + ts(8) + mint(32) + bc(32) + cfg(32) + admin(32) + shareholders(vec) + distributed(u64)
+            // V2 layout: ... + distributed(u64) + quote_mint(32)
+            if (disc === 'a537817004b3ca28' && claimType === 'distribute_creator_fees') {
+                const SHARE_VEC_OFFSET = 8 + 8 + 32 + 32 + 32 + 32; // 144
+                if (bytes.length < SHARE_VEC_OFFSET + 4) continue;
+                const shareCount = bytes.readUInt32LE(SHARE_VEC_OFFSET);
+                const distributedOffset = SHARE_VEC_OFFSET + 4 + shareCount * 34;
+                if (bytes.length < distributedOffset + 8) continue;
+                const amount = Number(view.getBigUint64(distributedOffset, true));
+                const qmOffset = distributedOffset + 8;
+                const quoteMint = bytes.length >= qmOffset + 32
+                    ? new PublicKey(bytes.subarray(qmOffset, qmOffset + 32)).toBase58()
+                    : undefined;
+                return { amount, quoteMint };
+            }
+
+            // CollectCreatorFeeEvent: 7a027f010ebf0caf
+            // V1 layout: disc(8) + ts(8) + creator(32) + creatorFee(u64)
+            // V2 layout: ... + quote_mint(32)
+            if (disc === '7a027f010ebf0caf' && claimType === 'collect_creator_fee') {
+                if (bytes.length < 56) continue;
+                const amount = Number(view.getBigUint64(48, true));
+                const quoteMint = bytes.length >= 88
+                    ? new PublicKey(bytes.subarray(56, 88)).toBase58()
+                    : undefined;
+                return { amount, quoteMint };
+            }
+
+            // ClaimCashbackEvent: e2d6f62107f293e5
+            // V1 layout: disc(8) + user(32) + amount(8) + ...
+            if (disc === 'e2d6f62107f293e5' && claimType === 'claim_cashback') {
+                if (bytes.length < 48) continue;
+                const amount = Number(view.getBigUint64(40, true));
+                return { amount };
+            }
+
+            // CollectCoinCreatorFeeEvent: e8f5c2eeeada3a59
+            // Layout: disc(8) + ts(8) + coinCreator(32) + coinCreatorFee(u64) + ...
+            if (disc === 'e8f5c2eeeada3a59' && claimType === 'collect_coin_creator_fee') {
+                if (bytes.length < 56) continue;
+                const amount = Number(view.getBigUint64(48, true));
+                return { amount };
+            }
+
+            // SocialFeePdaClaimed: 3212c141edd2eaec
+            // V1 layout: disc(8) + ts(8) + user_id(string) + platform(u8) + social_fee_pda(32)
+            //          + recipient(32) + social_claim_authority(32) + amount_claimed(u64)
+            //          + claimable_before(u64) + lifetime_claimed(u64)
+            //          + recipient_balance_before(u64) + recipient_balance_after(u64)
+            // V2 trailing: quote_mint(32) + lifetime_stable_claimed(u64)
+            if (disc === '3212c141edd2eaec' && claimType === 'claim_social_fee_pda') {
+                let offset = 16; // skip disc(8) + ts(8)
+                if (bytes.length < offset + 4) continue;
+                const uidLen = bytes.readUInt32LE(offset);
+                offset += 4 + uidLen + 1; // string + platform(u8)
+                offset += 32 + 32 + 32; // social_fee_pda + recipient + social_claim_authority
+                if (bytes.length < offset + 8) continue;
+                const amount = Number(view.getBigUint64(offset, true));
+                offset += 8 + 8 + 8; // amount_claimed + claimable_before + lifetime_claimed
+                // V2 only: skip recipient_balance_before(8) + recipient_balance_after(8), then read quote_mint
+                const quoteMint = bytes.length >= offset + 16 + 32
+                    ? new PublicKey(bytes.subarray(offset + 16, offset + 16 + 32)).toBase58()
+                    : undefined;
+                return { amount, quoteMint };
+            }
+        } catch {
+            // skip unparseable log lines
+        }
+    }
+    return null;
 }
