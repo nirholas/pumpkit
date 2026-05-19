@@ -139,6 +139,7 @@ function EventContent({ event }: { event: FeedEvent }) {
           <InlineButtons labels={['View TX']} event={event} />
         </>
       );
+    }
     case 'cto':
       return (
         <>
@@ -152,11 +153,12 @@ function EventContent({ event }: { event: FeedEvent }) {
           <InlineButtons labels={['View TX']} event={event} />
         </>
       );
-    case 'distribution':
+    case 'distribution': {
+      const { amount, ticker, isStable } = pickAmount(event);
       return (
         <>
           <p className="text-sm text-zinc-200 font-medium">
-            💎 Fee Distribution — <span className="text-pump-cyan">{event.amountSol.toFixed(1)} SOL</span>
+            💎 Fee Distribution — <span className="text-pump-cyan">{amount.toFixed(isStable ? 2 : 1)} {ticker}</span>
           </p>
           <p className="text-sm text-zinc-300 mt-1">
             {event.tokenName} (<span className="text-zinc-400">${event.tokenSymbol}</span>)
@@ -164,13 +166,14 @@ function EventContent({ event }: { event: FeedEvent }) {
           {event.shareholders && event.shareholders.length > 0 && (
             <div className="text-xs text-zinc-400 mt-1 space-y-0.5">
               {event.shareholders.map((s) => (
-                <p key={s.address}>{s.address}: {s.amount.toFixed(2)} SOL</p>
+                <p key={s.address}>{s.address}: {s.amount.toFixed(2)} {ticker}</p>
               ))}
             </div>
           )}
           <InlineButtons labels={['View TX', 'Fee Config']} event={event} />
         </>
       );
+    }
     default:
       return null;
   }

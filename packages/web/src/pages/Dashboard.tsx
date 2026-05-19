@@ -103,6 +103,10 @@ function toFeedEvent(e: PumpEvent, i: number): FeedEvent {
     tokenSymbol: (rec.tokenSymbol as string) ?? (rec.symbol as string) ?? '???',
     creator: (rec.creator as string) ?? (rec.claimerWallet as string) ?? (rec.wallet as string) ?? '',
     amountSol: (rec.amountSol as number) ?? 0,
+    // V2 quote-mint fields (2026-05-21 rollout). When present, EventCard
+    // renders the V2 amount/ticker instead of `amountSol`.
+    amountQuote: typeof rec.amountQuote === 'number' ? rec.amountQuote : undefined,
+    quoteTicker: typeof rec.quoteTicker === 'string' ? rec.quoteTicker : undefined,
     direction: rec.direction as 'buy' | 'sell' | undefined,
     newCreator: rec.newCreator as string | undefined,
     shareholders: rec.shareholders as { address: string; amount: number }[] | undefined,
