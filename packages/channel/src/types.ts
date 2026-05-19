@@ -16,6 +16,7 @@ export const MONITORED_PROGRAM_IDS = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP
 
 export const PUMPFUN_FEE_ACCOUNT = 'CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbCJ5GEFDM97zC';
 export const PUMPFUN_MIGRATION_AUTHORITY = '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg';
+export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 
 export const PUMP_FEE_RECIPIENTS = [
     '5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD',
@@ -32,7 +33,6 @@ export const PUMP_FEE_RECIPIENT_SET = new Set<string>([
     PUMPFUN_FEE_ACCOUNT,
     ...PUMP_FEE_RECIPIENTS,
 ]);
-export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
 
 // ============================================================================
 // Token Creation Discriminators
@@ -115,10 +115,12 @@ export interface FeeClaimEvent {
     recipientWallet?: string;
     /** Social fee PDA account for social claims */
     socialFeePda?: string;
-    /** True when claim_social_fee_pda was called but no SocialFeePdaClaimed event was emitted (zero-amount) */
+    /** True when instruction was called but no SocialFeePdaClaimed event was emitted (scam/fake claim) */
     isFake?: boolean;
-    /** Cumulative lamports claimed lifetime, parsed from SocialFeePdaClaimed event */
+    /** Lifetime total claimed in lamports (from on-chain event, cumulative across all claims) */
     lifetimeClaimedLamports?: number;
+    /** When multiple tokens share the same social fee PDA (scam vector), all candidate mints */
+    allCandidateMints?: string[];
 }
 
 export interface TokenLaunchEvent {
@@ -183,3 +185,4 @@ export interface FeeDistributionEvent {
     distributedSol: number;
     shareholders: Array<{ address: string; shareBps: number }>;
 }
+

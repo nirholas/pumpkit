@@ -15,12 +15,12 @@ import { Bot, type BotError } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { isFirstClaimByGithubUser, loadPersistedClaims } from './claim-tracker.js';
-import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile } from './pump-client.js';
-import { fetchGitHubUserById } from './github-client.js';
+import { hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, getGithubUserClaimedMints, loadPersistedClaims } from './claim-tracker.js';
+import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile, fetchSameNameTokens } from './pump-client.js';
+import { fetchGitHubUserById, fetchRepoFromUrls } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
-import { formatGitHubClaimFeed, formatGraduationFeed } from './formatters.js';
-import type { ClaimFeedContext } from './formatters.js';
+import { formatGitHubClaimFeed, formatCreatorClaimFeed, formatGraduationFeed } from './formatters.js';
+import type { ClaimFeedContext, CreatorClaimContext } from './formatters.js';
 import { log, setLogLevel } from './logger.js';
 import { startHealthServer, stopHealthServer } from './health.js';
 import { maskUrl } from './rpc-fallback.js';
@@ -71,7 +71,7 @@ async function main(): Promise<void> {
         throw new Error('Unreachable');
     }
 
-    /** Send a message to the channel. */
+    /** Send a message to the channel. Throws on failure. */
     async function postToChannel(message: string): Promise<void> {
         try {
             await withRetry(() => bot.api.sendMessage(config.channelId, message, {
@@ -79,7 +79,8 @@ async function main(): Promise<void> {
                 link_preview_options: { is_disabled: true },
             }));
         } catch (err) {
-            log.error('Failed to post to channel %s:', config.channelId, err);
+            log.error('Failed to post to channel %s: %s', config.channelId, err);
+            throw err;
         }
     }
 
@@ -97,10 +98,10 @@ async function main(): Promise<void> {
     }
 
     // ── Pipeline Counters ─────────────────────────────────────────────
-    const pipeline = { total: 0, socialClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0 };
+    const pipeline = { total: 0, socialClaims: 0, creatorClaims: 0, firstClaim: 0, posted: 0, skippedCashback: 0, repeatClaim: 0 };
     setInterval(() => {
-        log.info('Pipeline: %d total → %d social → %d first → %d posted (skip: %d cashback)',
-            pipeline.total, pipeline.socialClaims, pipeline.firstClaim, pipeline.posted, pipeline.skippedCashback);
+        log.info('Pipeline: %d total → %d social + %d creator → %d first / %d repeat → %d posted (skip: %d cashback)',
+            pipeline.total, pipeline.socialClaims, pipeline.creatorClaims, pipeline.firstClaim, pipeline.repeatClaim, pipeline.posted, pipeline.skippedCashback);
     }, 60_000);
 
     // ── Claim Monitor ────────────────────────────────────────────────
@@ -120,21 +121,81 @@ async function main(): Promise<void> {
         if (event.claimType === 'claim_social_fee_pda' && event.socialPlatform === 2 && event.githubUserId) {
             pipeline.socialClaims++;
 
-            if (!isFirstClaimByGithubUser(event.githubUserId)) return;
-            pipeline.firstClaim++;
+            let mint = event.tokenMint?.trim() || '';
 
-            const mint = event.tokenMint?.trim() || '';
+            // When multiple tokens share the same social fee PDA,
+            // fetch token info for ALL candidates and pick highest MC as primary.
+            let allLinkedTokens: import('./pump-client.js').TokenInfo[] = [];
+            if (event.allCandidateMints && event.allCandidateMints.length > 1) {
+                log.info('PDA %s maps to %d tokens — fetching all',
+                    event.socialFeePda?.slice(0, 8) ?? '?', event.allCandidateMints.length);
+                const infos = (await Promise.all(
+                    event.allCandidateMints.map((m) => fetchTokenInfo(m)),
+                )).filter((i): i is import('./pump-client.js').TokenInfo => i != null);
+                infos.sort((a, b) => b.usdMarketCap - a.usdMarketCap);
+                allLinkedTokens = infos;
+                const best = infos[0];
+                if (best && best.usdMarketCap > 0) {
+                    mint = best.mint;
+                    event.tokenMint = mint;
+                    log.info('Resolved PDA to highest-MC token: %s ($%s)',
+                        mint.slice(0, 8), best.usdMarketCap.toFixed(0));
+                }
+            }
+
+            // Use on-chain lifetime data as ground truth: if lifetime lamports
+            // significantly exceed this claim, the user has claimed before —
+            // regardless of what our local persistence says (it resets on redeploy).
+            // Tracked per user+mint so claiming coin A doesn't affect coin B.
+            let isFirstClaim = !hasGithubUserClaimed(event.githubUserId, mint);
+            if (isFirstClaim && event.lifetimeClaimedLamports != null && event.lifetimeClaimedLamports > event.amountLamports * 1.01) {
+                // On-chain lifetime is larger than this single claim → not actually first
+                isFirstClaim = false;
+                // Backfill our local tracker so future claims aren't misclassified
+                markGithubUserClaimed(event.githubUserId, mint);
+            }
+            const isFake = event.isFake === true;
+            if (isFirstClaim) pipeline.firstClaim++;
+            else pipeline.repeatClaim++;
+
+            // Only post FIRST claims — skip fake and repeat claims entirely
+            if (isFake || !isFirstClaim) {
+                log.debug('Skipping %s claim by %s on %s',
+                    isFake ? 'fake' : 'repeat', event.githubUserId, mint.slice(0, 8));
+                return;
+            }
+
             const [githubUser, tokenInfo, solUsdPrice] = await Promise.all([
                 fetchGitHubUserById(event.githubUserId),
                 mint ? fetchTokenInfo(mint) : Promise.resolve(null),
                 fetchSolUsdPrice(),
             ]);
-            const xProfile = githubUser?.twitterUsername
-                ? await fetchXProfile(githubUser.twitterUsername)
+            // Second wave: depends on first-wave results
+            const [xProfile, repoInfo, creatorProfile, holders, trades, liquidity, bundle, sameNameTokens] = await Promise.all([
+                githubUser?.twitterUsername
+                    ? fetchXProfile(githubUser.twitterUsername)
+                    : Promise.resolve(null),
+                tokenInfo?.githubUrls?.length
+                    ? fetchRepoFromUrls(tokenInfo.githubUrls)
+                    : Promise.resolve(null),
+                tokenInfo?.creator
+                    ? fetchCreatorProfile(tokenInfo.creator)
+                    : Promise.resolve(null),
+                mint ? fetchTopHolders(mint) : Promise.resolve(null),
+                mint ? fetchTokenTrades(mint) : Promise.resolve(null),
+                mint && tokenInfo ? fetchPoolLiquidity(mint, tokenInfo.usdMarketCap) : Promise.resolve(null),
+                mint ? fetchBundleInfo(mint) : Promise.resolve(null),
+                tokenInfo ? fetchSameNameTokens(tokenInfo.name, tokenInfo.symbol, mint) : Promise.resolve([]),
+            ]);
+            // Third wave: dev wallet needs RPC + creator address
+            const devWallet = tokenInfo?.creator
+                ? await fetchDevWalletInfo(tokenInfo.creator, mint, config.solanaRpcUrl)
                 : null;
 
-            log.info('📤 GitHub social fee claim by %s (%s) — %.4f SOL',
-                event.githubUserId, githubUser?.login ?? '?', event.amountSol);
+            const claimNumber = incrementGithubClaimCount(event.githubUserId, mint);
+            const claimedMints = getGithubUserClaimedMints(event.githubUserId);
+            log.info('🚨 GitHub social fee FIRST claim by %s (%s) — %s SOL',
+                event.githubUserId, githubUser?.login ?? '?', event.amountSol.toFixed(4));
 
             const ctx: ClaimFeedContext = {
                 event,
@@ -142,17 +203,75 @@ async function main(): Promise<void> {
                 githubUser,
                 xProfile,
                 tokenInfo,
+                isFirstClaim: true,
+                isFake: false,
+                claimNumber,
+                lifetimeClaimedSol: event.lifetimeClaimedLamports != null
+                    ? event.lifetimeClaimedLamports / 1e9
+                    : undefined,
+                repoInfo,
+                creatorProfile,
+                holders,
+                trades,
+                devWallet,
+                liquidity,
+                bundle,
+                sameNameTokens,
+                allLinkedTokens: allLinkedTokens.length > 0 ? allLinkedTokens : undefined,
+                claimedMints: claimedMints.length > 0 ? claimedMints : undefined,
             };
 
             const { imageUrl, caption } = formatGitHubClaimFeed(ctx);
-            if (imageUrl) {
-                await postPhotoToChannel(imageUrl, caption);
-            } else {
-                await postToChannel(caption);
+            try {
+                if (imageUrl) {
+                    await postPhotoToChannel(imageUrl, caption);
+                } else {
+                    await postToChannel(caption);
+                }
+                markGithubUserClaimed(event.githubUserId, mint);
+                pipeline.posted++;
+                log.info('✅ Posted GitHub claim by %s (%s) to %s',
+                    event.githubUserId, githubUser?.login ?? '?', config.channelId);
+            } catch (postErr) {
+                log.error('Failed to post claim by %s — will retry on next claim event: %s',
+                    event.githubUserId, postErr);
             }
-            pipeline.posted++;
-            log.info('✅ Posted GitHub claim by %s (%s) to %s',
-                event.githubUserId, githubUser?.login ?? '?', config.channelId);
+        }
+
+        // ── Path B: Creator fee claims (collect_creator_fee, collect_coin_creator_fee, distribute_creator_fees) ──
+        else if (event.claimType === 'collect_creator_fee' ||
+                 event.claimType === 'collect_coin_creator_fee' ||
+                 (event.claimType === 'distribute_creator_fees' && config.feed.feeDistributions)) {
+            pipeline.creatorClaims++;
+
+            const mint = event.tokenMint?.trim() || '';
+            const [tokenInfo, solUsdPrice, creator] = await Promise.all([
+                mint ? fetchTokenInfo(mint) : Promise.resolve(null),
+                fetchSolUsdPrice(),
+                fetchCreatorProfile(event.claimerWallet),
+            ]);
+
+            log.info('💰 Creator fee claim by %s — %s SOL (%s)',
+                event.claimerWallet.slice(0, 8), event.amountSol.toFixed(4), event.claimLabel);
+
+            const ctx: CreatorClaimContext = {
+                event,
+                solUsdPrice,
+                creator,
+            };
+
+            const { imageUrl, caption } = formatCreatorClaimFeed(ctx);
+            try {
+                if (imageUrl) {
+                    await postPhotoToChannel(imageUrl, caption);
+                } else {
+                    await postToChannel(caption);
+                }
+                pipeline.posted++;
+                log.info('✅ Posted creator claim by %s to %s', event.claimerWallet.slice(0, 8), config.channelId);
+            } catch (postErr) {
+                log.error('Failed to post creator claim by %s: %s', event.claimerWallet.slice(0, 8), postErr);
+            }
         }
       } catch (err) {
         log.error('Claim handler error: %s', err);
@@ -256,3 +375,4 @@ main().catch((err) => {
     console.error('Fatal error:', err);
     process.exit(1);
 });
+

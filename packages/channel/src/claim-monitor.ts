@@ -156,17 +156,10 @@ export class ClaimMonitor {
 
         log.info('Claim monitor: monitoring %d programs', this.programPubkeys.length);
 
-        // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking).
-        // Opt-in: the gPA scan can return hundreds of MB once the SharingConfig set is large,
-        // which OOMs small containers. Default off — live events keep the index current for
-        // new claims; historical PDAs resolve once they next emit an event.
-        if (process.env.SOCIAL_FEE_BOOTSTRAP === 'true') {
-            this.socialFeeIndex.bootstrap(this.rpc).catch((err: unknown) => {
-                log.warn('SocialFeeIndex bootstrap error: %s', err);
-            });
-        } else {
-            log.info('SocialFeeIndex: bootstrap disabled (set SOCIAL_FEE_BOOTSTRAP=true to enable); using live events only');
-        }
+        // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking)
+        this.socialFeeIndex.bootstrap(this.rpc).catch((err: unknown) => {
+            log.warn('SocialFeeIndex bootstrap error: %s', err);
+        });
 
         if (this.config.solanaWsUrl && process.env.SOLANA_WS_URL) {
             try {
@@ -616,9 +609,19 @@ export class ClaimMonitor {
         // Skip non-social dust amounts (real social claims always emit event data)
         if (!isFake && amountLamports < 1000) return null;
 
-        // For social fee PDA claims, resolve mint from the index
+        // For social fee PDA claims, resolve mint from the index.
+        // When multiple tokens share the same PDA (scam vector), return all
+        // candidates so the caller can disambiguate by market cap.
+        let allCandidateMints: string[] | undefined;
         if (def.claimType === 'claim_social_fee_pda' && socialFeePda && !tokenMint) {
-            tokenMint = this.socialFeeIndex.lookup(socialFeePda) ?? '';
+            const candidates = this.socialFeeIndex.lookupAll(socialFeePda);
+            if (candidates.length === 1) {
+                tokenMint = candidates[0]!;
+            } else if (candidates.length > 1) {
+                allCandidateMints = candidates;
+                // Use first as fallback; caller should disambiguate
+                tokenMint = candidates[0]!;
+            }
         }
 
         return {
@@ -639,6 +642,7 @@ export class ClaimMonitor {
             socialFeePda,
             isFake,
             lifetimeClaimedLamports,
+            allCandidateMints,
         };
     }
 
