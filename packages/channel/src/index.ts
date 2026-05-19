@@ -194,8 +194,10 @@ async function main(): Promise<void> {
 
             const claimNumber = incrementGithubClaimCount(event.githubUserId, mint);
             const claimedMints = getGithubUserClaimedMints(event.githubUserId);
-            log.info('🚨 GitHub social fee FIRST claim by %s (%s) — %s SOL',
-                event.githubUserId, githubUser?.login ?? '?', event.amountSol.toFixed(4));
+            const quoteTicker = event.quoteTicker ?? 'SOL';
+            const quoteAmount = event.amountQuote ?? event.amountSol;
+            log.info('🚨 GitHub social fee FIRST claim by %s (%s) — %s %s',
+                event.githubUserId, githubUser?.login ?? '?', quoteAmount.toFixed(4), quoteTicker);
 
             const ctx: ClaimFeedContext = {
                 event,
@@ -206,7 +208,9 @@ async function main(): Promise<void> {
                 isFirstClaim: true,
                 isFake: false,
                 claimNumber,
-                lifetimeClaimedSol: event.lifetimeClaimedLamports != null
+                // Legacy SOL-denominated lifetime (kept for V1 backwards compat); for USDC
+                // claims the formatter uses event.lifetimeClaimedQuote + event.quoteTicker.
+                lifetimeClaimedSol: !event.isStableQuote && event.lifetimeClaimedLamports != null
                     ? event.lifetimeClaimedLamports / 1e9
                     : undefined,
                 repoInfo,
@@ -251,8 +255,11 @@ async function main(): Promise<void> {
                 fetchCreatorProfile(event.claimerWallet),
             ]);
 
-            log.info('💰 Creator fee claim by %s — %s SOL (%s)',
-                event.claimerWallet.slice(0, 8), event.amountSol.toFixed(4), event.claimLabel);
+            log.info('💰 Creator fee claim by %s — %s %s (%s)',
+                event.claimerWallet.slice(0, 8),
+                (event.amountQuote ?? event.amountSol).toFixed(4),
+                event.quoteTicker ?? 'SOL',
+                event.claimLabel);
 
             const ctx: CreatorClaimContext = {
                 event,
