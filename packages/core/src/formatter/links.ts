@@ -58,8 +58,11 @@ export function formatSol(lamports: number | bigint): string {
 
 // Quote-mint awareness for the 2026-05-21 V2 rollout. Pump V2 events carry a
 // trailing `quote_mint` pubkey; the `amount` they emit is in base units of
-// that mint (lamports for SOL, micro-USDC for USDC, etc.).
-export const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+// that mint (lamports for SOL, micro-USDC for USDC, etc.). `WSOL_MINT` lives
+// alongside the other program IDs in `solana/programs.ts` — we import it here
+// so this module owns only the display-side concerns.
+import { WSOL_MINT } from '../solana/programs.js';
+
 export const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export const QUOTE_MINT_INFO: Record<string, { ticker: string; decimals: number; isStable: boolean }> = {

@@ -15,7 +15,7 @@ export type { BaseBotConfig, ShutdownHandler, PumpEvent, TokenInfo } from './typ
 export {
     link, solscanTx, solscanAccount, pumpFunToken, dexScreenerToken,
     bold, code, italic, shortenAddress, formatSol, formatNumber,
-    formatQuoteAmount, WSOL_MINT, USDC_MINT, QUOTE_MINT_INFO,
+    formatQuoteAmount, USDC_MINT, QUOTE_MINT_INFO,
     formatClaim, formatLaunch, formatGraduation, formatWhaleTrade, formatCTO, formatFeeDistribution,
 } from './formatter/index.js';
 export type {
