@@ -284,6 +284,28 @@ const buyIxs = await PUMP_SDK.buyInstructions({
         </div>
       </UserBubble>
 
+      {/* 7b. V2 USDC rollout note (2026-05-21) */}
+      <BotBubble time="14:06">
+        <p className="text-sm font-semibold mb-2">🆕 V2 quote-mint support — May 21, 2026</p>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          pump.fun now lets coins be paired against either <strong>SOL</strong> or <strong>USDC</strong>.
+          USDC-paired coins can only be traded through the new <code className="text-pump-green">_v2</code> instructions —
+          they accept a <code className="text-pump-green">quote_mint</code> argument.
+          SOL-paired coins keep working with the legacy instructions (the V2 ones still work and just need
+          <code className="text-pump-green"> WSOL</code> passed as the quote mint).
+        </p>
+        <p className="text-xs text-zinc-400 mt-2">
+          PumpKit&apos;s observability packages already parse the new event layouts. Trading-side V2 builders
+          (<code className="text-zinc-300">buy_v2</code> / <code className="text-zinc-300">sell_v2</code>) land in the next
+          <code className="text-zinc-300"> @nirholas/pump-sdk</code> release — until then use the existing SOL-only builders for SOL pairs.
+        </p>
+        <p className="text-xs text-zinc-400 mt-2">
+          Docs: <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs" target="_blank" rel="noopener noreferrer">pump-public-docs</a> ·{' '}
+          <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/COLLECT_CREATOR_FEE.md" target="_blank" rel="noopener noreferrer">COLLECT_CREATOR_FEE</a> ·{' '}
+          <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/CREATOR_FEE_SHARING.md" target="_blank" rel="noopener noreferrer">CREATOR_FEE_SHARING</a>
+        </p>
+      </BotBubble>
+
       {/* 8. Telegram Bot Integration */}
       <BotBubble time="14:07">
         <p className="text-sm font-medium mb-2">🤖 Wire it into a Telegram bot:</p>
