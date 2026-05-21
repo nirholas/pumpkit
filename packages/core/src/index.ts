@@ -68,3 +68,12 @@ export {
     CTOMonitor, type CTOMonitorOptions,
     FeeDistMonitor, type FeeDistMonitorOptions,
 } from './monitor/index.js';
+
+// Utilities — retry/backoff and friends
+export {
+    retry,
+    isTransientError,
+    computeBackoffDelay,
+    type RetryOptions,
+    type RetryEvent,
+} from './util/index.js';
