@@ -26,7 +26,8 @@
         "api:dev": "ENABLE_API=true API_ONLY=true tsx watch src/index.ts",
         "dev:full": "ENABLE_API=true tsx watch src/index.ts",
         "build": "tsc",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "lint": "node ../../tools/lint-check.mjs ."
     },
     "dependencies": {
         "@solana/web3.js": "^1.98.0",

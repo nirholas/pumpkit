@@ -33,6 +33,26 @@ TypeScript keypair verification utility. Validates that a Solana keypair file co
 npx tsx tools/verify-keypair.ts ./path/to/keypair.json
 ```
 
+### `lint-check.mjs`
+
+Lightweight repo-wide lint that complements `tsc --noEmit`. Zero dependencies, runs on Node 20+, and catches the failure modes that have actually shown up in this repo:
+
+- Staged JSON files that look like Solana keypairs (64-byte integer arrays under `tmp/`, `secrets/`, or `scripts/`)
+- Hardcoded GitHub PATs, Telegram bot tokens, AWS access keys
+- `console.log` in `src/` (warning — use the logger instead)
+- `.only` / `fdescribe` left in test files (error — would skip sibling tests in CI)
+- Bare `// TODO` / `// FIXME` comments with no owner
+
+```bash
+node tools/lint-check.mjs            # Lint the whole repo
+node tools/lint-check.mjs packages/core   # Lint a specific package
+
+# Or via the workspace lint task:
+npx turbo run lint
+```
+
+Each package's `package.json` exposes a `lint` script that delegates here, so `turbo run lint` picks them up automatically.
+
 ## When To Use
 
 - **Before deployment** — run `audit-dependencies.sh` to catch vulnerable packages
