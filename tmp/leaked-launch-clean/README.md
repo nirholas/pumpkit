@@ -1,4 +1,4 @@
-# pump-launch-toolkit
+# atomic
 
 Atomic scripts for launching, collecting fees from, and trading pump.fun coins. Built around **Jito bundles** for atomicity across multiple txs — useful when:
 

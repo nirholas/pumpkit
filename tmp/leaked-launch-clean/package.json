@@ -1,5 +1,5 @@
 {
-  "name": "pump-launch-toolkit",
+  "name": "atomic",
   "version": "0.1.0",
   "description": "Atomic pump.fun launch + fee collection + buy/transfer scripts using Jito bundles",
   "license": "MIT",
