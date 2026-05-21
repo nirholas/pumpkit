@@ -10,7 +10,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@pumpkit/core": "workspace:*",
+    "@pumpkit/core": "*",
     "grammy": "^1.30.0",
     "dotenv": "^16.4.7"
   },

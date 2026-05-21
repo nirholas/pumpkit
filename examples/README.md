@@ -1,6 +1,27 @@
 # PumpKit Examples
 
-Reference implementations from the original PumpFun SDK live dashboards.
+Reference implementations from the original PumpFun SDK live dashboards, plus
+runnable bot examples that use `@pumpkit/core`.
+
+## Bots
+
+| Directory                    | Description                                                                |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| [claim-alert/](claim-alert/) | Minimal ~100-line Telegram fee-claim alert bot with watchlist + webhook    |
+
+### Running a bot example
+
+Bot examples are npm workspaces, so they pick up the local `@pumpkit/core`
+automatically:
+
+```bash
+cp examples/claim-alert/.env.example examples/claim-alert/.env
+# Edit .env with BOT_TOKEN, SOLANA_RPC_URL, CHAT_ID
+npm install
+npm run dev --workspace=@pumpkit/example-claim-alert
+```
+
+See each example's `README.md` for primitives demonstrated and adaptation tips.
 
 ## Dashboards
 
