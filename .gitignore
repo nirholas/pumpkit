@@ -6,3 +6,8 @@ dist/
 data/
 *.tsbuildinfo
 .turbo/
+tmp/leaked-launch/funder.json
+tmp/leaked-launch/mint.json
+tmp/leaked-launch/*.keypair.json
+tmp/vanity-usdc/*.json
+.gitignore
