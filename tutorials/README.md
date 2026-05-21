@@ -76,6 +76,17 @@ Hands-on guides for building PumpFun Telegram bots.
 | 31 | [USDC Pair Launches](46-usdc-pair-launches.md) | V2 `create`, choosing the quote mint, USDC vs WSOL, mint conventions |
 | 32 | [V2 Creator Fees](47-v2-creator-fees.md) | `collect_creator_fee`, fee sharing at launch, monitoring & verification |
 
+## Production Hardening
+
+> MEV defense, RPC resilience, and curve internals — the deeper material for running PumpKit bots in adversarial environments.
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 33 | [Jito Bundle Strategies](48-jito-bundle-strategies.md) | Atomic multi-tx execution, tip strategy, landing odds, retry paths |
+| 34 | [RPC Resilience](49-rpc-resilience.md) | Reader/streamer/sender role split, multi-vendor failover, replay-on-reconnect |
+| 35 | [MEV Defense Patterns](50-mev-defense-patterns.md) | Sandwich/copy-trade/sniper defenses, wallet rotation, slippage policy |
+| 36 | [Bonding Curve Internals](51-bonding-curve-internals.md) | Account layout, virtual-vs-real reserves, graduation math, offline pricing |
+
 ## Prerequisites
 
 - Node.js 20+
