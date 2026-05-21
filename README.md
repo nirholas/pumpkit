@@ -205,6 +205,7 @@ Consolidates 3 existing production bots into one:
 - [RPC Best Practices](docs/rpc-best-practices.md) — Provider selection, batching, rate limiting
 - [Performance](docs/performance.md) — Benchmarks, latency, and optimization tips
 - [Security Guide](docs/guides/security.md) — Crypto library rules, key management
+- [Wallet & Keypair Safety](docs/guides/wallet-safety.md) — Keypair handling, gitignore patterns, leak recovery
 - [Troubleshooting](docs/troubleshooting.md) — Common issues and solutions
 - [Support](docs/support.md) — Getting help, bug reports, feature requests
 - [Roadmap](docs/roadmap.md) — Where PumpKit is headed
