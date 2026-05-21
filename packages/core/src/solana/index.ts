@@ -34,3 +34,9 @@ export {
     RpcFallback,
     type RpcOptions,
 } from './rpc.js';
+
+export {
+    detectSeededByPump,
+    type FundingSourceResult,
+    type DetectSeededByPumpOptions,
+} from './funding-source.js';

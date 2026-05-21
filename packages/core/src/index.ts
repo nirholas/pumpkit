@@ -36,6 +36,11 @@ export {
     createRpcConnection, deriveWsUrl, RpcFallback, type RpcOptions,
 } from './solana/rpc.js';
 export {
+    detectSeededByPump,
+    type FundingSourceResult,
+    type DetectSeededByPumpOptions,
+} from './solana/funding-source.js';
+export {
     getTokenPrice, getGraduationProgress,
     getBuyQuote, getSellQuote, getBondingCurveState,
 } from './solana/sdk-bridge.js';

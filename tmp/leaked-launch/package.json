@@ -1,0 +1,22 @@
+{
+  "name": "leaked-launch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "grind.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@nirholas/pump-sdk": "^1.30.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "bn.js": "^5.2.3",
+    "bs58": "^6.0.0",
+    "form-data": "^4.0.5",
+    "node-fetch": "^2.7.0"
+  }
+}
