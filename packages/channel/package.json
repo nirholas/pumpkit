@@ -2,6 +2,17 @@
   "name": "@pumpkit/channel",
   "version": "1.0.0",
   "description": "PumpFun read-only Telegram channel feed — broadcasts token launches, graduations, whale trades, fee claims and distributions",
+  "license": "Apache-2.0",
+  "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git",
+    "directory": "packages/channel"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/atomic/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.0.0"

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+//  
+
 import { describe, it, expect, vi } from 'vitest';
 import { PublicKey, type Connection } from '@solana/web3.js';
 import { detectSeededByPump } from '../solana/funding-source.js';

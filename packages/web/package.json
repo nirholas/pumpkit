@@ -3,6 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "description": "PumpKit documentation site and bot dashboard UI",
+  "license": "Apache-2.0",
+  "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git",
+    "directory": "packages/web"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/atomic/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,4 +1,4 @@
-# Tutorial 48 — Building an end-to-end USDC pump.fun trading bot
+# Tutorial 53 — Building an end-to-end USDC pump.fun trading bot
 
 > Audience: developers who finished [tutorial 46](46-usdc-pair-launches.md) and want a complete bot that monitors USDC launches and auto-trades them.
 >
@@ -378,14 +378,16 @@ Run on Railway / Fly / your VPS. Ensure:
 
 ## Risk disclosures
 
-This tutorial is **reference architecture**, not financial advice. Things that will lose you money include — but are absolutely not limited to — RPC outages, MEV ([tutorial 50](50-mev-protection-pumpfun.md)), slippage you under-modelled ([tutorial 51](51-slippage-modeling-v2.md)), creator rugs, sniper bots, and bugs in this very tutorial. Trade small until you understand the failure modes.
+This tutorial is **reference architecture**, not financial advice. Things that will lose you money include — but are absolutely not limited to — RPC outages, MEV ([tutorial 50](50-mev-defense-patterns.md)), slippage you under-modelled ([tutorial 51](51-bonding-curve-internals.md)), creator rugs, sniper bots, and bugs in this very tutorial. Trade small until you understand the failure modes.
 
 ## See also
 
 - [tutorials/46-usdc-pair-launches.md](46-usdc-pair-launches.md) — what the bot is buying
 - [tutorials/47-v2-creator-fees.md](47-v2-creator-fees.md) — fees that accrue on your buys/sells
-- [tutorials/49-indexing-v2-events.md](49-indexing-v2-events.md) — faster event ingestion
-- [tutorials/50-mev-protection-pumpfun.md](50-mev-protection-pumpfun.md) — MEV defence
-- [tutorials/51-slippage-modeling-v2.md](51-slippage-modeling-v2.md) — slippage math
+- [tutorials/48-jito-bundle-strategies.md](48-jito-bundle-strategies.md) — atomic execute-or-revert
+- [tutorials/49-rpc-resilience.md](49-rpc-resilience.md) — RPC failover so the bot doesn't go dark
+- [tutorials/50-mev-defense-patterns.md](50-mev-defense-patterns.md) — MEV defence
+- [tutorials/51-bonding-curve-internals.md](51-bonding-curve-internals.md) — curve math underpinning fills
+- [tutorials/54-indexing-v2-events.md](54-indexing-v2-events.md) — faster event ingestion at scale
 - [tutorials/11-trading-bot.md](11-trading-bot.md) — the V1 SOL-pair predecessor
 - [docs/rpc-best-practices.md](../docs/rpc-best-practices.md) — RPC choice + tuning

@@ -2,6 +2,17 @@
   "name": "@pumpkit/core",
   "version": "1.0.0",
   "description": "Shared utilities for PumpKit bots — logger, health server, config helpers, and common types",
+  "license": "Apache-2.0",
+  "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/atomic/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

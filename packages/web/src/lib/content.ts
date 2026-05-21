@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+//  
+
 /* ── Content registry ──────────────────────────────────────────────
  * Uses Vite's import.meta.glob to load all markdown docs & tutorials
  * as raw strings at build time. No need to list every file manually.

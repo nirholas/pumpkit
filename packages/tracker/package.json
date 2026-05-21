@@ -2,6 +2,17 @@
   "name": "@pumpkit/tracker",
   "version": "1.0.0",
   "description": "Telegram call-tracking bot with leaderboards, PNL cards, and performance analytics",
+  "license": "Apache-2.0",
+  "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git",
+    "directory": "packages/tracker"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/atomic/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "scripts": {

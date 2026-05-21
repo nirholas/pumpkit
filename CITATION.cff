@@ -7,7 +7,8 @@ type: software
 authors:
   - given-names: Nicholas
     alias: nirholas
-repository-code: "https://github.com/pumpkit/pumpkit"
+    website: "https://x.com/nichxbt"
+repository-code: "https://github.com/nirholas/atomic"
 url: "https://pumpkits.vercel.app"
 abstract: >-
   PumpKit is an open-source TypeScript framework for building pump.fun
@@ -21,4 +22,4 @@ keywords:
   - monorepo
   - defi
   - bot-framework
-license: MIT
+license: Apache-2.0
