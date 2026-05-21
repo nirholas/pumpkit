@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "PumpKit"
+message: >-
+  If you reference PumpKit in academic work, blog posts, or other publications,
+  please cite using the metadata below.
+type: software
+authors:
+  - given-names: Nicholas
+    alias: nirholas
+repository-code: "https://github.com/pumpkit/pumpkit"
+url: "https://pumpkits.vercel.app"
+abstract: >-
+  PumpKit is an open-source TypeScript framework for building pump.fun
+  Telegram bots on Solana — claim monitors, channel feeds, group trackers,
+  whale alerts, and the shared infrastructure underneath.
+keywords:
+  - solana
+  - pump-fun
+  - telegram-bot
+  - typescript
+  - monorepo
+  - defi
+  - bot-framework
+license: MIT

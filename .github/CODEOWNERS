@@ -1,0 +1,25 @@
+# CODEOWNERS — automatic review requests
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# The last matching pattern wins for any file.
+
+# Default owner — everything not matched below
+*                              @nirholas
+
+# Workspaces
+/packages/core/                @nirholas
+/packages/monitor/             @nirholas
+/packages/channel/             @nirholas
+/packages/claim/               @nirholas
+/packages/tracker/             @nirholas
+/packages/web/                 @nirholas
+
+# Tooling + security-sensitive paths
+/tools/                        @nirholas
+/security/                     @nirholas
+/SECURITY.md                   @nirholas
+/.github/                      @nirholas
+
+# Docs + tutorials — light touch, but still owned
+/docs/                         @nirholas
+/tutorials/                    @nirholas

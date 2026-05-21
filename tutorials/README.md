@@ -67,6 +67,15 @@ Hands-on guides for building PumpFun Telegram bots.
 | 29 | [Testing & Benchmarking](38-testing-benchmarking.md) | CLI tests, fuzz tests, stress tests, Rust vs TS benchmarks |
 | 30 | [Custom DeFi Agents & i18n](44-custom-defi-agents-i18n.md) | AI agent JSON definitions, 18-language translations, LLM integration |
 
+## V2 / USDC Pair Launches
+
+> Pump.fun enabled USDC as a quote mint on **2026-05-21**. Anything new should be V2-aware.
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 31 | [USDC Pair Launches](46-usdc-pair-launches.md) | V2 `create`, choosing the quote mint, USDC vs WSOL, mint conventions |
+| 32 | [V2 Creator Fees](47-v2-creator-fees.md) | `collect_creator_fee`, fee sharing at launch, monitoring & verification |
+
 ## Prerequisites
 
 - Node.js 20+

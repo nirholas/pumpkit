@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    name: Changesets release
+    runs-on: ubuntu-latest
+    # Skip if there are no changesets to consume — Changesets handles this internally,
+    # but we also skip the job entirely on dependabot pushes.
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck + Test
+        run: |
+          npm run typecheck
+          npm run test
+
+      - name: Create Release PR or publish to npm
+        uses: changesets/action@v1
+        with:
+          publish: npx changeset publish
+          version: npx changeset version
+          commit: "chore: release packages"
+          title: "chore: release packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

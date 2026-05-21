@@ -1,0 +1,44 @@
+title: "[Idea] "
+labels: ["enhancement", "discussion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas welcome — large or small. If this is a concrete bug or a confirmed feature request,
+        please open an [issue](https://github.com/pumpkit/pumpkit/issues/new/choose) instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Start with the user pain, not the solution. Who is blocked, and on what?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed direction
+      description: One-paragraph sketch. Don't worry about full design — that's what the discussion is for.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Anything you tried or rejected, and why.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Rough scope
+      options:
+        - "Single package change"
+        - "Cross-package / framework change"
+        - "New package"
+        - "Docs / tutorials"
+        - "Tooling / CI"
+        - "Unsure"
+    validations:
+      required: true

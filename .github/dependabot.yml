@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  # Root + each workspace package
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    groups:
+      typescript-tooling:
+        patterns:
+          - "typescript"
+          - "tsx"
+          - "vitest"
+          - "@types/*"
+      solana:
+        patterns:
+          - "@solana/*"
+          - "@nirholas/pump-sdk"
+      bot-runtime:
+        patterns:
+          - "grammy"
+          - "grammy-*"
+    labels:
+      - "dependencies"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"

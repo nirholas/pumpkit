@@ -1,0 +1,43 @@
+title: "[Q&A] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for asking! Before posting, please scan the [docs](https://github.com/pumpkit/pumpkit/tree/main/docs) and
+        [tutorials](https://github.com/pumpkit/pumpkit/tree/main/tutorials) — most setup, RPC, and pump.fun protocol
+        questions are already answered there.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and what's blocking you?
+      placeholder: "I want to launch a coin with a USDC quote pair using @pumpkit/core. The V2 create call rejects my mint with…"
+    validations:
+      required: true
+
+  - type: input
+    id: package
+    attributes:
+      label: Which package or area?
+      description: e.g. @pumpkit/core, @pumpkit/monitor, tools/, docs, agent-prompts
+      placeholder: "@pumpkit/core"
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you already tried?
+      description: Commands, doc pages, tutorials, related issues — link them so we don't loop.
+      placeholder: "Read tutorials/46-usdc-pair-launches.md, ran tools/check-pump-funding.ts on the deployer, …"
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment (if relevant)
+      description: Node version, OS, network (mainnet/devnet), pump-sdk version.
+      placeholder: |
+        node: v20.11.1
+        os: Ubuntu 22.04
+        network: mainnet-beta
+        @nirholas/pump-sdk: 1.33.0

@@ -1,0 +1,32 @@
+# EditorConfig — https://editorconfig.org
+# Keeps whitespace consistent across editors / IDEs / CI.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Markdown allows trailing spaces (line break) and may have wider indentation
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefile requires real tabs
+[Makefile]
+indent_style = tab
+
+# Shell scripts — keep 2-space, match the style in tools/
+[*.sh]
+indent_size = 2
+
+# YAML — match GitHub Actions / dependabot conventions
+[*.{yml,yaml}]
+indent_size = 2
+
+# JSON / TS / JS — explicit even though they share the default
+[*.{json,ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 2
