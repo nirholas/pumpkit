@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-hooks.json",
+  "_doc": "Hooks are shell commands executed by Claude Code at lifecycle events. These are project-level safety nets. See https://docs.claude.com/en/docs/claude-code/hooks for the canonical spec.",
+  "preToolUse": [
+    {
+      "matcher": { "tool": "Bash", "pattern": "git push --force" },
+      "command": "echo 'Refusing to force-push from a hook. If you really mean it, run the command yourself.' >&2 && exit 2"
+    },
+    {
+      "matcher": { "tool": "Bash", "pattern": "rm -rf /" },
+      "command": "echo 'Refusing rm -rf on root paths.' >&2 && exit 2"
+    },
+    {
+      "matcher": { "tool": "Read", "pattern": ".env" },
+      "command": "echo 'Reading .env files is denied by .claude/settings.json — this hook is a backup belt + braces.' >&2 && exit 0"
+    }
+  ],
+  "postToolUse": [
+    {
+      "matcher": { "tool": "Write", "pattern": "tmp/.*\\.json$" },
+      "command": "if [ -f \"$CLAUDE_TOOL_FILE_PATH\" ] && [ \"$(stat -c '%a' \"$CLAUDE_TOOL_FILE_PATH\")\" != '600' ]; then echo 'Warning: file in tmp/ does not have mode 600 — keypair files should always be 600. Run: chmod 600 \"'\"$CLAUDE_TOOL_FILE_PATH\"'\"' >&2; fi"
+    }
+  ],
+  "stop": [
+    {
+      "command": "if [ -n \"$(git status --short 2>/dev/null | grep -E '^\\?\\?.*\\.(env|json)$' | grep -v node_modules)' ]; then echo 'Note: untracked .env or .json files present — confirm none are sensitive before committing.' >&2; fi"
+    }
+  ]
+}

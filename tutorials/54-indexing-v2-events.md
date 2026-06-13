@@ -1,4 +1,4 @@
-# Tutorial 49 — Indexing pump.fun V2 events at scale
+# Tutorial 54 — Indexing pump.fun V2 events at scale
 
 > Audience: developers running multi-coin monitors, dashboards, or trading bots who have outgrown a single RPC websocket.
 >

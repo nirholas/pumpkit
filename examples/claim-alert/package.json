@@ -4,14 +4,22 @@
   "private": true,
   "type": "module",
   "description": "Minimal fee claim notification bot using PumpKit",
+  "license": "Apache-2.0",
+  "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git",
+    "directory": "examples/claim-alert"
+  },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@pumpkit/core": "workspace:*",
-    "grammy": "^1.30.0",
+    "@pumpkit/core": "*",
+    "grammy": "^1.43.0",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

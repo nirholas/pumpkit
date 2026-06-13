@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+//  
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],

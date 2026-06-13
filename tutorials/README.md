@@ -76,6 +76,27 @@ Hands-on guides for building PumpFun Telegram bots.
 | 31 | [USDC Pair Launches](46-usdc-pair-launches.md) | V2 `create`, choosing the quote mint, USDC vs WSOL, mint conventions |
 | 32 | [V2 Creator Fees](47-v2-creator-fees.md) | `collect_creator_fee`, fee sharing at launch, monitoring & verification |
 
+## Production Hardening
+
+> MEV defense, RPC resilience, and curve internals — the deeper material for running PumpKit bots in adversarial environments.
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 33 | [Jito Bundle Strategies](48-jito-bundle-strategies.md) | Atomic multi-tx execution, tip strategy, landing odds, retry paths |
+| 34 | [RPC Resilience](49-rpc-resilience.md) | Reader/streamer/sender role split, multi-vendor failover, replay-on-reconnect |
+| 35 | [MEV Defense Patterns](50-mev-defense-patterns.md) | Sandwich/copy-trade/sniper defenses, wallet rotation, slippage policy |
+| 36 | [Bonding Curve Internals](51-bonding-curve-internals.md) | Account layout, virtual-vs-real reserves, graduation math, offline pricing |
+
+## Migration + Reference Bots
+
+> Putting it all together: full-stack reference flows for shipping a V2-aware integration.
+
+| # | Tutorial | What You'll Learn |
+|---|----------|-------------------|
+| 37 | [V1 → V2 Migration](52-v1-to-v2-migration.md) | Audit-and-migrate playbook: trade adapter, decoders, schema, phased rollout — additive, V1 keeps working |
+| 38 | [USDC Trading Bot](53-usdc-trading-bot.md) | End-to-end V2 USDC bot: monitor → strategy → executor → positions → Telegram |
+| 39 | [Indexing V2 Events at Scale](54-indexing-v2-events.md) | RPC vs Geyser vs webhooks, schema design, dedup, backfill, cost/latency tables |
+
 ## Prerequisites
 
 - Node.js 20+

@@ -10,4 +10,5 @@ tmp/leaked-launch/funder.json
 tmp/leaked-launch/mint.json
 tmp/leaked-launch/*.keypair.json
 tmp/vanity-usdc/*.json
+tmp/usdc-launch/
 .gitignore

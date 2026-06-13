@@ -1,4 +1,10 @@
 #!/usr/bin/env ts-node
+
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+//  
+
 /**
  * Keypair Verification Tool
  *

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+//  
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { requireEnv, optionalEnv, parseListEnv, parseIntEnv } from '../config.js';
 

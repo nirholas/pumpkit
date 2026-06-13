@@ -3,9 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "description": "Open-source framework for building PumpFun Telegram bots on Solana",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "nirholas",
+    "url": "https://github.com/nirholas"
+  },
+  "contributors": [
+    {
+      "name": "nichxbt",
+      "url": "https://x.com/nichxbt"
+    }
+  ],
+  "homepage": "https://github.com/nirholas/atomic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirholas/atomic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nirholas/atomic/issues"
+  },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/claim-alert"
   ],
   "scripts": {
     "build": "turbo build",
@@ -16,7 +35,7 @@
     "clean": "turbo clean"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
+    "turbo": "^2.9.14",
     "typescript": "^5.7.0"
   },
   "engines": {

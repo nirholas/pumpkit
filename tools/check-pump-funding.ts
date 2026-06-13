@@ -1,4 +1,10 @@
 #!/usr/bin/env tsx
+
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2025-2026 nirholas (nichxbt)
+// Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
+// Part of PumpKit — https://github.com/nirholas/atomic
+
 /**
  * Check whether a wallet was seeded by pump.fun.
  *
