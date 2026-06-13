@@ -363,11 +363,17 @@ async function main(): Promise<void> {
 
     startHealthServer({
         startedAt,
-        getStats: () => ({
-            channel: config.channelId,
-            messagesPosted: pipeline.posted,
-            ...(claimMonitor ? { claimMonitor: claimMonitor.getMetrics() } : {}),
-        }),
+        getStats: () => {
+            const claimMetrics = claimMonitor?.getMetrics();
+            return {
+                channel: config.channelId,
+                messagesPosted: pipeline.posted,
+                // Top-level `degraded` makes the health endpoint return 503 when the
+                // claim feed has gone silent (exhausted RPC key, dead WS, sustained 429s).
+                degraded: claimMetrics?.degraded === true,
+                ...(claimMetrics ? { claimMonitor: claimMetrics } : {}),
+            };
+        },
     });
 
     // ── Graceful shutdown ────────────────────────────────────────────

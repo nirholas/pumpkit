@@ -10,7 +10,7 @@
  * Two modes: WebSocket (real-time) or HTTP polling (fallback).
  */
 
-import { PUMP_SDK, getQuoteInfo } from '@nirholas/pump-sdk';
+import { PUMP_SDK } from '@nirholas/pump-sdk';
 import {
     Connection,
     LAMPORTS_PER_SOL,
@@ -35,8 +35,21 @@ import {
     PUMP_AMM_PROGRAM_ID,
     PUMP_FEE_PROGRAM_ID,
     WSOL_MINT,
+    QUOTE_MINT_INFO,
     type InstructionDef,
 } from './types.js';
+
+interface QuoteInfo { ticker: string; decimals: number; isStable: boolean }
+
+/**
+ * Quote-currency metadata for a given quote mint. Defaults to SOL for unknown
+ * mints, which preserves exact V1 behavior. This replaces a helper that was
+ * imported from @nirholas/pump-sdk but never actually published there — the
+ * data already lives locally in QUOTE_MINT_INFO (types.ts).
+ */
+function getQuoteInfo(quoteMint: PublicKey): QuoteInfo {
+    return QUOTE_MINT_INFO[quoteMint.toBase58()] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+}
 
 // ============================================================================
 // Rate limiter
@@ -529,11 +542,14 @@ export class ClaimMonitor {
                     const ev = PUMP_SDK.decodeDistributeCreatorFeesEvent(bytes);
                     tokenMint = ev.mint.toBase58();
                     amountLamports = Number(ev.distributed);
-                    quoteMint = pubkeyToBase58OrUndefined(ev.quoteMint);
+                    // quoteMint is a V2 field the runtime decoder emits but the
+                    // 1.30.0 TS type omits — cast to read it (see SocialFeePda above).
+                    quoteMint = pubkeyToBase58OrUndefined((ev as { quoteMint?: PublicKey }).quoteMint);
                 } else if (disc === '7a027f010ebf0caf') {
                     const ev = PUMP_SDK.decodeCollectCreatorFeeEvent(bytes);
                     amountLamports = Number(ev.creatorFee);
-                    quoteMint = pubkeyToBase58OrUndefined(ev.quoteMint);
+                    // V2 field omitted from the 1.30.0 TS type — cast to read.
+                    quoteMint = pubkeyToBase58OrUndefined((ev as { quoteMint?: PublicKey }).quoteMint);
                 } else if (disc === 'e2d6f62107f293e5') {
                     const ev = PUMP_SDK.decodeClaimCashbackEvent(bytes);
                     amountLamports = Number(ev.amount);

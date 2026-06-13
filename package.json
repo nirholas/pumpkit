@@ -27,6 +27,7 @@
     "examples/claim-alert"
   ],
   "scripts": {
+    "postinstall": "node tools/patch-pump-sdk.mjs",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",

@@ -393,7 +393,9 @@ export class EventMonitor {
                 slot: 0,
                 timestamp: timestamp || Math.floor(Date.now() / 1000),
                 mintAddress: ev.mint.toBase58(),
-                bondingCurve: ev.bondingCurve?.toBase58() ?? ev.sharingConfig.toBase58(),
+                // bondingCurve is a V2 field the runtime decoder emits but the 1.30.0
+                // TS type omits — cast to read, falling back to sharingConfig.
+                bondingCurve: (ev as { bondingCurve?: { toBase58(): string } }).bondingCurve?.toBase58() ?? ev.sharingConfig.toBase58(),
                 admin: ev.admin.toBase58(),
                 distributedSol: Number(ev.distributed) / LAMPORTS_PER_SOL,
                 shareholders: ev.shareholders.map((sh) => ({
