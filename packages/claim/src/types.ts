@@ -169,6 +169,8 @@ export interface BotConfig {
     twitterInfluencerIds: string[];
     /** Solana RPC HTTP endpoint URL */
     solanaRpcUrl?: string;
+    /** Additional RPC endpoints for failover (first is the primary) */
+    solanaRpcUrls?: string[];
     /** Solana WebSocket endpoint URL; falls back to HTTP polling if not set */
     solanaWsUrl?: string;
     /** Polling interval in seconds when using HTTP polling mode (default: 15) */

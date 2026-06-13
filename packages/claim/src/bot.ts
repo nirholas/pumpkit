@@ -39,7 +39,16 @@ import {
     removeTrackedByValue,
 } from './store.js';
 import { log } from './logger.js';
-import type { ClaimMonitor } from './monitor.js';
+/**
+ * Minimal monitor surface used by the /status command. Both ClaimMonitor (relay)
+ * and RpcClaimMonitor (direct Solana) satisfy this structurally, so /status works
+ * regardless of which backend is active.
+ */
+interface ClaimMonitorLike {
+    getMode(): string;
+    claimsDetected: number;
+    getUptimeMs(): number;
+}
 
 // ============================================================================
 // Bot Factory
@@ -235,7 +244,7 @@ async function handleList(ctx: Context): Promise<void> {
 // Status handler factory (needs monitor reference)
 // ============================================================================
 
-export function registerStatusCommand(bot: Bot, monitor: ClaimMonitor): void {
+export function registerStatusCommand(bot: Bot, monitor: ClaimMonitorLike): void {
     bot.command('status', async (ctx) => {
         const tokens = getTrackedTokensForChat(ctx.chat!.id);
         const handles = getTrackedXHandlesForChat(ctx.chat!.id);

@@ -23,6 +23,24 @@ export function loadConfig(): BotConfig {
 
     const relayWsUrl = process.env.RELAY_WS_URL || 'ws://localhost:3099/ws';
 
+    // Direct-RPC mode (preferred): when SOLANA_RPC_URL is set, the bot monitors
+    // Solana directly via RpcClaimMonitor and needs no external relay server.
+    const solanaRpcUrl = process.env.SOLANA_RPC_URL || undefined;
+    const solanaRpcUrls = process.env.SOLANA_RPC_URLS
+        ? process.env.SOLANA_RPC_URLS.split(',').map((s) => s.trim()).filter(Boolean)
+        : solanaRpcUrl
+            ? [solanaRpcUrl]
+            : [];
+
+    // Use explicit WS endpoint when provided; otherwise derive wss:// from the
+    // HTTP RPC URL so providers like Helius/Triton/QuickNode get a real socket.
+    let solanaWsUrl = process.env.SOLANA_WS_URL || undefined;
+    if (!solanaWsUrl && solanaRpcUrl?.startsWith('https://')) {
+        solanaWsUrl = solanaRpcUrl.replace(/^https:\/\//, 'wss://');
+    }
+
+    const pollIntervalSeconds = Number.parseInt(process.env.POLL_INTERVAL_SECONDS || '15', 10);
+
     const logLevel = (process.env.LOG_LEVEL || 'info') as BotConfig['logLevel'];
 
     const twitterBearerToken = process.env.TWITTER_BEARER_TOKEN;
@@ -34,6 +52,10 @@ export function loadConfig(): BotConfig {
     return {
         logLevel,
         relayWsUrl,
+        solanaRpcUrl,
+        solanaRpcUrls,
+        solanaWsUrl,
+        pollIntervalSeconds,
         telegramToken,
         twitterBearerToken,
         twitterInfluencerIds,
