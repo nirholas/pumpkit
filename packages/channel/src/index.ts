@@ -76,10 +76,35 @@ async function main(): Promise<void> {
         throw new Error('Unreachable');
     }
 
-    /** Send a message to the channel. Throws on failure. */
+    // Telegram hard limits: a photo *caption* is capped at 1024 chars, while a
+    // text message allows 4096. Our rich claim posts run 2000–3500+ chars, so they
+    // never fit a photo caption — sending them that way always fails with
+    // "message caption is too long". Post as text when too long, and cap to 4096.
+    const TELEGRAM_PHOTO_CAPTION_MAX = 1024;
+    const TELEGRAM_MESSAGE_MAX = 4096;
+
+    /**
+     * Trim an HTML message to Telegram's limit without splitting a tag. The
+     * formatters emit one complete, self-contained HTML fragment per line, so
+     * dropping whole trailing lines keeps the markup valid.
+     */
+    function capHtmlForTelegram(text: string, max = TELEGRAM_MESSAGE_MAX): string {
+        if (text.length <= max) return text;
+        const ellipsis = '\n…';
+        const budget = max - ellipsis.length;
+        let out = '';
+        for (const line of text.split('\n')) {
+            if ((out ? out.length + 1 : 0) + line.length > budget) break;
+            out = out ? `${out}\n${line}` : line;
+        }
+        if (!out) out = text.slice(0, budget); // single oversized line — hard slice
+        return out + ellipsis;
+    }
+
+    /** Send a message to the channel (capped to Telegram's 4096 limit). Throws on failure. */
     async function postToChannel(message: string): Promise<void> {
         try {
-            await withRetry(() => bot.api.sendMessage(config.channelId, message, {
+            await withRetry(() => bot.api.sendMessage(config.channelId, capHtmlForTelegram(message), {
                 parse_mode: 'HTML',
                 link_preview_options: { is_disabled: true },
             }));
@@ -89,8 +114,17 @@ async function main(): Promise<void> {
         }
     }
 
-    /** Send a photo with caption to the channel. Falls back to text if photo fails. */
+    /**
+     * Send a photo with caption to the channel. Because photo captions are capped
+     * at 1024, anything longer is posted as a text message instead (the image is
+     * dropped — posting reliably beats failing). Also falls back to text if the
+     * photo send itself errors.
+     */
     async function postPhotoToChannel(imageUrl: string, caption: string): Promise<void> {
+        if (caption.length > TELEGRAM_PHOTO_CAPTION_MAX) {
+            await postToChannel(caption);
+            return;
+        }
         try {
             await withRetry(() => bot.api.sendPhoto(config.channelId, imageUrl, {
                 caption,
