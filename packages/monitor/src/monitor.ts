@@ -505,10 +505,10 @@ export class PumpFunMonitor {
             this.state.lastSlot = tx.slot;
 
             log.info(
-                '%s: %s claimed %.4f SOL [%s] (tx: %s)',
+                '%s: %s claimed %s SOL [%s] (tx: %s)',
                 event.claimLabel,
                 event.claimerWallet.slice(0, 8),
-                event.amountSol,
+                event.amountSol.toFixed(4),
                 event.claimType,
                 signature.slice(0, 12) + '...',
             );

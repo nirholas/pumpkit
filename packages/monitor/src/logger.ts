@@ -6,8 +6,13 @@
 /**
  * PumpFun Telegram Bot — Logger
  *
- * Simple leveled logger wrapping console.
+ * Simple leveled logger wrapping console. Uses node:util format() so printf-style
+ * placeholders (%s, %d, %i, %f, %o) in messages interpolate their args correctly.
+ * Note: util.format does NOT support precision specifiers like %.2f — pre-format
+ * numbers with .toFixed(n) at the call site and use %s.
  */
+
+import { format } from 'node:util';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -34,15 +39,15 @@ function ts(): string {
 
 export const log = {
     debug(msg: string, ...args: unknown[]): void {
-        if (shouldLog('debug')) console.debug(`[${ts()}] [DEBUG]`, msg, ...args);
+        if (shouldLog('debug')) console.debug(`[${ts()}] [DEBUG] ${format(msg, ...args)}`);
     },
     error(msg: string, ...args: unknown[]): void {
-        if (shouldLog('error')) console.error(`[${ts()}] [ERROR]`, msg, ...args);
+        if (shouldLog('error')) console.error(`[${ts()}] [ERROR] ${format(msg, ...args)}`);
     },
     info(msg: string, ...args: unknown[]): void {
-        if (shouldLog('info')) console.info(`[${ts()}] [INFO]`, msg, ...args);
+        if (shouldLog('info')) console.info(`[${ts()}] [INFO] ${format(msg, ...args)}`);
     },
     warn(msg: string, ...args: unknown[]): void {
-        if (shouldLog('warn')) console.warn(`[${ts()}] [WARN]`, msg, ...args);
+        if (shouldLog('warn')) console.warn(`[${ts()}] [WARN] ${format(msg, ...args)}`);
     },
 };

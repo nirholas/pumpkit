@@ -790,12 +790,12 @@ export class PumpEventMonitor {
                 this.state.whaleTradesDetected++;
             }
             log.info(
-                'Whale %s: %.2f SOL on %s by %s (progress: %.1f%%, tx: %s)',
+                'Whale %s: %s SOL on %s by %s (progress: %s%%, tx: %s)',
                 event.isBuy ? 'BUY' : 'SELL',
-                event.solAmount,
+                event.solAmount.toFixed(2),
                 event.mintAddress.slice(0, 8) + '...',
                 event.user.slice(0, 8) + '...',
-                event.bondingCurveProgress,
+                event.bondingCurveProgress.toFixed(1),
                 event.txSignature.slice(0, 12) + '...',
             );
             this.onTradeAlert(event as TradeAlertEvent);
@@ -803,8 +803,8 @@ export class PumpEventMonitor {
             // FeeDistributionEvent
             this.state.feeDistributionsDetected++;
             log.info(
-                'Fee distribution: %.4f SOL for mint=%s (%d shareholders, tx: %s)',
-                event.distributedSol,
+                'Fee distribution: %s SOL for mint=%s (%d shareholders, tx: %s)',
+                event.distributedSol.toFixed(4),
                 event.mintAddress.slice(0, 8) + '...',
                 event.shareholders.length,
                 event.txSignature.slice(0, 12) + '...',
