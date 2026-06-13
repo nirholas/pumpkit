@@ -48,6 +48,13 @@ const MAX_QUEUE_SIZE = 50;
 const RATE_LIMIT_LOG_WINDOW_MS = 30_000;
 const WS_HEARTBEAT_INTERVAL_MS = 60_000;
 const WS_HEARTBEAT_TIMEOUT_MS = 90_000;
+// If no RPC read succeeds for this long, the feed is effectively dead (exhausted
+// RPC key, sustained 429s, dead websocket). We surface this as `degraded` on the
+// health endpoint (→ 503) and log loudly, instead of sitting silently online.
+// These programs are high-traffic, so a healthy feed reads continuously; minutes
+// of total silence means the chain connection is broken, not just quiet.
+const DEGRADED_AFTER_MS = 300_000; // 5 min
+const LIVENESS_CHECK_INTERVAL_MS = 60_000;
 
 class RpcQueue {
     private queue: string[] = [];
@@ -132,6 +139,11 @@ export class ClaimMonitor {
     private claimsDetected = 0;
     private lastWsEventTime = 0;
     private wsHeartbeatTimer?: ReturnType<typeof setInterval>;
+    private livenessTimer?: ReturnType<typeof setInterval>;
+    /** Last time ANY RPC read succeeded (WS event, poll, or getTransaction). */
+    private lastSuccessfulReadAt = 0;
+    /** Set true once we've logged the degraded warning, to avoid spamming. */
+    private degradedLogged = false;
     private wsEventsReceived = 0;
     private claimTxProcessed = 0;
     private claimsByType = new Map<string, number>();
@@ -160,8 +172,13 @@ export class ClaimMonitor {
         if (this.isRunning) return;
         this.isRunning = true;
         this.startedAt = Date.now();
+        this.lastSuccessfulReadAt = Date.now();
 
         log.info('Claim monitor: monitoring %d programs', this.programPubkeys.length);
+
+        // Liveness watchdog: if the feed goes silent (exhausted RPC key, sustained
+        // 429s, dead WS), log loudly and flip the health endpoint to degraded → 503.
+        this.livenessTimer = setInterval(() => this.checkLiveness(), LIVENESS_CHECK_INTERVAL_MS);
 
         // Bootstrap social fee index from on-chain SharingConfig accounts (non-blocking)
         this.socialFeeIndex.bootstrap(this.rpc).catch((err: unknown) => {
@@ -188,6 +205,10 @@ export class ClaimMonitor {
             clearInterval(this.wsHeartbeatTimer);
             this.wsHeartbeatTimer = undefined;
         }
+        if (this.livenessTimer) {
+            clearInterval(this.livenessTimer);
+            this.livenessTimer = undefined;
+        }
         if (this.wsConnection) {
             for (const id of this.wsSubscriptionIds) {
                 this.wsConnection.removeOnLogsListener(id).catch(() => {});
@@ -201,6 +222,35 @@ export class ClaimMonitor {
         log.info('Claim monitor stopped');
     }
 
+    /** Record that an RPC read succeeded — resets the liveness watchdog. */
+    private markRead(): void {
+        this.lastSuccessfulReadAt = Date.now();
+        if (this.degradedLogged) {
+            log.info('✅ Claim monitor RECOVERED — RPC reads flowing again.');
+            this.degradedLogged = false;
+        }
+    }
+
+    /** True when no RPC read has succeeded for DEGRADED_AFTER_MS while running. */
+    isDegraded(): boolean {
+        if (!this.isRunning || this.lastSuccessfulReadAt === 0) return false;
+        return Date.now() - this.lastSuccessfulReadAt > DEGRADED_AFTER_MS;
+    }
+
+    /** Watchdog tick: log loudly when the feed has gone silent. */
+    private checkLiveness(): void {
+        if (!this.isRunning) return;
+        if (this.isDegraded()) {
+            const ago = Math.floor((Date.now() - this.lastSuccessfulReadAt) / 1000);
+            log.error(
+                '⚠️ Claim monitor DEGRADED — no successful RPC read in %ds (consecutive429s=%d, rpc=%s). ' +
+                'Feed is NOT posting — check RPC quota / key.',
+                ago, this.consecutive429s, maskRpcUrl(this.rpc.currentUrl),
+            );
+            this.degradedLogged = true;
+        }
+    }
+
     getMetrics(): Record<string, unknown> {
         return {
             claimsDetected: this.claimsDetected,
@@ -209,6 +259,9 @@ export class ClaimMonitor {
             rpcEndpoints: this.rpc.size,
             activeRpc: maskRpcUrl(this.rpc.currentUrl),
             uptimeMs: this.startedAt ? Date.now() - this.startedAt : 0,
+            degraded: this.isDegraded(),
+            consecutive429s: this.consecutive429s,
+            lastReadAgoMs: this.lastSuccessfulReadAt ? Date.now() - this.lastSuccessfulReadAt : 0,
         };
     }
 
@@ -228,6 +281,7 @@ export class ClaimMonitor {
                 pubkey,
                 async (logInfo: Logs) => {
                     this.lastWsEventTime = Date.now();
+                    this.markRead();
                     this.wsEventsReceived++;
                     try { await this.handleLogEvent(logInfo); }
                     catch (err) { log.error('Log event error:', err); }
@@ -325,6 +379,7 @@ export class ClaimMonitor {
             try {
                 await this.pollAllPrograms();
                 this.consecutive429s = 0;
+                this.markRead();
             } catch (err) {
                 const msg = String(err);
                 if (msg.includes('429')) {
@@ -376,6 +431,7 @@ export class ClaimMonitor {
                 commitment: 'confirmed',
                 maxSupportedTransactionVersion: 0,
             }));
+            this.markRead(); // the getTransaction call itself succeeded
             if (!tx?.meta || tx.meta.err) return;
 
             const instructions = tx.transaction.message.instructions;
