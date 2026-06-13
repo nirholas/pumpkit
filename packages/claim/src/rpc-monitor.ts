@@ -172,15 +172,34 @@ export class RpcClaimMonitor {
                     const sig = logInfo.signature;
                     if (this.processedSigs.has(sig)) return;
 
-                    const logsStr = logInfo.logs.join(' ');
-                    const hasClaimIx = CLAIM_INSTRUCTIONS.some((def) =>
-                        logsStr.includes(def.discriminator),
-                    );
-                    const hasClaimEvent = Object.keys(CLAIM_EVENT_DISCRIMINATORS).some((disc) =>
-                        logsStr.includes(disc),
-                    );
+                    // Discriminators live in instruction data / "Program data:" CPI
+                    // events as raw bytes — NOT as hex in the human-readable log text.
+                    // So scan log lines for: (a) the social-fee instruction log (it
+                    // emits no CPI event), and (b) "Program data:" events whose decoded
+                    // 8-byte discriminator matches a known claim event. processTransaction
+                    // then does the authoritative instruction-data decode.
+                    let relevant = false;
+                    for (const line of logInfo.logs) {
+                        if (line.includes('Instruction: ClaimSocialFeePda')) {
+                            relevant = true;
+                            break;
+                        }
+                        const marker = 'Program data: ';
+                        const idx = line.indexOf(marker);
+                        if (idx === -1) continue;
+                        try {
+                            const bytes = Buffer.from(line.slice(idx + marker.length).trim(), 'base64');
+                            if (bytes.length < 8) continue;
+                            if (CLAIM_EVENT_DISCRIMINATORS[bytes.subarray(0, 8).toString('hex')]) {
+                                relevant = true;
+                                break;
+                            }
+                        } catch {
+                            // ignore unparseable program-data lines
+                        }
+                    }
 
-                    if (hasClaimIx || hasClaimEvent) {
+                    if (relevant) {
                         this.txQueue.enqueue(sig);
                     }
                 },
@@ -277,9 +296,9 @@ export class RpcClaimMonitor {
                 const ticker = event.quoteTicker ?? 'SOL';
                 const amount = event.amountQuote ?? event.amountSol;
                 log.info(
-                    'Claim: %s %.4f %s (%s)',
+                    'Claim: %s %s %s (%s)',
                     event.claimType,
-                    amount,
+                    amount.toFixed(4),
                     ticker,
                     event.tokenMint.slice(0, 8),
                 );

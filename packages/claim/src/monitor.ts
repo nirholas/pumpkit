@@ -143,8 +143,8 @@ export class ClaimMonitor {
                     this.claimsDetected++;
                     const ticker = event.quoteTicker ?? 'SOL';
                     const amount = event.amountQuote ?? event.amountSol;
-                    log.info('Relay claim: %s %.4f %s (%s)',
-                        event.claimType, amount, ticker, event.tokenMint.slice(0, 8));
+                    log.info('Relay claim: %s %s %s (%s)',
+                        event.claimType, amount.toFixed(4), ticker, event.tokenMint.slice(0, 8));
                     this.onClaim(event);
                 }
                 // Ignore heartbeat, status, token-launch — we only care about claims
