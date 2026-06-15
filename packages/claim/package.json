@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "dotenv": "^17.4.2",
-    "grammy": "^1.43.0",
+    "grammy": "^1.44.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {
