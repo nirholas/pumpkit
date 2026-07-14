@@ -2807,9 +2807,7 @@ PumpKit was extracted from the [pump-fun-sdk](https://github.com/nirholas/pump-f
 
 ## License
 
-[Apache License, Version 2.0](LICENSE) — Copyright © 2025–2026 nirholas ([nichxbt](https://x.com/nichxbt)).
-
-When redistributing, see [NOTICE](NOTICE) for the required attribution.
+All rights reserved. See [LICENSE](LICENSE).
 
 ## Author
 
