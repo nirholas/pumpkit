@@ -1,0 +1,17 @@
+{
+  // Cloudflare Workers static-assets deployment for the PumpKit site.
+  // Build first: npx turbo build --filter=@pumpkit/web
+  // Deploy: npx wrangler deploy   (one-time: npx wrangler login)
+  "name": "pumpkit-site",
+  "compatibility_date": "2026-07-01",
+  "account_id": "9b69258d55b0dc7ed0c31c067dd944d8",
+  "routes": [
+    { "pattern": "pumpk.it", "custom_domain": true },
+    { "pattern": "www.pumpk.it", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "./packages/web/dist",
+    "not_found_handling": "single-page-application",
+    "html_handling": "auto-trailing-slash"
+  }
+}
