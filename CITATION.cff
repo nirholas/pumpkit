@@ -9,7 +9,7 @@ authors:
     alias: nirholas
     website: "https://x.com/nichxbt"
 repository-code: "https://github.com/nirholas/atomic"
-url: "https://pumpkits.vercel.app"
+url: "https://pumpk.it"
 abstract: >-
   PumpKit is an open-source TypeScript framework for building pump.fun
   Telegram bots on Solana — claim monitors, channel feeds, group trackers,
