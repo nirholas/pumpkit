@@ -8,7 +8,7 @@ authors:
   - given-names: Nicholas
     alias: nirholas
     website: "https://x.com/nichxbt"
-repository-code: "https://github.com/nirholas/atomic"
+repository-code: "https://github.com/nirholas/pumpkit"
 url: "https://pumpk.it"
 abstract: >-
   PumpKit is an open-source TypeScript framework for building pump.fun

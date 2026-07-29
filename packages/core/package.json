@@ -4,14 +4,14 @@
   "description": "Shared utilities for PumpKit bots — logger, health server, config helpers, and common types",
   "license": "Apache-2.0",
   "author": "nirholas <https://github.com/nirholas> (https://x.com/nichxbt)",
-  "homepage": "https://github.com/nirholas/atomic",
+  "homepage": "https://github.com/nirholas/pumpkit",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nirholas/atomic.git",
+    "url": "git+https://github.com/nirholas/pumpkit.git",
     "directory": "packages/core"
   },
   "bugs": {
-    "url": "https://github.com/nirholas/atomic/issues"
+    "url": "https://github.com/nirholas/pumpkit/issues"
   },
   "type": "module",
   "main": "dist/index.js",

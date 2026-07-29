@@ -14,13 +14,13 @@
       "url": "https://x.com/nichxbt"
     }
   ],
-  "homepage": "https://github.com/nirholas/atomic",
+  "homepage": "https://github.com/nirholas/pumpkit",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nirholas/atomic.git"
+    "url": "git+https://github.com/nirholas/pumpkit.git"
   },
   "bugs": {
-    "url": "https://github.com/nirholas/atomic/issues"
+    "url": "https://github.com/nirholas/pumpkit/issues"
   },
   "workspaces": [
     "packages/*",

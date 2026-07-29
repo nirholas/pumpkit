@@ -1,6 +1,6 @@
 # Authors
 
-PumpKit is built and maintained by the contributors below. For the complete commit-level list, see [GitHub contributors](https://github.com/nirholas/atomic/graphs/contributors) or run `git shortlog -sne`.
+PumpKit is built and maintained by the contributors below. For the complete commit-level list, see [GitHub contributors](https://github.com/nirholas/pumpkit/graphs/contributors) or run `git shortlog -sne`.
 
 ## Maintainers
 
