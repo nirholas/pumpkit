@@ -2,8 +2,7 @@
 
 > Shared framework for building PumpFun Telegram bots on Solana.
 
-[![npm version](https://img.shields.io/npm/v/@pumpkit/core)](https://www.npmjs.com/package/@pumpkit/core)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![License](https://img.shields.io/badge/License-see%20LICENSE-blue.svg)](../../LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green)](https://nodejs.org/)
 
 ## What is PumpKit Core?
@@ -12,8 +11,15 @@ PumpKit Core is the shared foundation for building Telegram bots that monitor an
 
 ## Installation
 
+> **Not on the npm registry yet.** `npm install @pumpkit/core` returns 404.
+> Build the monorepo once, then install the built workspace by path.
+
 ```bash
-npm install @pumpkit/core
+git clone https://github.com/nirholas/pumpkit.git
+(cd pumpkit && npm install && npm run build)
+
+cd my-project
+npm install ../pumpkit/packages/core
 ```
 
 Peer dependencies (install what you need):
@@ -188,4 +194,4 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+See the repository [LICENSE](../../LICENSE) file for terms.

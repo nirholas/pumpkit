@@ -4,27 +4,34 @@ PumpKit packages are available under the `@pumpkit` scope. Currently distributed
 
 ## Packages
 
-| Package | Install | Description | Status |
-|---------|---------|-------------|--------|
-| `@pumpkit/core` | `npm i @pumpkit/core` | Shared framework — bot scaffolding, Solana monitoring, formatters, storage, config, health | ✅ Ready |
-| `@pumpkit/monitor` | `npm i @pumpkit/monitor` | All-in-one PumpFun monitor bot (claims, launches, graduations, whales, CTO alerts) | ✅ Ready |
-| `@pumpkit/channel` | `npm i @pumpkit/channel` | Read-only Telegram channel feed (broadcasts token events) | ✅ Ready |
-| `@pumpkit/claim` | `npm i @pumpkit/claim` | Fee claim tracker by token CA or X handle | ✅ Ready |
-| `@pumpkit/tracker` | `npm i @pumpkit/tracker` | Group call-tracking bot with leaderboards and PNL cards | ✅ Ready |
+None of these are on the npm registry yet. `npm i @pumpkit/<name>` returns 404
+for every one of them. Install today's build from the workspace on disk.
+
+| Package | Workspace | Description | Registry status |
+|---------|-----------|-------------|-----------------|
+| `@pumpkit/core` | `packages/core` | Shared framework: bot scaffolding, Solana monitoring, formatters, storage, config, health | Not published |
+| `@pumpkit/monitor` | `packages/monitor` | All-in-one PumpFun monitor bot (claims, launches, graduations, whales, CTO alerts) | Not published |
+| `@pumpkit/channel` | `packages/channel` | Read-only Telegram channel feed (broadcasts token events) | Not published |
+| `@pumpkit/claim` | `packages/claim` | Fee claim tracker by token CA or X handle | Not published |
+| `@pumpkit/tracker` | `packages/tracker` | Group call-tracking bot with leaderboards and PNL cards | Not published |
 
 ## Install
 
-Once published to npm, install packages directly:
+Build the monorepo once, then install the workspace you need by path:
 
 ```bash
-# Install the core framework
-npm install @pumpkit/core
+git clone https://github.com/nirholas/pumpkit.git
+(cd pumpkit && npm install && npm run build)
 
-# Install a specific bot
-npm install @pumpkit/monitor
+cd my-project
+npm install ../pumpkit/packages/core
+```
 
-# Install everything
-npm install @pumpkit/core @pumpkit/monitor @pumpkit/tracker @pumpkit/channel @pumpkit/claim
+To run a bot rather than consume the framework, work inside the clone directly:
+
+```bash
+cd pumpkit
+npm run dev --workspace=@pumpkit/monitor
 ```
 
 ## Usage

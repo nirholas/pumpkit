@@ -2,7 +2,7 @@
 
 Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — token launches, graduations, whale trades, fee claims, and fee distributions.
 
-> **Looking for interactive monitoring?** The [telegram-bot](../telegram-bot/) supports watch management, group chats, REST API, SSE streaming, and webhooks. Use this channel-bot for simple broadcast-only channels.
+> **Looking for interactive monitoring?** The [monitor bot](../monitor/) supports watch management, group chats, REST API, SSE streaming, and webhooks. Use this channel-bot for simple broadcast-only channels.
 
 ## Features
 
@@ -94,7 +94,7 @@ docker build -t pumpfun-channel-bot .
 docker run -d --env-file .env pumpfun-channel-bot
 ```
 
-Railway deployment is also supported — see [railway.json](railway.json).
+Railway deployment is also supported — see `railway.json`.
 
 ## Project Structure
 

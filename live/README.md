@@ -129,7 +129,7 @@ cd live
 vercel
 ```
 
-The included [vercel.json](vercel.json) handles routing configuration. All three dashboards are served as static files.
+The included `vercel.json` handles routing configuration. All three dashboards are served as static files.
 
 ### Deploy Anywhere
 

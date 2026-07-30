@@ -414,10 +414,10 @@ Each step builds `TransactionInstruction[]` — you combine them into transactio
 
 ## Related
 
-- [Getting Started](./getting-started.md) — Quick start guide
+- [Getting Started](../getting-started.md) — Quick start guide
 - [Bonding Curve Math](./bonding-curve-math.md) — Price calculation formulas
 - [Fee Sharing](./fee-sharing.md) — Shareholder setup details
 - [Token Incentives](./token-incentives.md) — Volume reward mechanics
-- [Examples](./examples.md) — More code samples
-- [Troubleshooting](./TROUBLESHOOTING.md) — Common issues and fixes
+- [Examples](../examples.md) — More code samples
+- [Troubleshooting](../troubleshooting.md) — Common issues and fixes
 

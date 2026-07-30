@@ -293,6 +293,6 @@ Use a feature flag for the cutover:
 
 - [tutorials/46-usdc-pair-launches.md](46-usdc-pair-launches.md) — V2 USDC create
 - [tutorials/47-v2-creator-fees.md](47-v2-creator-fees.md) — V2 fee instructions
-- [tutorials/48-usdc-trading-bot.md](48-usdc-trading-bot.md) — V2-only bot reference
-- [tutorials/49-indexing-v2-events.md](49-indexing-v2-events.md) — event decoder considerations
+- [tutorials/53-usdc-trading-bot.md](53-usdc-trading-bot.md) — V2-only bot reference
+- [tutorials/54-indexing-v2-events.md](54-indexing-v2-events.md) — event decoder considerations
 - [docs/migration.md](../docs/migration.md) — the project's migration guide doc

@@ -153,7 +153,7 @@ Package dependency graph — `@pumpkit/core` has zero internal dependencies, onl
 
 ```bash
 # Clone the repo
-git clone https://github.com/pumpkit/pumpkit.git
+git clone https://github.com/nirholas/pumpkit.git
 cd pumpkit
 
 # Install dependencies
@@ -209,7 +209,7 @@ bot.launch();
 **Monitor Bot** (fee claims, launches, whales, graduations):
 
 ```bash
-git clone https://github.com/pumpkit/pumpkit.git
+git clone https://github.com/nirholas/pumpkit.git
 cd pumpkit
 npm install
 cp packages/monitor/.env.example packages/monitor/.env
@@ -250,11 +250,20 @@ Add the bot to a Telegram group. Members can paste token CAs to start tracking c
 
 #### 1. Create a new project
 
+> **`@pumpkit/*` is not on the npm registry yet.** `npm install @pumpkit/core`
+> returns 404. Until the packages are published, build the monorepo once and
+> point your project at the built workspace on disk.
+
 ```bash
+# Build the framework once
+git clone https://github.com/nirholas/pumpkit.git
+(cd pumpkit && npm install && npm run build)
+
+# Create your project next to it
 mkdir my-pump-bot
 cd my-pump-bot
 npm init -y
-npm install @pumpkit/core grammy dotenv
+npm install ../pumpkit/packages/core grammy dotenv
 npm install -D typescript @types/node tsx
 ```
 
@@ -737,9 +746,8 @@ brew install pkg-config cairo pango libpng jpeg giflib librsvg
 
 > Shared framework modules for building PumpFun Telegram bots.
 
-```bash
-npm install @pumpkit/core
-```
+> **Not on the npm registry yet.** See [Build a Custom Bot](#option-2--build-a-custom-bot)
+> above for the workspace install that works today.
 
 ### `bot/` — Telegram Scaffolding
 
@@ -2493,7 +2501,7 @@ try {
 
 **Is this the official PumpFun SDK?** This is the official community PumpFun SDK, published as `@nirholas/pump-sdk`. Reverse-engineered from the on-chain programs; IDLs extracted directly from deployed programs.
 
-**Is it free?** Yes, MIT licensed.
+**Is it free?** The source is public in this repository, but it is not permissively licensed. See [LICENSE](LICENSE) for the terms that apply.
 
 **Languages?** TypeScript/JavaScript (core), Rust (vanity), Shell (tools).
 
@@ -2738,7 +2746,7 @@ For that to happen, agents need:
 
 ### Principles
 
-1. **Open source forever** — MIT licensed, always
+1. **Developed in the open, always.** See [LICENSE](LICENSE) for the terms that apply.
 2. **Official libraries only** — no third-party crypto, ever
 3. **Agent-first design** — if an agent can't use it, redesign it
 4. **Security is non-negotiable** — audit everything, zero trust by default

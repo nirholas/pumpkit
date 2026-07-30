@@ -90,4 +90,4 @@ src/
 
 ## License
 
-MIT
+See the repository [LICENSE](../../LICENSE) file for terms.

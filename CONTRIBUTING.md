@@ -23,7 +23,7 @@ pumpkit/
 ## Getting Started
 
 ```bash
-git clone https://github.com/pumpkit/pumpkit.git
+git clone https://github.com/nirholas/pumpkit.git
 cd pumpkit
 npm install
 ```
@@ -90,4 +90,4 @@ To add a Telegram command to a bot:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions are licensed under the terms in the repository's [LICENSE](LICENSE) file.

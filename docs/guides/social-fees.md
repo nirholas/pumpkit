@@ -185,4 +185,4 @@ Emitted when fees are claimed from a social fee PDA.
 
 - [Fee Sharing](./fee-sharing.md) — General fee sharing system
 - [Fee Tiers](./fee-tiers.md) — Fee tier structure
-- [Tutorial 27](../tutorials/27-social-fee-sharing.md) — Step-by-step guide
+- [Tutorial 27](../../tutorials/27-cashback-social-fees.md) — Step-by-step guide

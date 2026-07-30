@@ -65,7 +65,7 @@ For *current* state and architecture, see [docs/architecture.md](docs/architectu
 - **Self-custodial wallet UX in the dashboard.** The dashboard is read-only by design. Trading flows go through bots with explicit, locally-signed keypairs.
 - **Hosted RPC service.** PumpKit is BYO-RPC. We won't run infrastructure for users.
 - **Telegram-Mini-App version of the dashboard.** Not in scope — the dashboard targets desktop browsers.
-- **Closed-source releases.** Everything in this repo stays MIT-licensed.
+- **A second, private fork of this codebase.** Development happens here, in the open, under the terms in [LICENSE](LICENSE).
 
 ## How priorities are set
 

@@ -22,7 +22,7 @@ description: Use this skill when designing or running a pump.fun event indexer �
 | Analytics + history | Helius enhanced webhooks → Postgres | Easiest ops; supports replay |
 | Self-hosted production | Geyser → Kafka → Postgres + S3 archive | Full sovereignty |
 
-See [tutorials/49-indexing-v2-events.md](../../../tutorials/49-indexing-v2-events.md) for client code per approach.
+See [tutorials/54-indexing-v2-events.md](../../../tutorials/54-indexing-v2-events.md) for client code per approach.
 
 ## Schema starter
 
@@ -141,7 +141,7 @@ Indexers love eating money. Limits to add at design time:
 
 ## See also
 
-- [tutorials/49-indexing-v2-events.md](../../../tutorials/49-indexing-v2-events.md)
+- [tutorials/54-indexing-v2-events.md](../../../tutorials/54-indexing-v2-events.md)
 - [.claude/skills/monitor-usdc-pairs/SKILL.md](../monitor-usdc-pairs/SKILL.md)
 - [docs/events-reference.md](../../../docs/events-reference.md)
 - [packages/core/src/monitor/](../../../packages/core/src/monitor/)

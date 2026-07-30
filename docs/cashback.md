@@ -167,6 +167,6 @@ See [Admin Operations](./admin-operations.md).
 ## Related
 
 - [AMM Trading](./amm-trading.md) — AMM trade instructions
-- [Token Incentives](./token-incentives.md) — Volume-based token rewards
+- [Token Incentives](./guides/token-incentives.md) — Volume-based token rewards
 - [Events Reference](./events-reference.md) — Full event catalog
 - [Admin Operations](./admin-operations.md) — Toggle cashback

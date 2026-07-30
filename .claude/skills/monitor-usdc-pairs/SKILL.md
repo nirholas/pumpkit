@@ -15,7 +15,7 @@ description: Use this skill when wiring or extending a monitor/bot to specifical
 
 - [@pumpkit/core](../../../packages/core/) — `LaunchMonitor`, `WhaleMonitor`, `ClaimMonitor` already exist
 - [packages/channel/](../../../packages/channel/) — uses typed V2 decoders (recent refactor)
-- [tutorials/49-indexing-v2-events.md](../../../tutorials/49-indexing-v2-events.md) — ingestion approaches at scale
+- [tutorials/54-indexing-v2-events.md](../../../tutorials/54-indexing-v2-events.md) — ingestion approaches at scale
 - [tutorials/43-understanding-pumpfun-events.md](../../../tutorials/43-understanding-pumpfun-events.md) — event taxonomy
 
 ## Workflow
@@ -112,5 +112,5 @@ function dedupe(sig: string, ix: number) {
 
 - [.claude/skills/launch-usdc-pair/SKILL.md](../launch-usdc-pair/SKILL.md) — launch side
 - [.claude/skills/index-pump-events/SKILL.md](../index-pump-events/SKILL.md) — indexing at scale
-- [tutorials/49-indexing-v2-events.md](../../../tutorials/49-indexing-v2-events.md)
+- [tutorials/54-indexing-v2-events.md](../../../tutorials/54-indexing-v2-events.md)
 - [packages/core/src/monitor/](../../../packages/core/src/monitor/)

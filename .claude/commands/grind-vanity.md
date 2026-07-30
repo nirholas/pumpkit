@@ -21,4 +21,4 @@ Run the project's vanity wrapper. **Do not call `solana-keygen` directly** — t
 
 ## Pump.fun convention reminder
 
-The launch mint typically ends in `pump`. If the user asked for a prefix only and is planning a pump.fun launch, flag that they may also want `--suffix pump` — or that pump.fun's launch instruction may reject non-`pump`-suffixed mints. Cross-check against [tutorials/13-vanity-addresses.md](tutorials/13-vanity-addresses.md).
+The launch mint typically ends in `pump`. If the user asked for a prefix only and is planning a pump.fun launch, flag that they may also want `--suffix pump` — or that pump.fun's launch instruction may reject non-`pump`-suffixed mints. Cross-check against [tutorials/13-vanity-addresses.md](../../tutorials/13-vanity-addresses.md).

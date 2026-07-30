@@ -197,7 +197,7 @@ grep -r "secret\|private" src/ --include="*.ts" | grep -v "test\|spec\|\.d\.ts"
 
 ### Full Audit
 
-The 60+ item [SECURITY_CHECKLIST.md](../security/SECURITY_CHECKLIST.md) covers:
+The 60+ item [SECURITY_CHECKLIST.md](../../security/SECURITY_CHECKLIST.md) covers:
 
 | Category | Items |
 |----------|-------|
@@ -218,14 +218,14 @@ The 60+ item [SECURITY_CHECKLIST.md](../security/SECURITY_CHECKLIST.md) covers:
 3. Or contact the maintainer directly via GitHub profile
 4. Allow up to 90 days for a fix before disclosure
 
-See [SECURITY.md](../SECURITY.md) for the full policy.
+See [SECURITY.md](../../SECURITY.md) for the full policy.
 
 ---
 
 ## Related
 
-- [SECURITY.md](../SECURITY.md) — Vulnerability reporting policy
-- [SECURITY_CHECKLIST.md](../security/SECURITY_CHECKLIST.md) — 60+ item pre-release checklist
-- [Testing Guide](./testing.md) — Security test commands
-- [Architecture](./architecture.md) — System design overview
+- [SECURITY.md](../../SECURITY.md) — Vulnerability reporting policy
+- [SECURITY_CHECKLIST.md](../../security/SECURITY_CHECKLIST.md) — 60+ item pre-release checklist
+- [Testing Guide](../testing.md) — Security test commands
+- [Architecture](../architecture.md) — System design overview
 

@@ -24,7 +24,7 @@ You are the jito-bundler agent for the PumpKit repo.
    - How many txs and which signers?
 2. Check the project's existing bundle code paths before inventing new ones:
    - `grep -r 'searcherClient\|sendBundle\|block-engine' packages/`
-   - Read [packages/core/src/solana/](../packages/core/src/solana/) for sender abstractions.
+   - Read [packages/core/src/solana/](../../packages/core/src/solana/) for sender abstractions.
 3. Read the SDK's V2 instruction builders (`node_modules/@nirholas/pump-sdk/dist/*.d.ts`) to confirm the bundle's individual instructions are V2-aware where required.
 4. For "why didn't it land" questions, walk through this checklist in order:
    - Did all txs use the same recent blockhash and were they signed close to send time?

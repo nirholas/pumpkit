@@ -310,7 +310,7 @@ Before mainnet:
 - [ ] Deployer keypair backed up off-machine
 - [ ] Deployer has 0.05+ SOL for fees + retries
 - [ ] Quote-mint pubkey is the **mainnet** USDC, not devnet
-- [ ] Slippage guards (`minTokensOut` / `minQuoteOut`) tuned for your expected trade size — see [tutorial 51](51-slippage-modeling-v2.md)
+- [ ] Slippage guards (`minTokensOut` / `minQuoteOut`) tuned for your expected trade size
 - [ ] Monitor running so you catch the on-chain event for your own launch
 - [ ] Tested SDK version pinned in `package.json` (not floating `*`)
 
@@ -328,8 +328,7 @@ Before mainnet:
 
 - Skill: [.claude/skills/launch-usdc-pair/SKILL.md](../.claude/skills/launch-usdc-pair/SKILL.md)
 - Next tutorial: [tutorials/47-v2-creator-fees.md](47-v2-creator-fees.md) — V2 creator-fee collection + sharing
-- Companion: [tutorials/48-usdc-trading-bot.md](48-usdc-trading-bot.md) — building an end-to-end USDC pump.fun trading bot
-- Companion: [tutorials/51-slippage-modeling-v2.md](51-slippage-modeling-v2.md) — modeling slippage on V2 curves
+- Companion: [tutorials/53-usdc-trading-bot.md](53-usdc-trading-bot.md) — building an end-to-end USDC pump.fun trading bot
 - Companion: [tutorials/52-v1-to-v2-migration.md](52-v1-to-v2-migration.md) — audit-and-migrate playbook for existing callers
 - Authoritative protocol docs: [pump-fun/pump-public-docs](https://github.com/pump-fun/pump-public-docs)
 - Earlier vanity coverage: [tutorials/13-vanity-addresses.md](13-vanity-addresses.md), [tutorials/31-rust-vanity-deep-dive.md](31-rust-vanity-deep-dive.md)

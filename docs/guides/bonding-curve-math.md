@@ -223,6 +223,6 @@ Use the `slippage` parameter in `buyInstructions()` / `sellInstructions()` to se
 
 - [Fee Tiers](./fee-tiers.md) — How fee rates are determined by market cap
 - [Token Lifecycle](../README.md#-token-lifecycle) — Full lifecycle from creation to AMM
-- [API Reference](./api-reference.md) — Complete function signatures
-- [Examples](./examples.md) — Working code samples
+- [API Reference](../api-reference.md) — Complete function signatures
+- [Examples](../examples.md) — Working code samples
 

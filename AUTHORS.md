@@ -27,5 +27,4 @@ _Be the first — open a PR to add yourself._
 
 ## License
 
-PumpKit is licensed under the [Apache License, Version 2.0](LICENSE).
-See [NOTICE](NOTICE) for attribution requirements when redistributing.
+See the [LICENSE](LICENSE) file for the terms that apply to PumpKit.

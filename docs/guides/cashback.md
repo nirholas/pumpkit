@@ -160,13 +160,13 @@ const ix = await PUMP_SDK.toggleCashbackEnabledInstruction({
 });
 ```
 
-See [Admin Operations](./admin-operations.md).
+See [Admin Operations](../admin-operations.md).
 
 ---
 
 ## Related
 
-- [AMM Trading](./amm-trading.md) — AMM trade instructions
+- [AMM Trading](../amm-trading.md) — AMM trade instructions
 - [Token Incentives](./token-incentives.md) — Volume-based token rewards
 - [Events Reference](./events-reference.md) — Full event catalog
-- [Admin Operations](./admin-operations.md) — Toggle cashback
+- [Admin Operations](../admin-operations.md) — Toggle cashback

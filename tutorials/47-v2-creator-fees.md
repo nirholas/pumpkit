@@ -278,8 +278,8 @@ Before launching with sharing in production:
 ## See also
 
 - Previous tutorial: [tutorials/46-usdc-pair-launches.md](46-usdc-pair-launches.md) — launching with USDC quote pair
-- Companion: [tutorials/48-usdc-trading-bot.md](48-usdc-trading-bot.md) — end-to-end USDC trading bot that uses these primitives
-- Companion: [tutorials/49-indexing-v2-events.md](49-indexing-v2-events.md) — indexing V2 fee events at scale
+- Companion: [tutorials/53-usdc-trading-bot.md](53-usdc-trading-bot.md) — end-to-end USDC trading bot that uses these primitives
+- Companion: [tutorials/54-indexing-v2-events.md](54-indexing-v2-events.md) — indexing V2 fee events at scale
 - Fee sharing docs in repo: [docs/fee-sharing.md](../docs/fee-sharing.md), [docs/fee-tiers.md](../docs/fee-tiers.md)
 - Cashback/social-fee notes: [docs/cashback.md](../docs/cashback.md), [tutorials/27-cashback-social-fees.md](27-cashback-social-fees.md)
 - Authoritative protocol docs: [pump-fun/pump-public-docs](https://github.com/pump-fun/pump-public-docs)

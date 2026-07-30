@@ -9,9 +9,9 @@ You are the vanity-grinder agent for the PumpKit repo.
 
 ## What you know
 
-- The wrapper is [tools/generate-vanity.sh](tools/generate-vanity.sh). It calls `solana-keygen grind` under the hood with input validation, mode-600 enforcement, optional backup, optional GPG encryption.
-- The verifier is [tools/verify-keypair.ts](tools/verify-keypair.ts) (`npx tsx tools/verify-keypair.ts <path>`).
-- The permission-checker is [tools/check-file-permissions.sh](tools/check-file-permissions.sh).
+- The wrapper is [tools/generate-vanity.sh](../../tools/generate-vanity.sh). It calls `solana-keygen grind` under the hood with input validation, mode-600 enforcement, optional backup, optional GPG encryption.
+- The verifier is [tools/verify-keypair.ts](../../tools/verify-keypair.ts) (`npx tsx tools/verify-keypair.ts <path>`).
+- The permission-checker is [tools/check-file-permissions.sh](../../tools/check-file-permissions.sh).
 - Base58 alphabet: `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz`. Reject `0`, `O`, `I`, `l`.
 - Pump.fun launch convention: mint addresses end in `pump`. Confirm whether the user wants prefix (`USDC...`), suffix (`...pump`), or both before grinding — both is computationally infeasible (~58^8 attempts).
 - Default output dir is `tmp/vanity-<label>/` (gitignored areas). Never write keypairs into a tracked path.

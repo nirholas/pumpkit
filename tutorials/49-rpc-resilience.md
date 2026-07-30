@@ -199,6 +199,6 @@ Alert on:
 ## See also
 
 - [packages/core/src/solana/rpc.ts](../packages/core/src/solana/rpc.ts) — current RPC resolution
-- [packages/core/src/health/](../packages/core/src/health/) — existing health surface
+- [packages/core/src/health.ts](../packages/core/src/health.ts) — existing health surface
 - [tutorial 48](48-jito-bundle-strategies.md) — Jito as a sender alternative
 - [.claude/agents/rpc-strategist.md](../.claude/agents/rpc-strategist.md) — agent for RPC topology decisions

@@ -255,5 +255,5 @@ fullExplorer(new PublicKey("YOUR_MINT"));
 
 ## What's Next?
 
-Go back to [Tutorial Index](./README.md) to explore more tutorials, or dive into the [SDK source code](../src/) to learn the internals.
+Go back to [Tutorial Index](./README.md) to explore more tutorials, or dive into the [SDK source code](../packages/core/src/) to learn the internals.
 

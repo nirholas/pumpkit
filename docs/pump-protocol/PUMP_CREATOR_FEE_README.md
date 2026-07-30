@@ -98,7 +98,7 @@ same code should work on both the creator fee update on Devnet and the current M
 program on Mainnet to the creator fee update.
 
 We are also trying to release the Pump program Typescript SDK by Monday, so you can use it. The 
-[bondingCurve.ts](bondingCurve.ts) file is part of the upcoming Pump program Typescript SDK.
+`bondingCurve.ts` file is part of the upcoming Pump program Typescript SDK.
 
 ## Coin creator fees update
 

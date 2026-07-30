@@ -175,5 +175,5 @@ A `claim_social_fee_pda` instruction can be called without a matching `SocialFee
 
 ## Next Steps
 
-- [Tutorial 5: RPC Best Practices](./05-rpc-best-practices.md) — rate limits, fallback, batching
+- [RPC Best Practices](../docs/rpc-best-practices.md) — rate limits, fallback, batching
 - See the [Official Pump IDL files](https://github.com/pump-fun/pump-public-docs) for complete instruction/event definitions

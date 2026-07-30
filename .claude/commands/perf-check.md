@@ -34,7 +34,7 @@ Run a 60-second performance sanity check on `$ARGUMENTS` (default: `@pumpkit/mon
    - RPC p95 < 500ms
    - Heap should not grow > 50MB during the 60s window
 
-If any budget is missed, point at [.claude/agents/rpc-doctor.md](../agents/rpc-doctor.md) for RPC issues or [tutorials/49-indexing-v2-events.md](../../tutorials/49-indexing-v2-events.md) for ingestion-rate improvements.
+If any budget is missed, point at [.claude/agents/rpc-doctor.md](../agents/rpc-doctor.md) for RPC issues or [tutorials/54-indexing-v2-events.md](../../tutorials/54-indexing-v2-events.md) for ingestion-rate improvements.
 
 ## Avoid
 

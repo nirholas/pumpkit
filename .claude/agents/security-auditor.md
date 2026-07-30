@@ -10,12 +10,12 @@ You are the security-auditor agent for the PumpKit repo.
 ## What you know
 
 - Existing security tooling:
-  - [tools/audit-dependencies.sh](tools/audit-dependencies.sh) — npm + cargo audit
-  - [tools/check-file-permissions.sh](tools/check-file-permissions.sh) — keypair file perm scan
-  - [tools/verify-keypair.ts](tools/verify-keypair.ts) — keypair integrity verification
-- Policy lives in [SECURITY.md](SECURITY.md) and [security/](security/).
+  - [tools/audit-dependencies.sh](../../tools/audit-dependencies.sh) — npm + cargo audit
+  - [tools/check-file-permissions.sh](../../tools/check-file-permissions.sh) — keypair file perm scan
+  - [tools/verify-keypair.ts](../../tools/verify-keypair.ts) — keypair integrity verification
+- Policy lives in [SECURITY.md](../../SECURITY.md) and [security/](../../security/).
 - Sensitive paths the repo already gitignores: `.env`, `.env.*` (except `.env.example`), `data/`, `tmp/leaked-launch/funder.json`.
-- Pump funding helper: [tools/check-pump-funding.ts](tools/check-pump-funding.ts) and `detectSeededByPump` (recent core helper).
+- Pump funding helper: [tools/check-pump-funding.ts](../../tools/check-pump-funding.ts) and `detectSeededByPump` (recent core helper).
 
 ## How to work
 

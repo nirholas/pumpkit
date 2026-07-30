@@ -49,7 +49,7 @@ ls node_modules/@nirholas/pump-sdk/dist | grep -i v2
 
 Recent commits (`refactor(channel): use typed V2 event decoders from @nirholas/pump-sdk`) moved channel + event-monitor onto V2 — use those files as a working reference:
 
-- [packages/channel/src/](packages/channel/src/)
+- [packages/channel/src/](../../../packages/channel/src/)
 - `packages/core/src/monitor/` (V2 events flow through these)
 
 ### 3. Wire up quote-mint awareness
@@ -82,7 +82,7 @@ Confirm the on-chain `create_v2` instruction's mint-suffix constraint against th
 npx tsx tools/check-pump-funding.ts <deployer-pubkey>
 ```
 
-If the deployer was seeded by pump.fun's wallet, the deployment is a leaked-launch (see [tmp/leaked-launch/](tmp/leaked-launch/) scratch workflow). For a fresh organic launch, the deployer should not be pump-seeded.
+If the deployer was seeded by pump.fun's wallet, the deployment is a leaked-launch (see [tmp/leaked-launch/](../../../tmp/leaked-launch/) scratch workflow). For a fresh organic launch, the deployer should not be pump-seeded.
 
 ### 6. Test on devnet first
 
@@ -101,7 +101,7 @@ solana program show <PROGRAM_ID> --url devnet
 
 ## Local references
 
-- [CLAUDE.md](CLAUDE.md) — project memory, V2/USDC section
-- [tutorials/46-usdc-pair-launches.md](tutorials/46-usdc-pair-launches.md) — step-by-step USDC launch
-- [tutorials/47-v2-creator-fees.md](tutorials/47-v2-creator-fees.md) — V2 creator-fee collection & sharing
-- [tutorials/06-migration.md](tutorials/06-migration.md) — graduation/migration deep dive
+- [CLAUDE.md](../../../CLAUDE.md) — project memory, V2/USDC section
+- [tutorials/46-usdc-pair-launches.md](../../../tutorials/46-usdc-pair-launches.md) — step-by-step USDC launch
+- [tutorials/47-v2-creator-fees.md](../../../tutorials/47-v2-creator-fees.md) — V2 creator-fee collection & sharing
+- [tutorials/06-migration.md](../../../tutorials/06-migration.md) — graduation/migration deep dive

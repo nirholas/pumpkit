@@ -13,7 +13,7 @@ description: Use this skill when migrating an existing pump.fun integration from
 
 ## When **not** to use
 
-- Greenfield USDC bot — point at [tutorials/48-usdc-trading-bot.md](../../../tutorials/48-usdc-trading-bot.md) instead. No migration needed.
+- Greenfield USDC bot — point at [tutorials/53-usdc-trading-bot.md](../../../tutorials/53-usdc-trading-bot.md) instead. No migration needed.
 - The user is happy on V1 forever and doesn't need USDC. Don't push a migration they didn't ask for.
 
 ## Core principle
@@ -33,7 +33,7 @@ Classify each match as TX out (need adapter) or RX events (need decoder update).
 
 ### 2. Trade adapter
 
-Create [packages/core/src/solana/trade-adapter.ts](../../../packages/core/src/solana/trade-adapter.ts) with `buildBuy` / `buildSell` that route by quote mint. SOL → V1 by default, USDC → V2 always. Env flag (`PUMP_FORCE_V2=1`) forces V2 for SOL pair callers in canary builds.
+Create `packages/core/src/solana/trade-adapter.ts` with `buildBuy` / `buildSell` that route by quote mint. SOL → V1 by default, USDC → V2 always. Env flag (`PUMP_FORCE_V2=1`) forces V2 for SOL pair callers in canary builds.
 
 See [tutorials/52-v1-to-v2-migration.md](../../../tutorials/52-v1-to-v2-migration.md) for the full adapter code.
 

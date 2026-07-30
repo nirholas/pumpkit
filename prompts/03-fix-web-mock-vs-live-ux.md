@@ -18,7 +18,7 @@ The dashboard at `packages/web` falls back to mock data whenever `VITE_API_URL` 
 `STATUS.md` lists this as Known Issue #3: *"Web dashboard uses mock data by default — set `VITE_API_URL` env to connect to real monitor bot."* The dashboard is otherwise built and we are about to publish packages — first-run users will install the framework, open the dashboard, and assume it's wired up. A clear mock-mode banner prevents that confusion.
 
 ## Reference
-- Existing connection-status enum lives in [packages/web/src/hooks/useEventStream.ts](packages/web/src/hooks/useEventStream.ts) — reuse it
+- Existing connection-status enum lives in [packages/web/src/hooks/useEventStream.ts](../packages/web/src/hooks/useEventStream.ts) — reuse it
 - `import.meta.env.VITE_API_URL` is read in the same file; a missing value falls back to an empty base URL, which becomes `/api/v1/claims/stream` on the same origin
 - Current `.env.example`:
   ```

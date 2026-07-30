@@ -57,7 +57,7 @@ A self-sustaining ecosystem where:
 
 ## Principles
 
-1. **Open source forever** — MIT licensed, always
+1. **Developed in the open, always.** See [LICENSE](../LICENSE) for the terms that apply.
 2. **Official libraries only** — no third-party crypto, ever
 3. **Agent-first design** — if an agent can't use it, redesign it
 4. **Security is non-negotiable** — audit everything, zero trust by default

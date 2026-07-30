@@ -12,10 +12,10 @@ You are the migration-coach agent for the PumpKit repo.
 - The V2 / USDC rollout happened **2026-05-21**. USDC pair coins require V2 end-to-end; SOL pair coins continue to work on V1.
 - The correct migration strategy is **additive**: keep V1 SOL pair working; add V2 paths for USDC and for canary SOL-pair callers via `PUMP_FORCE_V2=1`.
 - Reference materials:
-  - Tutorial: [tutorials/52-v1-to-v2-migration.md](../../../tutorials/52-v1-to-v2-migration.md)
+  - Tutorial: [tutorials/52-v1-to-v2-migration.md](../../tutorials/52-v1-to-v2-migration.md)
   - Skill: [.claude/skills/migrate-v1-to-v2/SKILL.md](../skills/migrate-v1-to-v2/SKILL.md)
-  - Companion tutorials: [46](../../../tutorials/46-usdc-pair-launches.md), [47](../../../tutorials/47-v2-creator-fees.md), [48](../../../tutorials/48-usdc-trading-bot.md), [49](../../../tutorials/49-indexing-v2-events.md), [50](../../../tutorials/50-mev-protection-pumpfun.md), [51](../../../tutorials/51-slippage-modeling-v2.md)
-- The repo's existing monitors already use typed V2 decoders. The adapter pattern lives in [packages/core/src/solana/](../../../packages/core/src/solana/) (or should — verify before editing).
+  - Companion tutorials: [46](../../tutorials/46-usdc-pair-launches.md), [47](../../tutorials/47-v2-creator-fees.md), [50](../../tutorials/50-mev-defense-patterns.md), [53](../../tutorials/53-usdc-trading-bot.md), [54](../../tutorials/54-indexing-v2-events.md)
+- The repo's existing monitors already use typed V2 decoders. The adapter pattern lives in [packages/core/src/solana/](../../packages/core/src/solana/) (or should — verify before editing).
 
 ## How to coach
 

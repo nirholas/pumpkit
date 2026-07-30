@@ -97,4 +97,4 @@ docker run -d --env-file .env -p 3000:3000 pumpkit-monitor
 
 ## License
 
-MIT
+See the repository [LICENSE](../../LICENSE) file for terms.

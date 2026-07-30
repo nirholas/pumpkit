@@ -262,7 +262,7 @@ Emitted when an account is extended (resized).
 
 ### AmmBuyEvent
 
-Emitted on AMM pool buys. See [AMM Trading](./amm-trading.md) for key fields.
+Emitted on AMM pool buys. See [AMM Trading](../amm-trading.md) for key fields.
 
 **Decoder:** `PUMP_SDK.decodeAmmBuyEvent(data)`
 
@@ -389,8 +389,8 @@ See [Social Fees](./social-fees.md).
 
 ## Related
 
-- [AMM Trading](./amm-trading.md) — AMM event details
+- [AMM Trading](../amm-trading.md) — AMM event details
 - [Fee Sharing](./fee-sharing.md) — Fee distribution system
 - [Social Fees](./social-fees.md) — Social fee events
 - [Token Incentives](./token-incentives.md) — Volume rewards
-- [Tutorial 29](../tutorials/29-events-parsing.md) — Event parsing guide
+- [Tutorial 29](../../tutorials/29-event-parsing-analytics.md) — Event parsing guide

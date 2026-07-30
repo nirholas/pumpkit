@@ -171,7 +171,7 @@ import { getStaticRandomFeeRecipient } from "@nirholas/pump-sdk";
 const recipient = getStaticRandomFeeRecipient();
 ```
 
-In [Mayhem mode](./mayhem-mode.md), fees are routed to `reservedFeeRecipient` / `reservedFeeRecipients` instead.
+In [Mayhem mode](./guides/mayhem-mode.md), fees are routed to `reservedFeeRecipient` / `reservedFeeRecipients` instead.
 
 ## Usage in SDK Functions
 
@@ -191,8 +191,8 @@ If you pass `feeConfig: null`, the SDK falls back to the global flat fee rates.
 
 ## Related
 
-- [Bonding Curve Math](./bonding-curve-math.md) — Price calculation formulas
+- [Bonding Curve Math](./guides/bonding-curve-math.md) — Price calculation formulas
 - [Fee Sharing](./fee-sharing.md) — Splitting creator fees among shareholders
-- [Mayhem Mode](./mayhem-mode.md) — Alternate fee routing
+- [Mayhem Mode](./guides/mayhem-mode.md) — Alternate fee routing
 - [API Reference](./api-reference.md) — Full function signatures
 

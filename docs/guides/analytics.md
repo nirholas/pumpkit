@@ -200,7 +200,7 @@ interface BondingCurveSummary {
 
 ## See Also
 
-- [API Reference — Analytics Functions](api-reference.md#analytics-functions) — Full parameter documentation
+- [API Reference — Analytics Functions](../api-reference.md#analytics-functions) — Full parameter documentation
 - [Bonding Curve Math](bonding-curve-math.md) — How virtual reserves and pricing work
-- [Examples](examples.md#analytics--price-impact) — More code examples
+- [Examples](../examples.md#analytics--price-impact) — More code examples
 

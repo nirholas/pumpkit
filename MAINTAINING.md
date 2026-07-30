@@ -96,7 +96,7 @@ Follow [SECURITY.md](SECURITY.md). Briefly:
 
 | Tool | Minimum version | Notes |
 |---|---|---|
-| Node | 20 | Locked via [.nvmrc](.nvmrc), engines in [package.json](package.json) |
+| Node | 20 | Locked via `.nvmrc`, engines in [package.json](package.json) |
 | npm | 10 | Comes with Node 20 |
 | TypeScript | 5.7+ | Repo-wide via [tsconfig.base.json](tsconfig.base.json) |
 | solana-keygen | any recent | Required for vanity work |
@@ -133,7 +133,7 @@ Linking to a written rationale beats relitigating in every issue.
 
 - [GOVERNANCE.md](GOVERNANCE.md) — who decides what
 - [CONTRIBUTING.md](CONTRIBUTING.md) — onboarding for new contributors
-- [TESTING.md](TESTING.md) — how the test suite is structured
+- [docs/testing.md](docs/testing.md) — how the test suite is structured
 - [SECURITY.md](SECURITY.md) — disclosure policy
 - [STATUS.md](STATUS.md) — current state
 - [ROADMAP.md](ROADMAP.md) — where we're going

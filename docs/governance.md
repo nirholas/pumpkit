@@ -26,7 +26,7 @@ pump-fun-sdk uses a **Benevolent Dictator For Life (BDFL)** governance model wit
 
 Anyone who has submitted a merged PR. Contributors:
 
-- Are credited in [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md)
+- Are credited in [AUTHORS.md](../AUTHORS.md)
 - May be invited to become collaborators based on sustained contribution
 - Have a voice in discussions and RFCs
 - Can review PRs (non-binding reviews)
@@ -38,7 +38,7 @@ Trusted contributors with write access. Collaborators:
 - Can merge PRs (with maintainer approval on breaking changes)
 - Can triage issues and manage labels
 - Can moderate discussions
-- Are listed in [CODEOWNERS](.github/CODEOWNERS)
+- Are listed in [CODEOWNERS](../.github/CODEOWNERS)
 
 ---
 
@@ -64,7 +64,7 @@ Any change that breaks the public API requires:
 2. At least 1 week for community feedback
 3. Deprecation notice in the previous release
 4. Maintainer approval
-5. Documentation in [MIGRATION.md](docs/MIGRATION.md)
+5. Documentation in [migration.md](./migration.md)
 
 ---
 

@@ -15,7 +15,7 @@
 
 **Non-goals:**
 
-1. We are **not** an MEV extraction framework. We surface MEV defensively (see [tutorial 50](tutorials/50-mev-protection-pumpfun.md)).
+1. We are **not** an MEV extraction framework. We surface MEV defensively (see [tutorial 50](tutorials/50-mev-defense-patterns.md)).
 2. We are **not** a hosted service. PumpKit ships code; you run the infrastructure.
 3. We are **not** an exhaustive Solana SDK — `@nirholas/pump-sdk` and `@solana/web3.js` own the lower layers.
 
@@ -166,7 +166,7 @@ grammY has better TypeScript types, modern middleware, and active maintenance. T
 
 ### File-based + SQLite vs Postgres
 
-For per-user bot state, SQLite is enough. Postgres pulls in operational overhead (separate process, network, backups) without buying us much for the per-bot persistence we need. For analytics indexers, we recommend external Postgres (see [tutorial 49](tutorials/49-indexing-v2-events.md)).
+For per-user bot state, SQLite is enough. Postgres pulls in operational overhead (separate process, network, backups) without buying us much for the per-bot persistence we need. For analytics indexers, we recommend external Postgres (see [tutorial 54](tutorials/54-indexing-v2-events.md)).
 
 ### Why a peer-dependency on `@nirholas/pump-sdk`
 
@@ -181,8 +181,8 @@ The SDK ships typed decoders + instruction builders that pump.fun updates in loc
 | Symptom | First place to look |
 |---|---|
 | No events arriving | [.claude/agents/rpc-doctor.md](.claude/agents/rpc-doctor.md), [docs/rpc-best-practices.md](docs/rpc-best-practices.md) |
-| Tx fails simulation | [tutorials/51-slippage-modeling-v2.md](tutorials/51-slippage-modeling-v2.md), simulate first, read logs |
-| Sandwich attacks suspected | [tutorials/50-mev-protection-pumpfun.md](tutorials/50-mev-protection-pumpfun.md) |
+| Tx fails simulation | Simulate first, read logs |
+| Sandwich attacks suspected | [tutorials/50-mev-defense-patterns.md](tutorials/50-mev-defense-patterns.md) |
 | V2 events not decoding | bump `@nirholas/pump-sdk` |
 | USDC pair launch fails | [tutorials/46-usdc-pair-launches.md](tutorials/46-usdc-pair-launches.md) |
 | Migration plan unclear | [.claude/skills/migrate-v1-to-v2/SKILL.md](.claude/skills/migrate-v1-to-v2/SKILL.md), [tutorials/52-v1-to-v2-migration.md](tutorials/52-v1-to-v2-migration.md) |

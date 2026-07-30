@@ -122,5 +122,5 @@ These are standard Anchor errors and appear in transaction logs — not as SDK e
 
 ## Related
 
-- [Fee Sharing](./fee-sharing.md) — Share configuration
-- [API Reference](./api-reference.md) — Full SDK API
+- [Fee Sharing](../fee-sharing.md) — Share configuration
+- [API Reference](../api-reference.md) — Full SDK API

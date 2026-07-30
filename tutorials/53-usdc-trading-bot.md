@@ -369,7 +369,7 @@ Run on Railway / Fly / your VPS. Ensure:
 
 ## Operational lessons
 
-- **Latency matters.** A 500ms slower launch detection often means a worse fill. Use a Geyser stream ([tutorial 49](49-indexing-v2-events.md)) instead of public RPC websockets if you're serious.
+- **Latency matters.** A 500ms slower launch detection often means a worse fill. Use a Geyser stream ([tutorial 54](54-indexing-v2-events.md)) instead of public RPC websockets if you're serious.
 - **Backoff on RPC errors.** Don't retry every 10ms — you'll get rate-limited and miss the next launch.
 - **Watch your wallet's USDC balance.** A bot that runs out of USDC will keep computing decisions and never execute. Add a balance check at startup and every N minutes.
 - **Pre-compute ATAs.** The first buy on a new coin creates an ATA — if you race the ATA-init, two parallel buys can both try and one will fail. Either pre-init or use idempotent ATA instructions in the same tx.

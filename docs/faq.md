@@ -16,7 +16,7 @@ This is the official community PumpFun SDK. It is published as `@nirholas/pump-s
 
 ### Is it free to use?
 
-Yes. pump-fun-sdk is open-source under the [MIT License](LICENSE). Use it for personal projects, commercial products, bots, agents — anything.
+The source is public in this repository, but it is not permissively licensed. See the [LICENSE](../LICENSE) file for the terms that apply before you use it in a personal or commercial project.
 
 ### What languages are supported?
 
@@ -213,13 +213,13 @@ Yes. Private keys are:
 The SDK is published on npm and used in production applications. However, you should:
 
 - Always review code that handles private keys
-- Use the security checklist in [SECURITY_CHECKLIST.md](security/SECURITY_CHECKLIST.md)
+- Use the security checklist in [SECURITY_CHECKLIST.md](../security/SECURITY_CHECKLIST.md)
 - Test thoroughly on devnet before mainnet
 - Never commit keypair files to version control
 
 ### How do I report a vulnerability?
 
-See [SECURITY.md](SECURITY.md). Do NOT open a public issue. Use GitHub's private security advisory feature or email the maintainer directly.
+See [SECURITY.md](../SECURITY.md). Do NOT open a public issue. Use GitHub's private security advisory feature or email the maintainer directly.
 
 ---
 
@@ -227,7 +227,7 @@ See [SECURITY.md](SECURITY.md). Do NOT open a public issue. Use GitHub's private
 
 ### How do I contribute?
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The short version:
+See [CONTRIBUTING.md](../CONTRIBUTING.md). The short version:
 
 1. Fork → Branch → Code → Test → PR
 2. Follow existing code style

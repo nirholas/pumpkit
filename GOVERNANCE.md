@@ -76,7 +76,7 @@ A maintainer can be removed by:
 
 ## Forking + downstream
 
-PumpKit is MIT-licensed. You are free to fork and ship a derivative. We ask only:
+Forking and redistribution are governed by the repository's [LICENSE](LICENSE), which currently reserves all rights. If you have written permission to ship a derivative, we ask only:
 
 - Don't claim affiliation with the upstream maintainers.
 - Don't reuse the `@pumpkit/*` npm scope.

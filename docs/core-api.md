@@ -4,8 +4,15 @@
 
 ## Installation
 
+> **Not on the npm registry yet.** `npm install @pumpkit/core` returns 404.
+> Build the monorepo once, then install the built workspace by path.
+
 ```bash
-npm install @pumpkit/core
+git clone https://github.com/nirholas/pumpkit.git
+(cd pumpkit && npm install && npm run build)
+
+cd my-project
+npm install ../pumpkit/packages/core
 ```
 
 ## Modules

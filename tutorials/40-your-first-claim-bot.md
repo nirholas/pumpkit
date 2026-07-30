@@ -120,6 +120,5 @@ username (Display Name)
 
 ## Next Steps
 
-- [Tutorial 2: Customizing Claim Cards](./02-customizing-claim-cards.md) — change the layout, add your own data
-- [Tutorial 3: Channel Feed Bot](./03-channel-feed-bot.md) — set up a read-only channel feed
-- [Tutorial 4: Adding Trade Links](./04-adding-trade-links.md) — add Axiom/GMGN/Padre referral links
+- [Tutorial 2: Customizing Claim Cards](./41-customizing-claim-cards.md) — change the layout, add your own data
+- [Tutorial 3: Channel Feed Bot](./42-channel-feed-bot.md) — set up a read-only channel feed

@@ -375,7 +375,7 @@ Emitted when a new AMM pool is created during graduation.
 
 ### SocialFeePdaCreatedEvent / SocialFeePdaClaimedEvent
 
-See [Social Fees](./social-fees.md).
+See [Social Fees](./guides/social-fees.md).
 
 ### MinimumDistributableFeeEvent
 
@@ -391,6 +391,6 @@ See [Social Fees](./social-fees.md).
 
 - [AMM Trading](./amm-trading.md) — AMM event details
 - [Fee Sharing](./fee-sharing.md) — Fee distribution system
-- [Social Fees](./social-fees.md) — Social fee events
-- [Token Incentives](./token-incentives.md) — Volume rewards
-- [Tutorial 29](../tutorials/29-events-parsing.md) — Event parsing guide
+- [Social Fees](./guides/social-fees.md) — Social fee events
+- [Token Incentives](./guides/token-incentives.md) — Volume rewards
+- [Tutorial 29](../tutorials/29-event-parsing-analytics.md) — Event parsing guide

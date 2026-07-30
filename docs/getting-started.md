@@ -13,7 +13,7 @@
 ### Monitor Bot (fee claims, launches, whales, graduations)
 
 ```bash
-git clone https://github.com/pumpkit/pumpkit.git
+git clone https://github.com/nirholas/pumpkit.git
 cd pumpkit
 npm install
 
@@ -62,11 +62,19 @@ Add the bot to a Telegram group. Members can paste token CAs to start tracking c
 
 ### 1. Create a new project
 
+> **`@pumpkit/*` is not on the npm registry yet.** `npm install @pumpkit/core`
+> returns 404. Build the monorepo once, then install the built workspace by path.
+
 ```bash
+# Build the framework once
+git clone https://github.com/nirholas/pumpkit.git
+(cd pumpkit && npm install && npm run build)
+
+# Create your project next to it
 mkdir my-pump-bot
 cd my-pump-bot
 npm init -y
-npm install @pumpkit/core grammy dotenv
+npm install ../pumpkit/packages/core grammy dotenv
 npm install -D typescript @types/node tsx
 ```
 

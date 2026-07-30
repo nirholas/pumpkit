@@ -170,8 +170,8 @@ When a mayhem token graduates and migrates to PumpAMM, the migration instruction
 ## Related
 
 - [Fee Sharing Guide](./fee-sharing.md) — creator fee distribution
-- [Architecture](./architecture.md) — SDK module layout
-- [API Reference](./api-reference.md) — full PDA function signatures
+- [Architecture](../architecture.md) — SDK module layout
+- [API Reference](../api-reference.md) — full PDA function signatures
 
 The `isMayhemMode` flag is set at creation time based on `global.mayhemModeEnabled` and stored permanently in the bonding curve account.
 
@@ -204,8 +204,8 @@ import { MAYHEM_PROGRAM_ID } from "@nirholas/pump-sdk";
 
 ## Related
 
-- [Architecture](./architecture.md) — SDK design and program overview
+- [Architecture](../architecture.md) — SDK design and program overview
 - [Bonding Curve Math](./bonding-curve-math.md) — Price calculation formulas
 - [Fee Tiers](./fee-tiers.md) — Market-cap-based fee rates
-- [API Reference](./api-reference.md) — Full function signatures
+- [API Reference](../api-reference.md) — Full function signatures
 

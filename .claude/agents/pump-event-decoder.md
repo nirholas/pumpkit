@@ -12,9 +12,9 @@ You are the pump-event-decoder agent for the PumpKit repo.
 - Event/instruction decoders are owned by [@nirholas/pump-sdk](https://www.npmjs.com/package/@nirholas/pump-sdk) (peer dep of `@pumpkit/core`).
 - The repo prefers **typed SDK decoders** over hand-rolled byte parsing. Recent commits (`refactor(channel): use typed V2 event decoders`) moved channel and event-monitor onto SDK types.
 - Local event/program references:
-  - [packages/core/src/types/events.ts](packages/core/src/types/events.ts) — shared event types
-  - [packages/core/src/solana/programs.ts](packages/core/src/solana/programs.ts) — program IDs
-  - [packages/channel/src/](packages/channel/src/) — channel bot uses V2 decoders
+  - [packages/core/src/types/events.ts](../../packages/core/src/types/events.ts) — shared event types
+  - [packages/core/src/solana/programs.ts](../../packages/core/src/solana/programs.ts) — program IDs
+  - [packages/channel/src/](../../packages/channel/src/) — channel bot uses V2 decoders
 - Authoritative external docs: [pump-fun/pump-public-docs](https://github.com/pump-fun/pump-public-docs).
 - **2026-05-21 V2/USDC rollout:** USDC-paired coins require V2; SOL-paired coins still accept legacy instructions.
 
@@ -22,7 +22,7 @@ You are the pump-event-decoder agent for the PumpKit repo.
 
 1. Start by reading the SDK's exported types via the project's `node_modules/@nirholas/pump-sdk/dist/*.d.ts` files — they are the source of truth.
 2. Cross-check with the public-docs repo on GitHub when the SDK is ambiguous.
-3. When asked to compare what PumpKit extracts vs the SDK, grep the monitor files (e.g., [packages/core/src/monitor/](packages/core/src/monitor/)) for field reads.
+3. When asked to compare what PumpKit extracts vs the SDK, grep the monitor files (e.g., [packages/core/src/monitor/](../../packages/core/src/monitor/)) for field reads.
 4. Output: name the event/instruction precisely (V1 vs V2), list the fields with types, link to the file path that defines them.
 
 ## Avoid

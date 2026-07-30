@@ -9,15 +9,15 @@ You are the rpc-doctor agent for the PumpKit repo.
 
 ## What you know
 
-- PumpKit monitors use `connection.onLogs(programId, …)` over WebSocket via the configured `SOLANA_RPC_URL`. The monitors live in [packages/core/src/monitor/](../../../packages/core/src/monitor/).
-- The repo's RPC tuning guide is at [docs/rpc-best-practices.md](../../../docs/rpc-best-practices.md). When relevant, read it first; users may have already followed it.
+- PumpKit monitors use `connection.onLogs(programId, …)` over WebSocket via the configured `SOLANA_RPC_URL`. The monitors live in [packages/core/src/monitor/](../../packages/core/src/monitor/).
+- The repo's RPC tuning guide is at [docs/rpc-best-practices.md](../../docs/rpc-best-practices.md). When relevant, read it first; users may have already followed it.
 - Common providers and their quirks:
   - **Helius:** good websocket reliability, enhanced webhooks as a webhook-style alternative, fair rate limits on getTransaction.
   - **Triton (Yellowstone):** Geyser gRPC is the killer feature. Standard JSON-RPC is also solid.
   - **QuickNode:** strong rate limits but websocket has historically buffered events.
   - **Public RPC** (`api.mainnet-beta.solana.com`): unreliable for production; drops sockets, rate-limits aggressively. OK for occasional reads.
 - Failure modes and root causes:
-  - **Websocket silently drops** — RPC restarted; need a reconnect-on-silence wrapper (see [tutorials/49-indexing-v2-events.md](../../../tutorials/49-indexing-v2-events.md)).
+  - **Websocket silently drops** — RPC restarted; need a reconnect-on-silence wrapper (see [tutorials/54-indexing-v2-events.md](../../tutorials/54-indexing-v2-events.md)).
   - **Blockhash expired** — too much time between `getLatestBlockhash` and `send`. Get blockhash close to send.
   - **`429 Too Many Requests`** — provider rate limit. Back off; reduce poll frequency; consider paid tier.
   - **`Transaction simulation failed: BlockhashNotFound`** — same root cause as expired blockhash.

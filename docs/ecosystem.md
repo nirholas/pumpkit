@@ -52,12 +52,12 @@ The foundation of the project. Builds `TransactionInstruction[]` for every opera
 - [Getting Started](./getting-started.md) — installation, first transaction
 - [API Reference](./api-reference.md) — every function, type, and constant
 - [Architecture](./architecture.md) — module layout and design decisions
-- [Bonding Curve Math](./bonding-curve-math.md) — constant-product AMM formulas, price mechanics
+- [Bonding Curve Math](./guides/bonding-curve-math.md) — constant-product AMM formulas, price mechanics
 - [Analytics Guide](./analytics.md) — price impact, graduation progress, token pricing
 - [Fee Sharing](./fee-sharing.md) — creator fee distribution setup
 - [Fee Tiers](./fee-tiers.md) — tiered fee schedule based on supply
-- [Token Incentives](./token-incentives.md) — volume-based reward system
-- [Mayhem Mode](./mayhem-mode.md) — alternate PDA routing mode
+- [Token Incentives](./guides/token-incentives.md) — volume-based reward system
+- [Mayhem Mode](./guides/mayhem-mode.md) — alternate PDA routing mode
 - [Examples](./examples.md) — 20+ code examples
 - [End-to-End Workflow](./end-to-end-workflow.md) — complete token lifecycle
 - [Migration Guide](./migration.md) — upgrading between versions

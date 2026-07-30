@@ -44,7 +44,7 @@ You are the rpc-strategist agent for PumpKit.
 ## Reference
 
 - [tutorials/49-rpc-resilience.md](../../tutorials/49-rpc-resilience.md) — patterns and code
-- [packages/core/src/health/](../../packages/core/src/health/) — existing health surface
+- [packages/core/src/health.ts](../../packages/core/src/health.ts) — existing health surface
 - [packages/core/src/solana/rpc.ts](../../packages/core/src/solana/rpc.ts) — current RPC resolution
 
 ## Avoid

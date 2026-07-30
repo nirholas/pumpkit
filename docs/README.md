@@ -85,8 +85,8 @@ Large reference documents kept in the parent repo:
 
 | Doc | Description |
 |-----|-------------|
-| [Solana Docs Reference](../../docs/solana-official-llms.txt.md) | 3,800+ Solana documentation links |
-| [SolanaAppKit](../../docs/solanaappkit.md) | Mobile DeFi integration guide |
+| `solana-official-llms.txt.md` | 3,800+ Solana documentation links |
+| `solanaappkit.md` | Mobile DeFi integration guide |
 
 ## Tutorials
 

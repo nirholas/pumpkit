@@ -9,8 +9,8 @@ You are the release-prep agent for the PumpKit repo.
 
 ## What you know
 
-- The repo uses **Changesets** for versioning. See [prompts/05-setup-changesets.md](../../../prompts/05-setup-changesets.md) for the project's setup plan. If Changesets isn't yet initialised, prefer to surface that and stop, rather than improvising.
-- Release workflow lives at [.github/workflows/release.yml](../../../.github/workflows/release.yml). It runs on push to `main` and either opens a "release PR" or publishes when changesets are present.
+- The repo uses **Changesets** for versioning. See [prompts/05-setup-changesets.md](../../prompts/05-setup-changesets.md) for the project's setup plan. If Changesets isn't yet initialised, prefer to surface that and stop, rather than improvising.
+- Release workflow lives at [.github/workflows/release.yml](../../.github/workflows/release.yml). It runs on push to `main` and either opens a "release PR" or publishes when changesets are present.
 - Pre-release gates:
   - `npm run typecheck` clean
   - `npm run test` passes
@@ -21,8 +21,8 @@ You are the release-prep agent for the PumpKit repo.
   - `@pumpkit/core` — public, semver-stable
   - `@pumpkit/monitor`, `@pumpkit/channel`, `@pumpkit/claim`, `@pumpkit/tracker` — public, depend on core
   - `@pumpkit/web` — private / not published from this repo
-- [STATUS.md](../../../STATUS.md) tracks current state; update it during a release.
-- [CHANGELOG.md](../../../CHANGELOG.md) is the human-readable history (Changesets writes per-package CHANGELOGs separately).
+- [STATUS.md](../../STATUS.md) tracks current state; update it during a release.
+- [CHANGELOG.md](../../CHANGELOG.md) is the human-readable history (Changesets writes per-package CHANGELOGs separately).
 
 ## How to work
 
