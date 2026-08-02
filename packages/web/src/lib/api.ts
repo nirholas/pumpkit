@@ -11,10 +11,37 @@
 
 import type { ClaimEvent, HealthResponse, PaginatedResponse, WatchResponse } from './types.js';
 
-const DEFAULT_BASE_URL = 'http://localhost:3000';
+const LOCAL_MONITOR_URL = 'http://localhost:3000';
+const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]'];
+
+/**
+ * Where the monitor bot lives, or '' when there is none.
+ *
+ * `VITE_API_URL` wins. Failing that, a page served from localhost assumes a bot
+ * on the default port, which is what `npm run dev` gives you. A page served from
+ * anywhere else assumes nothing: probing a visitor's own localhost from a public
+ * deployment fails on every poll and is not ours to do.
+ */
+function resolveBaseUrl(): string {
+    const configured = import.meta.env.VITE_API_URL;
+    if (configured) return configured.replace(/\/+$/, '');
+    if (typeof window !== 'undefined' && LOCAL_HOSTS.includes(window.location.hostname)) {
+        return LOCAL_MONITOR_URL;
+    }
+    return '';
+}
+
+/** Base URL of the monitor bot API. Empty string means no bot is reachable. */
+export const MONITOR_BASE_URL: string = resolveBaseUrl();
+
+/** True when a monitor bot API is configured and worth calling. */
+export const isMonitorConfigured: boolean = MONITOR_BASE_URL !== '';
 
 function getBaseUrl(): string {
-    return import.meta.env.VITE_API_URL || DEFAULT_BASE_URL;
+    if (!MONITOR_BASE_URL) {
+        throw new Error('No monitor bot configured. Set VITE_API_URL to your bot API.');
+    }
+    return MONITOR_BASE_URL;
 }
 
 // ── Health ──────────────────────────────────────────────────────────

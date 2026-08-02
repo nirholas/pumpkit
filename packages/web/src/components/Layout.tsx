@@ -8,6 +8,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { WatchForm } from './WatchForm';
 import { WatchList } from './WatchList';
 import { StatusDot } from './StatusDot';
+import type { DotStatus } from './StatusDot';
 import { useWatches } from '../hooks/useWatches';
 import { useHealth } from '../hooks/useHealth';
 
@@ -38,7 +39,14 @@ export function Layout() {
     return best;
   })();
   const { watches, loading: watchesLoading, add: addWatch, remove: removeWatch } = useWatches();
-  const { health } = useHealth();
+  const { health, loading: healthLoading, configured: monitorConfigured } = useHealth();
+  const monitorStatus: DotStatus = !monitorConfigured
+    ? 'not-configured'
+    : healthLoading
+      ? 'connecting'
+      : health
+        ? 'connected'
+        : 'disconnected';
 
   // Close sidebar on mobile when navigating
   useEffect(() => {
@@ -197,7 +205,7 @@ export function Layout() {
             <p className="text-xs text-zinc-500 truncate">{current.preview}</p>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <StatusDot status={health ? 'connected' : 'disconnected'} />
+            <StatusDot status={monitorStatus} />
             <a
               href="https://github.com/nirholas/pumpkit"
               target="_blank"

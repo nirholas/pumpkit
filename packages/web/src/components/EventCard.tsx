@@ -10,10 +10,17 @@ export interface FeedEvent {
   type: EventType;
   timestamp: string;
   txSignature: string;
+  /** Mint address. pump.fun and explorer links are keyed on this, never on the symbol. */
+  tokenMint?: string;
   tokenName: string;
   tokenSymbol: string;
+  /** Display form of the actor (creator, trader or claimer), usually truncated. */
   creator: string;
+  /** Full actor address, when known, so the display form can still link to an explorer. */
+  creatorAddress?: string;
   amountSol: number;
+  /** Market cap in SOL at the time of the event, when the source reports it. */
+  marketCapSol?: number;
   /** Quote-amount expressed in whole units of the quote currency (V2 events only).
    *  When set, `quoteTicker` describes the currency — display this instead of `amountSol`. */
   amountQuote?: number;
@@ -48,21 +55,17 @@ function formatTime(timestamp: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+/** pump.fun routes coins by mint address. A symbol is not unique and 404s. */
 function getButtonUrl(label: string, event: FeedEvent): string {
-  const sig = event.txSignature;
+  const tx = `https://solscan.io/tx/${event.txSignature}`;
   switch (label) {
-    case 'View TX':
-    case 'Explorer':
-      return `https://solscan.io/tx/${sig}`;
     case 'View on PumpFun':
-      return `https://pump.fun/coin/${event.tokenSymbol}`;
     case 'View Pool':
     case 'Trade':
-      return `https://pump.fun/coin/${event.tokenSymbol}`;
-    case 'Fee Config':
-      return `https://solscan.io/tx/${sig}`;
+      // Without a mint there is no coin page to send anyone to, so stay on the tx.
+      return event.tokenMint ? `https://pump.fun/coin/${event.tokenMint}` : tx;
     default:
-      return `https://solscan.io/tx/${sig}`;
+      return tx;
   }
 }
 

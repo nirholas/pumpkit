@@ -4,7 +4,7 @@
 //  
 
 import { useCallback, useEffect, useState } from 'react';
-import { addWatch, fetchWatches, removeWatch } from '../lib/api';
+import { addWatch, fetchWatches, isMonitorConfigured, removeWatch } from '../lib/api';
 import type { WatchResponse } from '../lib/types';
 
 interface UseWatchesReturn {
@@ -16,12 +16,21 @@ interface UseWatchesReturn {
   refresh: () => Promise<void>;
 }
 
+/**
+ * Watched wallets, stored by the monitor bot.
+ *
+ * Watches live on the bot, so with no bot configured there is nothing to load
+ * and nothing to write. The hook reports that state instead of failing a fetch.
+ */
 export function useWatches(): UseWatchesReturn {
   const [watches, setWatches] = useState<WatchResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isMonitorConfigured);
+  const [error, setError] = useState<string | null>(
+    isMonitorConfigured ? null : 'Link a monitor bot to watch wallets.',
+  );
 
   const refresh = useCallback(async () => {
+    if (!isMonitorConfigured) return;
     try {
       setError(null);
       const data = await fetchWatches();
