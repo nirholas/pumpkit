@@ -32,7 +32,7 @@ export interface ClaimFeedContext {
     githubUser: GitHubUserInfo | null;
     xProfile: XProfile | null;
     tokenInfo?: TokenInfo | null;
-    affiliates?: { axiom: string; gmgn: string; padre: string };
+    affiliates?: { axiom: string; gmgn: string; padre: string; fomo?: string };
     /** True when this GitHub user is claiming for the very first time. */
     isFirstClaim?: boolean;
     /** True when the claim instruction was called but no event was emitted (fake/scam claim). */
@@ -466,11 +466,16 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ TRADE LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (mint) {
-        const axiomUrl = `https://axiom.trade/t/${mint}?ref=${encodeURIComponent(aff?.axiom ?? 'nich')}`;
-        const gmgnUrl  = `https://gmgn.ai/sol/token/${mint}?ref=${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}`;
+        // GMGN: documented ref format is {code}_{mint} in the path (docs.gmgn.ai/index/referral-link);
+        // a ?ref= query param does not attribute. Axiom attributes at signup via the @handle link.
+        const gmgnUrl  = `https://gmgn.ai/sol/token/${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}_${mint}`;
+        const axiomUrl = `https://axiom.trade/@${encodeURIComponent(aff?.axiom ?? 'nich')}`;
         const padreUrl = `https://trade.padre.gg/rk/${encodeURIComponent(aff?.padre ?? 'nichxbt')}`;
         L.push(`💹 Trade`);
-        L.push(`<a href="${axiomUrl}">Axiom</a> | <a href="${gmgnUrl}">GMGN</a> | <a href="${padreUrl}">Padre</a>`);
+        L.push(`<a href="${gmgnUrl}">GMGN</a> | <a href="${axiomUrl}">Axiom</a> | <a href="${padreUrl}">Padre</a>`);
+        if (aff?.fomo) {
+            L.push(`📱 FOMO app code: <code>${esc(aff.fomo)}</code>`);
+        }
         L.push('');
         L.push(`<code>${mint}</code>`);
     }

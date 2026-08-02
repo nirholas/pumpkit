@@ -43,6 +43,8 @@ export interface ChannelBotConfig {
         axiom: string;
         gmgn: string;
         padre: string;
+        /** FOMO is app-only; this code is shown for manual entry, not linked. */
+        fomo: string;
     };
 }
 
@@ -115,6 +117,7 @@ export function loadConfig(): ChannelBotConfig {
         axiom: process.env.AXIOM_REF ?? '',
         gmgn:  process.env.GMGN_REF  ?? '',
         padre: process.env.PADRE_REF  ?? '',
+        fomo:  process.env.FOMO_REF  ?? '',
     };
 
     return {
