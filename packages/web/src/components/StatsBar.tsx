@@ -8,9 +8,18 @@ import type { FeedEvent } from './EventCard';
 interface StatsBarProps {
   events: FeedEvent[];
   connected: boolean;
+  /** What the counts are being fed by, e.g. "pump.fun firehose". */
+  sourceLabel?: string;
 }
 
-export function StatsBar({ events, connected }: StatsBarProps) {
+/** SOL volume rounds to whole numbers once it is large enough for that to read well. */
+function formatSol(total: number): string {
+  if (total === 0) return '0';
+  if (total < 10) return total.toFixed(1);
+  return Math.round(total).toLocaleString();
+}
+
+export function StatsBar({ events, connected, sourceLabel }: StatsBarProps) {
   const counts = events.reduce(
     (acc, e) => {
       acc[e.type] = (acc[e.type] ?? 0) + 1;
@@ -27,7 +36,7 @@ export function StatsBar({ events, connected }: StatsBarProps) {
     { label: 'Graduations', value: counts['graduation'] ?? 0, icon: '🎓' },
     { label: 'Whales', value: counts['whale'] ?? 0, icon: '🐋' },
     { label: 'CTO', value: counts['cto'] ?? 0, icon: '👑' },
-    { label: 'Volume', value: `${totalSol.toFixed(0)} SOL`, icon: '💎' },
+    { label: 'Volume', value: `${formatSol(totalSol)} SOL`, icon: '💎' },
   ];
 
   return (
@@ -44,9 +53,11 @@ export function StatsBar({ events, connected }: StatsBarProps) {
         </div>
         <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 mt-2">
           <span className={`w-2 h-2 rounded-full ${connected ? 'bg-pump-green animate-pulse-glow' : 'bg-pump-pink'}`} />
-          {connected ? 'Connected to monitor' : 'Disconnected'}
+          {connected ? `Streaming from ${sourceLabel ?? 'the live feed'}` : 'Feed disconnected'}
           <span className="text-zinc-600">·</span>
-          <span>{events.length} events in feed</span>
+          <span>
+            {events.length} {events.length === 1 ? 'event' : 'events'} in feed
+          </span>
         </div>
       </div>
     </div>

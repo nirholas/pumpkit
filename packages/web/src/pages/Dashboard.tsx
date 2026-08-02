@@ -4,7 +4,9 @@
 //
 
 import { useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { EventCard } from '../components/EventCard';
+import type { FeedFilterContext } from '../components/Layout';
 import { StatsBar } from '../components/StatsBar';
 import { MONITOR_API_URL, useEventStream } from '../hooks/useEventStream';
 import { usePumpPortalFeed } from '../hooks/usePumpPortalFeed';
@@ -81,6 +83,7 @@ function SkeletonCard() {
 }
 
 export function Dashboard() {
+  const { feedQuery } = useOutletContext<FeedFilterContext>();
   const [filter, setFilter] = useState<EventType | 'all'>('all');
   const [whaleThreshold, setWhaleThreshold] = useState<number>(DEFAULT_WHALE_THRESHOLD);
 
@@ -98,7 +101,15 @@ export function Dashboard() {
       .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
   }, [firehose.events, monitor.events]);
 
-  const filtered = filter === 'all' ? feedEvents : feedEvents.filter((e) => e.type === filter);
+  const query = feedQuery.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const byType = filter === 'all' ? feedEvents : feedEvents.filter((e) => e.type === filter);
+    if (!query) return byType;
+    return byType.filter((e) =>
+      [e.tokenName, e.tokenSymbol, e.tokenMint, e.creator, e.creatorAddress]
+        .some((field) => field?.toLowerCase().includes(query)),
+    );
+  }, [feedEvents, filter, query]);
 
   const isLive = firehose.status === 'live' || monitorConnected;
   const waitingForFirst = feedEvents.length === 0 && !firehose.error;
@@ -166,7 +177,11 @@ export function Dashboard() {
       {/* Event feed */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2 p-4 max-w-3xl mx-auto">
-          <StatsBar events={feedEvents} connected={isLive} />
+          <StatsBar
+            events={feedEvents}
+            connected={isLive}
+            sourceLabel={monitorConnected ? 'the firehose + your monitor bot' : 'the pump.fun firehose'}
+          />
 
           <div className="text-center py-2">
             <span className="bg-tg-input/80 text-zinc-400 text-xs px-3 py-1 rounded-full">
@@ -228,12 +243,27 @@ export function Dashboard() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-4xl mb-3">🔍</p>
-              <p className="text-zinc-400 text-sm">Nothing matching this filter yet.</p>
-              <p className="text-zinc-500 text-xs mt-1">
-                {filter === 'whale'
-                  ? `No trade has cleared ${whaleThreshold} SOL since you opened this page.`
-                  : 'New events land here the moment they hit the chain.'}
-              </p>
+              {query ? (
+                <>
+                  <p className="text-zinc-400 text-sm">
+                    No event in the feed matches “{feedQuery.trim()}”.
+                  </p>
+                  <p className="text-zinc-500 text-xs mt-1">
+                    The filter searches token name, symbol, mint and wallet across the
+                    {' '}
+                    {feedEvents.length} {feedEvents.length === 1 ? 'event' : 'events'} received so far.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-zinc-400 text-sm">Nothing matching this filter yet.</p>
+                  <p className="text-zinc-500 text-xs mt-1">
+                    {filter === 'whale'
+                      ? `No trade has cleared ${whaleThreshold} SOL since you opened this page.`
+                      : 'New events land here the moment they hit the chain.'}
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             filtered.map((event) => <EventCard key={event.id} event={event} />)

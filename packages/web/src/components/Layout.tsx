@@ -3,7 +3,7 @@
 // Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
 //  
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { WatchForm } from './WatchForm';
 import { WatchList } from './WatchList';
@@ -11,6 +11,11 @@ import { StatusDot } from './StatusDot';
 import type { DotStatus } from './StatusDot';
 import { useWatches } from '../hooks/useWatches';
 import { useHealth } from '../hooks/useHealth';
+
+/** Shape handed to feed pages through the router outlet. */
+export interface FeedFilterContext {
+  feedQuery: string;
+}
 
 const channels = [
   { path: '/', label: 'PumpKit', emoji: '🚀', preview: 'Create your own PumpFun bot', unread: false },
@@ -40,6 +45,10 @@ export function Layout() {
   })();
   const { watches, loading: watchesLoading, add: addWatch, remove: removeWatch } = useWatches();
   const { health, loading: healthLoading, configured: monitorConfigured } = useHealth();
+  /** Feed filter, owned here because the search box lives in the layout chrome. */
+  const [feedQuery, setFeedQuery] = useState('');
+  const feedSearchRef = useRef<HTMLInputElement>(null);
+  const onFeed = location.pathname === '/dashboard';
   const monitorStatus: DotStatus = !monitorConfigured
     ? 'not-configured'
     : healthLoading
@@ -53,6 +62,11 @@ export function Layout() {
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
+  }, [location.pathname]);
+
+  // A stale filter would silently hide events on the next visit to the feed.
+  useEffect(() => {
+    setFeedQuery('');
   }, [location.pathname]);
 
   // Keyboard shortcut: Escape to toggle sidebar
@@ -219,22 +233,46 @@ export function Layout() {
 
         {/* Main content area — styled like a chat background */}
         <main className="flex-1 overflow-y-auto bg-tg-chat">
-          <Outlet />
+          <Outlet context={{ feedQuery } satisfies FeedFilterContext} />
         </main>
 
-        {/* Cosmetic Telegram input bar */}
+        {/* Feed search. Keeps the chat-composer shape, but every control here does something. */}
         <div className="shrink-0 bg-tg-header border-t border-tg-border px-4 py-2 flex items-center gap-3">
-          <button className="text-zinc-500 hover:text-zinc-300 transition text-xl" aria-label="Emoji">😊</button>
-          <div className="flex-1 bg-tg-input rounded-full px-4 py-2 text-sm text-zinc-500 flex items-center gap-1">
-            <span>Message</span>
-            <span className="typing-dot inline-block w-1 h-1 bg-zinc-500 rounded-full"></span>
-            <span className="typing-dot inline-block w-1 h-1 bg-zinc-500 rounded-full"></span>
-            <span className="typing-dot inline-block w-1 h-1 bg-zinc-500 rounded-full"></span>
-          </div>
-          <button className="text-zinc-500 hover:text-tg-blue transition text-xl" aria-label="Attach">📎</button>
-          <button className="w-9 h-9 rounded-full bg-tg-blue flex items-center justify-center text-white text-sm hover:bg-tg-blue/80 transition active:scale-95" aria-label="Send">
+          <span className="text-xl select-none" aria-hidden="true">
+            🔎
+          </span>
+          <input
+            ref={feedSearchRef}
+            type="search"
+            value={feedQuery}
+            onChange={(e) => setFeedQuery(e.target.value)}
+            disabled={!onFeed}
+            placeholder={
+              onFeed ? 'Filter the live feed by name, symbol, mint or wallet…' : 'Open the Live Feed to search events'
+            }
+            aria-label="Filter the live feed"
+            className="flex-1 bg-tg-input rounded-full px-4 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:ring-1 focus:ring-tg-blue/40 transition disabled:cursor-not-allowed disabled:text-zinc-500"
+          />
+          {feedQuery && (
+            <button
+              onClick={() => {
+                setFeedQuery('');
+                feedSearchRef.current?.focus();
+              }}
+              className="text-zinc-500 hover:text-zinc-200 transition text-sm"
+              aria-label="Clear the feed filter"
+            >
+              ✕
+            </button>
+          )}
+          <Link
+            to="/dashboard"
+            className="w-9 h-9 rounded-full bg-tg-blue flex items-center justify-center text-white text-sm hover:bg-tg-blue/80 transition active:scale-95"
+            aria-label="Go to the live feed"
+            title="Go to the live feed"
+          >
             ▶
-          </button>
+          </Link>
         </div>
       </div>
     </div>
