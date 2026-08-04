@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
-    "canvas": "^3.1.0",
+    "canvas": "^3.2.3",
     "dotenv": "^17.4.2",
     "grammy": "^1.43.0"
   },
