@@ -27,7 +27,7 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "grammy": "^1.43.0",
-    "ws": "^8.18.0"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
