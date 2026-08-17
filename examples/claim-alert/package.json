@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@pumpkit/core": "*",
-    "grammy": "^1.43.0",
+    "grammy": "^1.45.1",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
