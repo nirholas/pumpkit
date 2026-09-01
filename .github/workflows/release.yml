@@ -46,7 +46,7 @@ jobs:
           npm run test
 
       - name: Create Release PR or publish to npm
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           publish: npx changeset publish
           version: npx changeset version
