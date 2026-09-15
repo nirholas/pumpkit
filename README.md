@@ -1,5 +1,10 @@
 # PumpKit   
 
+> **GitHub claim safety:** an on-chain social-fee withdrawal is not automatic
+> developer endorsement. The channel package distinguishes verified repository
+> and creator-wallet relationships from identity mismatches, unverified links,
+> and pooled withdrawals that cannot safely be assigned to one CA.
+
 > Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts — build your own or use ours.
 >
 >  [PumpKit Web App + Documentation](https://pumpk.it)

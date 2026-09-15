@@ -63,6 +63,20 @@ export interface ClaimFeedContext {
     claimedMints?: string[];
 }
 
+export type ClaimAttributionStatus = 'verified_repository' | 'verified_creator_wallet' | 'identity_mismatch' | 'unverified' | 'unresolved_pooled';
+
+export function classifyClaimAttribution(ctx: ClaimFeedContext): { status: ClaimAttributionStatus; headline: string; explanation: string } {
+    const count = ctx.allLinkedTokens?.length ?? ctx.event.allCandidateMints?.length ?? 0;
+    if (count > 1) return { status: 'unresolved_pooled', headline: 'UNRESOLVED POOLED GITHUB FEE WITHDRAWAL', explanation: `One shared fee account is linked to ${count} coins. This withdrawal cannot be assigned to one CA.` };
+    const claimer = ctx.githubUser?.login.toLowerCase();
+    const owner = ctx.tokenInfo?.githubUrls?.[0]?.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '').split('/')[0]?.toLowerCase();
+    if (claimer && owner && owner !== claimer) return { status: 'identity_mismatch', headline: 'IDENTITY MISMATCH — GITHUB FEE WITHDRAWAL', explanation: `The claiming GitHub account is not the owner linked in token metadata (${owner}).` };
+    if (claimer && owner === claimer) return { status: 'verified_repository', headline: 'VERIFIED GITHUB FEE CLAIM', explanation: 'The claiming GitHub identity matches the repository owner linked in token metadata.' };
+    const recipient = ctx.event.recipientWallet ?? ctx.event.claimerWallet;
+    if (recipient && ctx.tokenInfo?.creator && recipient === ctx.tokenInfo.creator) return { status: 'verified_creator_wallet', headline: 'CREATOR-WALLET GITHUB FEE CLAIM', explanation: 'The claim recipient matches the token creator wallet. No repository-owner match was established.' };
+    return { status: 'unverified', headline: 'UNVERIFIED GITHUB FEE WITHDRAWAL', explanation: 'A real withdrawal occurred, but it does not prove this GitHub user created or endorses the coin.' };
+}
+
 /**
  * GitHub Social Fee Claim card — rich Telegram HTML card with every
  * data point on its own line, grouped into clear sections.
@@ -72,13 +86,18 @@ export interface ClaimFeedContext {
  * Holder Intel → Trust Signals → Chart → Socials → Separator → Trade Links
  */
 export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string | null; caption: string } {
-    const { event, solUsdPrice, githubUser, xProfile, tokenInfo } = ctx;
+    const { event, solUsdPrice, githubUser, xProfile } = ctx;
+    const attribution = classifyClaimAttribution(ctx);
+    const tokenInfo = attribution.status === 'unresolved_pooled' ? null : ctx.tokenInfo;
     const L: string[] = [];
     const mint = event.tokenMint?.trim() || '';
     const aff = ctx.affiliates;
 
     // ━━ HEADER BADGE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`🚨🚨🚨 <b>FIRST CREATOR FEE CLAIM</b>`);
+    const statusEmoji = attribution.status.startsWith('verified') ? '✅' : attribution.status === 'identity_mismatch' ? '🚩' : '⚠️';
+    L.push(`${statusEmoji} <b>${attribution.headline}</b>`);
+    L.push(esc(attribution.explanation));
+    if (ctx.isFirstClaim) L.push('🆕 First-ever withdrawal observed for this GitHub fee account.');
 
     // Influencer badge right after header
     const tier = getInfluencerTier(
@@ -142,14 +161,12 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ ALL LINKED COINS (multi-token PDA) ━━━━━━━━━━━━━━
     if (ctx.allLinkedTokens && ctx.allLinkedTokens.length > 1) {
-        L.push(`🪙 <b>All Linked Coins (${ctx.allLinkedTokens.length})</b>`);
+        L.push(`🪙 <b>Candidate Coins (${ctx.allLinkedTokens.length}) — no primary CA selected</b>`);
         for (const t of ctx.allLinkedTokens) {
             const mc = t.usdMarketCap > 0 ? `$${formatCompact(t.usdMarketCap)}` : '?';
             const status = t.complete ? '🎓' : '📈';
             const shortMint = `${t.mint.slice(0, 6)}…`;
-            const isPrimary = tokenInfo && t.mint === tokenInfo.mint;
-            const tag = isPrimary ? ' ◂' : '';
-            L.push(`${status} <a href="https://pump.fun/coin/${esc(t.mint)}">${esc(t.symbol)}</a> — ${mc} — ${shortMint}${tag}`);
+            L.push(`${status} <a href="https://pump.fun/coin/${esc(t.mint)}">${esc(t.symbol)}</a> — ${mc} — ${shortMint}`);
         }
         L.push('');
     }
@@ -215,7 +232,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     }
 
     // ━━ LINKED DEV (GITHUB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    L.push(`👨‍💻 <b>Linked Dev</b>`);
+    L.push(`👨‍💻 <b>Claiming GitHub Identity</b>`);
     if (githubUser) {
         const nameTag = githubUser.name ? ` (${esc(githubUser.name)})` : '';
         L.push(`<a href="${esc(githubUser.htmlUrl)}">${esc(githubUser.login)}</a>${nameTag}`);
@@ -251,7 +268,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
 
     // ━━ REPO CLAIMED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (ctx.repoInfo) {
-        L.push(`📂 <b>Repo Claimed</b>`);
+        L.push(`📂 <b>Repository in Token Metadata</b>`);
         L.push(`<a href="${esc(ctx.repoInfo.htmlUrl)}">${esc(ctx.repoInfo.fullName)}</a>`);
         if (ctx.repoInfo.description) {
             const desc = ctx.repoInfo.description.length > 100 ? ctx.repoInfo.description.slice(0, 97) + '...' : ctx.repoInfo.description;
@@ -272,7 +289,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
         const repoUrl = tokenInfo.githubUrls[0]!;
         const repoPath = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\/+$/, '');
         const isRepoUrl = repoPath.includes('/');
-        L.push(`📂 <b>${isRepoUrl ? 'Repo Claimed' : 'GitHub Linked'}</b>`);
+        L.push(`📂 <b>${isRepoUrl ? 'Repository in Token Metadata' : 'GitHub Link in Token Metadata'}</b>`);
         L.push(`<a href="${esc(repoUrl)}">${esc(repoPath)}</a>`);
         if (!isRepoUrl) L.push(`<i>Profile linked — no specific repo</i>`);
         L.push('');
@@ -465,7 +482,7 @@ export function formatGitHubClaimFeed(ctx: ClaimFeedContext): { imageUrl: string
     L.push('');
 
     // ━━ TRADE LINKS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    if (mint) {
+    if (mint && (attribution.status === 'verified_repository' || attribution.status === 'verified_creator_wallet')) {
         // GMGN: documented ref format is {code}_{mint} in the path (docs.gmgn.ai/index/referral-link);
         // a ?ref= query param does not attribute. Axiom attributes at signup via the @handle link.
         const gmgnUrl  = `https://gmgn.ai/sol/token/${encodeURIComponent(aff?.gmgn ?? 'nichxbt')}_${mint}`;
@@ -1063,4 +1080,3 @@ function cleanXHandle(input: string): string | null {
     }
     return null;
 }
-

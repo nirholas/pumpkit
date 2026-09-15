@@ -1,5 +1,14 @@
 # PumpFun Channel Bot
 
+## GitHub claim evidence labels
+
+A GitHub social-fee withdrawal proves payment to a fee account, not automatic
+developer ownership or endorsement of a coin. Cards distinguish verified
+repository and creator-wallet relationships from identity mismatches,
+unverified links, and unresolved pooled withdrawals. Shared-PDA withdrawals
+select no primary CA; trade links appear only for verified relationships.
+“First-ever” applies to the fee account, not necessarily a token.
+
 Read-only Telegram channel feed that broadcasts PumpFun on-chain activity — token launches, graduations, whale trades, fee claims, and fee distributions.
 
 > **Looking for interactive monitoring?** The [monitor bot](../monitor/) supports watch management, group chats, REST API, SSE streaming, and webhooks. Use this channel-bot for simple broadcast-only channels.
