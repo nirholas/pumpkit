@@ -674,6 +674,7 @@ export function formatLaunchFeed(
 
     const features: string[] = [];
     if (event.mayhemMode) features.push('⚡ Mayhem');
+    if (event.holderRewardEnabled) features.push('🎁 Holder rewards');
     if (event.cashbackEnabled) features.push('💸 Cashback');
     if (event.hasGithub) features.push('🌐 GitHub');
     if (features.length > 0) {
@@ -924,7 +925,8 @@ export function formatWhaleFeed(
     const filled = Math.round(event.bondingCurveProgress / 10);
     const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
     lines.push(`💹  Mcap: ${mcap}  ·  [${bar}] ${bcp > 0 ? `${bcp}%` : '<1%'}`);
-    lines.push(`💰  Fee: ${event.fee.toFixed(4)} SOL  ·  Creator: ${event.creatorFee.toFixed(4)} SOL`);
+    const holderShare = event.holderRewards > 0 ? `  ·  Holders: ${event.holderRewards.toFixed(4)} SOL` : '';
+    lines.push(`💰  Fee: ${event.fee.toFixed(4)} SOL  ·  Creator: ${event.creatorFee.toFixed(4)} SOL${holderShare}`);
 
     lines.push('');
 

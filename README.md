@@ -1569,12 +1569,17 @@ interface SocialFeePda {
 
 ### Cashback
 
-Volume-based SOL rebate. Opt-in per trade.
+Volume-based SOL rebate on coins that were launched as cashback coins. Opt-in per trade.
+
+> **pump-sdk 2:** new cashback launches are gone. The on-chain `create_v2` rejects them
+> (error 6082), so `createV2Instruction` / `createV2AndBuyInstructions` throw
+> `CashbackDeprecatedError` when you pass `cashback: true`. Launch a holder-reward coin
+> instead (`holderReward: true`, see [Holder rewards](#holder-rewards)). Trading and claims
+> for existing cashback coins keep working.
 
 ```typescript
-// Bonding curve
+// Bonding curve (existing cashback coins)
 await PUMP_SDK.sellInstructions({ ..., cashback: true });
-await PUMP_SDK.createV2AndBuyInstructions({ ..., cashback: true });
 
 // AMM
 await PUMP_SDK.ammBuyInstruction({ ..., cashback: true });
@@ -1588,6 +1593,37 @@ await PUMP_SDK.ammClaimCashbackInstruction({ user });    // AMM
 // Admin toggle
 await PUMP_SDK.toggleCashbackEnabledInstruction({ authority, enabled: true });
 ```
+
+### Holder rewards
+
+pump-sdk 2 launches can route creator fees to the coin's holders instead of a creator
+wallet. Pass `holderReward: true` at launch: the SDK routes the creator to
+`holderRewardsPda(mint)`, and the program only accepts it while
+`Global.isHolderRewardEnabled` is true (error 6084 otherwise, surfaced locally as
+`HolderRewardDisabledError`).
+
+```typescript
+import { OnlinePumpSdk, PUMP_SDK, holderRewardsPda } from '@nirholas/pump-sdk';
+
+const global = await new OnlinePumpSdk(connection).fetchGlobal();
+if (!global.isHolderRewardEnabled) throw new Error('Holder-reward launches are paused on-chain');
+
+const ix = await PUMP_SDK.createV2Instruction({
+  mint: mint.publicKey,
+  name, symbol, uri,
+  creator: wallet.publicKey,
+  user: wallet.publicKey,
+  mayhemMode: false,
+  holderReward: true,
+});
+
+// Fees accrue on the holder-rewards PDA and are paid out with
+// PUMP_SDK.distributeFeeToHoldersInstruction (signed by Global.holderRewardClaimAuthority).
+console.log('holder vault', holderRewardsPda(mint.publicKey).toBase58());
+```
+
+Creator takeovers use the unified `adminCtoInstruction`; `adminSetCreatorInstruction`
+throws in pump-sdk 2 because the program retired `admin_set_creator`.
 
 Trade events carry `cashbackFeeBasisPoints` and `cashback`.
 

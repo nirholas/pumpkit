@@ -213,19 +213,19 @@ export async function getEnrichedTokenData(mintAddress: string): Promise<Enriche
 
   const priceSol = bc.virtualTokenReserves.isZero()
     ? 0
-    : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+    : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
   let marketCapSol = 0;
   if (!bc.virtualTokenReserves.isZero()) {
     const mc = bondingCurveMarketCap({
       mintSupply: bc.tokenTotalSupply,
-      virtualSolReserves: bc.virtualSolReserves,
+      virtualQuoteReserves: bc.virtualQuoteReserves,
       virtualTokenReserves: bc.virtualTokenReserves,
     });
     marketCapSol = mc.toNumber() / 1e9;
   }
 
-  const realSol = bc.realSolReserves.toNumber() / 1e9;
+  const realSol = bc.realQuoteReserves.toNumber() / 1e9;
 
   return {
     mint: mintAddress,
@@ -334,7 +334,7 @@ const bc = await onlineSdk.fetchBondingCurve(mint);
 
 const marketCapSol = bondingCurveMarketCap({
   mintSupply: bc.tokenTotalSupply,
-  virtualSolReserves: bc.virtualSolReserves,
+  virtualQuoteReserves: bc.virtualQuoteReserves,
   virtualTokenReserves: bc.virtualTokenReserves,
 }).toNumber() / 1e9;
 
@@ -420,7 +420,7 @@ async function comparePrices(mintAddress: string): Promise<PriceComparison> {
 
   const pumpPriceSol = bc.virtualTokenReserves.isZero()
     ? 0
-    : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+    : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
   const pumpPriceUsd = pumpPriceSol * solPrice.usd;
 

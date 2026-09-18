@@ -171,7 +171,10 @@ export interface TokenLaunchEvent {
     hasGithub: boolean;
     githubUrls: string[];
     mayhemMode: boolean;
+    /** Legacy cashback coin. The pump program rejects new cashback launches since pump-sdk 2. */
     cashbackEnabled: boolean;
+    /** Creator fees flow to holders through the holder-rewards PDA (pump-sdk 2 launches). */
+    holderRewardEnabled: boolean;
     metadata?: Record<string, unknown>;
 }
 
@@ -201,6 +204,8 @@ export interface TradeAlertEvent {
     tokenAmount: number;
     fee: number;
     creatorFee: number;
+    /** Share of this trade's fee routed to the coin's holders, in SOL (0 unless a holder-reward coin). */
+    holderRewards: number;
     virtualSolReserves: number;
     virtualTokenReserves: number;
     realSolReserves: number;

@@ -10,6 +10,13 @@ Volume-based SOL cashback for traders on bonding curves and AMM pools.
 
 Cashback rewards traders with a portion of their fees back as SOL. When enabled by the protocol and opted into per-trade, cashback accumulates in a user-specific account and can be claimed at any time.
 
+> **pump-sdk 2:** new cashback *launches* are retired. The Pump program's `create_v2`
+> rejects them (6082), and `createV2Instruction` / `createV2AndBuyInstructions` throw
+> `CashbackDeprecatedError` when passed `cashback: true`. Everything on this page still
+> applies to trading and claiming on coins that were launched as cashback coins. To reward
+> a new coin's community, launch it with `holderReward: true` so creator fees are paid out
+> to holders (see [Migration: v2.0.0](./migration.md#upgrading-to-v200-latest)).
+
 ### How It Works
 
 ```
@@ -30,18 +37,7 @@ Cashback is **opt-in per transaction** via the `cashback` parameter. It's availa
 ### Bonding Curve (Pre-Graduation)
 
 ```typescript
-// Create token with initial buy + cashback
-const ixs = await PUMP_SDK.createV2AndBuyInstructions({
-  creator: wallet,
-  mint: mintKeypair.publicKey,
-  name: "My Token",
-  symbol: "MTK",
-  uri: metadataUri,
-  buyAmountSol: new BN(100_000_000), // 0.1 SOL
-  cashback: true,  // ← Enable cashback
-});
-
-// Sell with cashback
+// Sell with cashback (coins launched as cashback coins)
 const ixs = await PUMP_SDK.sellInstructions({
   user: wallet,
   mint: tokenMint,

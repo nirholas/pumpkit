@@ -121,7 +121,7 @@ import { bondingCurveMarketCap } from "@nirholas/pump-sdk";
 
 const mcap = bondingCurveMarketCap({
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
 ```

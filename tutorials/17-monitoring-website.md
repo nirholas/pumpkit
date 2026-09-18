@@ -87,13 +87,13 @@ export async function getTokenData(mintAddress: string): Promise<TokenData | nul
 
     const price = bc.virtualTokenReserves.isZero()
       ? 0
-      : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     let marketCapSol = 0;
     if (!bc.virtualTokenReserves.isZero()) {
       const mcLamports = bondingCurveMarketCap({
         mintSupply: bc.tokenTotalSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       marketCapSol = mcLamports.toNumber() / 1e9;
@@ -101,14 +101,14 @@ export async function getTokenData(mintAddress: string): Promise<TokenData | nul
 
     // Progress = realSolReserves out of ~85 SOL graduation threshold
     const GRADUATION_SOL = 85;
-    const realSol = bc.realSolReserves.toNumber() / 1e9;
+    const realSol = bc.realQuoteReserves.toNumber() / 1e9;
     const progressPercent = Math.min(100, (realSol / GRADUATION_SOL) * 100);
 
     return {
       mint: mintAddress,
       price,
       marketCapSol,
-      virtualSolReserves: bc.virtualSolReserves.toNumber() / 1e9,
+      virtualSolReserves: bc.virtualQuoteReserves.toNumber() / 1e9,
       virtualTokenReserves: bc.virtualTokenReserves.toNumber() / 1e6,
       realSolReserves: realSol,
       realTokenReserves: bc.realTokenReserves.toNumber() / 1e6,
@@ -168,25 +168,25 @@ export async function getMultipleTokens(mints: string[]): Promise<(TokenData | n
 
     const price = bc.virtualTokenReserves.isZero()
       ? 0
-      : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     let marketCapSol = 0;
     if (!bc.virtualTokenReserves.isZero()) {
       const mc = bondingCurveMarketCap({
         mintSupply: bc.tokenTotalSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       marketCapSol = mc.toNumber() / 1e9;
     }
 
-    const realSol = bc.realSolReserves.toNumber() / 1e9;
+    const realSol = bc.realQuoteReserves.toNumber() / 1e9;
 
     return {
       mint: mintAddr,
       price,
       marketCapSol,
-      virtualSolReserves: bc.virtualSolReserves.toNumber() / 1e9,
+      virtualSolReserves: bc.virtualQuoteReserves.toNumber() / 1e9,
       virtualTokenReserves: bc.virtualTokenReserves.toNumber() / 1e6,
       realSolReserves: realSol,
       realTokenReserves: bc.realTokenReserves.toNumber() / 1e6,

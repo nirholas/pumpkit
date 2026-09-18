@@ -28,7 +28,7 @@ if (bondingCurve.complete) {
   console.log("Bonding curve is now closed.");
 } else {
   console.log("Token is still on the bonding curve.");
-  console.log("Real SOL collected:", bondingCurve.realSolReserves.toString());
+  console.log("Real SOL collected:", bondingCurve.realQuoteReserves.toString());
 }
 ```
 
@@ -175,7 +175,7 @@ async function getTokenState(mint: PublicKey) {
     return {
       state: "active",
       message: "Trading on bonding curve",
-      realSolReserves: bc.realSolReserves.toString(),
+      realSolReserves: bc.realQuoteReserves.toString(),
       realTokenReserves: bc.realTokenReserves.toString(),
       creator: bc.creator.toBase58(),
     };

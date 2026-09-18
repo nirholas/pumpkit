@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`@nirholas/pump-sdk` 2.0.** `@pumpkit/core` (peer dependency) and `@pumpkit/channel` now require `^2.0.0`, which tracks the Pump program's 2.0 upgrade. `getBondingCurveState` reads the renamed `virtualQuoteReserves` / `realQuoteReserves` and now also returns `quoteMint`, `isCashbackCoin`, `isHolderReward`, and `creatorFeeBps`; the old `virtualSolReserves` / `realSolReserves` keys stay as deprecated aliases with the same value. Docs, tutorials, and the web SDK page launch with `holderReward` instead of cashback, since new cashback launches now throw `CashbackDeprecatedError`. See [docs/migration.md](docs/migration.md).
+- **Channel feed shows holder rewards.** Launch posts flag holder-reward coins, and whale posts show the holders' share of a trade's fees.
+
+### Fixed
+
+- **Channel event decoding.** The channel's event monitor passed the full `Program data:` bytes, discriminator included, to the SDK's `decode*Event` helpers, which read a bare payload, so every trade decode threw, and launches were matched against instruction discriminators instead of the `CreateEvent` one. It now uses the SDK's program-aware `parsePumpEventsFromLogs`. Replaying live mainnet logs: 20 of 20 launches, 19 of 19 trades, and a graduation decode, where the old code produced none. The claim monitor strips the discriminator before decoding fee, cashback, and social-fee claim events.
+
 - **Pump program upgrade (April 28 2025)** — Added 8 new fee recipient addresses from the breaking pump program upgrade. `PUMP_FEE_RECIPIENTS` and `PUMP_FEE_RECIPIENT_SET` are now exported from `@pumpkit/core`, `claim`, and `channel` packages. The claim monitor detects fee balance changes across all recipients, and protocol-account filtering in the monitor is updated accordingly.
 
 ### Added

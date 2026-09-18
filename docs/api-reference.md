@@ -131,9 +131,15 @@ const ix = await sdk.createV2Instruction({
   creator: PublicKey,     // Creator wallet
   user: PublicKey,        // Fee payer
   mayhemMode: boolean,    // Enable mayhem mode
-  cashback?: boolean,    // Enable cashback (default: false)
+  holderReward?: boolean, // Route creator fees to holders via holderRewardsPda(mint)
+  creatorFeeBps?: BN,     // Per-coin creator fee (bps)
+  cashback?: boolean,     // Deprecated: `true` throws CashbackDeprecatedError
 });
 ```
+
+Since pump-sdk 2, `cashback: true` throws `CashbackDeprecatedError` because the
+on-chain `create_v2` rejects cashback launches (6082). `holderReward: true` requires
+`Global.isHolderRewardEnabled` (6084 otherwise).
 
 ##### `createV2AndBuyInstructions(params)`
 
@@ -151,7 +157,9 @@ const ixs = await sdk.createV2AndBuyInstructions({
   amount: BN,             // Token amount to buy
   solAmount: BN,          // SOL to spend (lamports)
   mayhemMode: boolean,
-  cashback?: boolean,         // Enable cashback (default: false)
+  holderReward?: boolean,     // Holder-reward launch (see createV2Instruction)
+  creatorFeeBps?: BN,
+  cashback?: boolean,         // Deprecated: `true` throws CashbackDeprecatedError
 });
 ```
 
@@ -204,7 +212,7 @@ const ixs = await sdk.sellInstructions({
   slippage: number,
   tokenProgram: PublicKey,  // Default: TOKEN_PROGRAM_ID
   mayhemMode: boolean,     // Default: false
-  cashback?: boolean,      // Enable cashback (default: false)
+  cashback?: boolean,      // Set for existing cashback coins (default: false)
 });
 ```
 

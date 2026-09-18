@@ -42,7 +42,7 @@ const { protocolFeeBps, creatorFeeBps } = computeFeesBps({
   global,
   feeConfig,
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
 
@@ -92,7 +92,7 @@ import { calculateFeeTier } from "@nirholas/pump-sdk";
 // Calculate current market cap
 const marketCap = bondingCurveMarketCap({
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
 
@@ -140,7 +140,7 @@ function previewTrade(solAmount: BN, isBuy: boolean) {
     global,
     feeConfig,
     mintSupply: bondingCurve.tokenTotalSupply,
-    virtualSolReserves: bondingCurve.virtualSolReserves,
+    virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
     virtualTokenReserves: bondingCurve.virtualTokenReserves,
   });
 

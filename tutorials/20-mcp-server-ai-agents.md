@@ -157,18 +157,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const marketCap = bondingCurveMarketCap({
         mintSupply: bc.tokenTotalSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
 
-      const price = bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      const price = bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
       return {
         content: [{ type: "text", text: JSON.stringify({
           mint: mint.toBase58(),
           priceLamportsPerToken: price,
           marketCapLamports: marketCap.toString(),
-          realSolReserves: bc.realSolReserves.toString(),
+          realSolReserves: bc.realQuoteReserves.toString(),
           realTokenReserves: bc.realTokenReserves.toString(),
           complete: bc.complete,
         }) }],
@@ -183,7 +183,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const tokensOut = getBuyTokenAmountFromSolAmount(
         solAmount,
-        bc.virtualSolReserves,
+        bc.virtualQuoteReserves,
         bc.virtualTokenReserves,
         feeConfig
       );
@@ -202,7 +202,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const bc = await onlineSdk.fetchBondingCurve(mint);
 
       const progress = bondingCurveGraduationProgress({
-        realSolReserves: bc.realSolReserves,
+        realSolReserves: bc.realQuoteReserves,
         realTokenReserves: bc.realTokenReserves,
       });
 

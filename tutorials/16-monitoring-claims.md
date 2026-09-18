@@ -362,7 +362,7 @@ async function decodeDistributionEvent(txSignature: string) {
 
 ### Claim Cashback
 
-Tokens created with `cashback: true` in `createV2Instruction` accumulate cashback for traders:
+Coins launched as cashback coins (before pump-sdk 2 retired cashback launches) accumulate cashback for traders:
 
 ```typescript
 async function claimCashback(user: Keypair) {

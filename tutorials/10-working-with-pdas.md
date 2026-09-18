@@ -249,7 +249,7 @@ async function exploreToken(mint: PublicKey) {
     console.log("Bonding curve state:");
     console.log("  Complete:", bc.complete);
     console.log("  Creator:", bc.creator.toBase58());
-    console.log("  Real SOL:", bc.realSolReserves.toString());
+    console.log("  Real SOL:", bc.realQuoteReserves.toString());
   }
 }
 

@@ -68,15 +68,15 @@ const lifecycle = [
   {
     emoji: '💱',
     title: 'Trade',
-    desc: 'Full AMM trading with LP positions, fee sharing, and cashback',
+    desc: 'Full AMM trading with LP positions, fee sharing, and holder rewards',
     color: 'text-pump-cyan',
   },
 ];
 
 const features = [
-  { emoji: '⚡', title: 'createV2', desc: 'Latest instruction with mayhem mode + cashback support' },
+  { emoji: '⚡', title: 'createV2', desc: 'Latest instruction with mayhem mode + holder rewards' },
   { emoji: '🔄', title: 'Fee Sharing', desc: 'Split creator fees across multiple shareholders (10,000 BPS)' },
-  { emoji: '💰', title: 'Cashback', desc: 'Volume-based rewards via UserVolumeAccumulator PDA' },
+  { emoji: '🎁', title: 'Holder Rewards', desc: 'Creator fees paid out to holders via the holder-rewards PDA' },
   { emoji: '🌪️', title: 'Mayhem Mode', desc: 'Enhanced launch mechanics for viral token creation' },
   { emoji: '📊', title: 'Analytics', desc: 'Price impact, graduation progress, bonding curve math' },
   { emoji: '🤖', title: 'Bot Ready', desc: 'All instructions return TransactionInstruction[] — compose freely' },
@@ -192,7 +192,7 @@ const instructions = await PUMP_SDK.createV2Instruction({
   creator: wallet.publicKey,
   user: wallet.publicKey,
   mayhemMode: false,
-  cashback: true,
+  holderReward: true, // creator fees go to holders
 });`} />
           <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`import { PUMP_SDK } from "@nirholas/pump-sdk";
 import { Keypair } from "@solana/web3.js";
@@ -207,7 +207,7 @@ const instructions = await PUMP_SDK.createV2Instruction({
   creator: wallet.publicKey,
   user: wallet.publicKey,
   mayhemMode: false,
-  cashback: true,
+  holderReward: true, // creator fees go to holders
 });
 
 // → returns TransactionInstruction[]

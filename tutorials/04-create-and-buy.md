@@ -59,7 +59,7 @@ async function createAndBuy() {
     solAmount: solToSpend,
     slippage: 0.01,           // 1% slippage (tight since we're first)
     mayhemMode: false,
-    cashback: false,
+    holderReward: false, // true routes creator fees to holders (pump-sdk 2)
   });
 
   // Send as a single atomic transaction
@@ -133,7 +133,7 @@ const createBuyIxs = await PUMP_SDK.createV2AndBuyInstructions({
   solAmount: solToSpend,
   slippage: 0.01,
   mayhemMode: false,
-  cashback: false,
+  holderReward: false,
 });
 
 // Then build the fee sharing config instruction

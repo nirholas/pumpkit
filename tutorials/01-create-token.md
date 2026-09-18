@@ -48,7 +48,7 @@ const createIx = await PUMP_SDK.createV2Instruction({
   creator: creator.publicKey,
   user: creator.publicKey,
   mayhemMode: false,
-  cashback: false,
+  holderReward: false, // true routes creator fees to holders (pump-sdk 2)
 });
 ```
 
@@ -130,7 +130,7 @@ async function createToken() {
     creator: creator.publicKey,
     user: creator.publicKey,
     mayhemMode: false,
-    cashback: false,
+    holderReward: false,
   });
 
   // Send transaction

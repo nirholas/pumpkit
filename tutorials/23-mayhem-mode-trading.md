@@ -46,7 +46,6 @@ const createIx = await PUMP_SDK.createV2Instruction({
   creator: creator.publicKey,
   user: creator.publicKey,
   mayhemMode: true,   // <-- Enables Mayhem Mode
-  cashback: false,
 });
 ```
 
@@ -98,7 +97,7 @@ const feeConfig = await onlineSdk.fetchFeeConfig();
 const solToSpend = new BN(100_000_000); // 0.1 SOL
 const tokensOut = getBuyTokenAmountFromSolAmount(
   solToSpend,
-  bc.virtualSolReserves,
+  bc.virtualQuoteReserves,
   bc.virtualTokenReserves,
   feeConfig
 );
@@ -157,29 +156,30 @@ async function isMayhemToken(
 
 ## Step 6: Mayhem + Cashback Combo
 
-You can combine Mayhem Mode with cashback for a unique token configuration:
+You can combine Mayhem Mode with holder rewards, so creator fees are paid out to holders:
 
 ```typescript
+import { OnlinePumpSdk, PUMP_SDK } from "@nirholas/pump-sdk";
+
+const global = await onlineSdk.fetchGlobal();
+if (!global.isHolderRewardEnabled) {
+  throw new Error("Holder-reward launches are paused on-chain (program error 6084)");
+}
+
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
-  name: "Mayhem Cashback Token",
-  symbol: "MCASH",
+  name: "Mayhem Holder Token",
+  symbol: "MHOLD",
   uri: "https://example.com/metadata.json",
   creator: creator.publicKey,
   user: creator.publicKey,
-  mayhemMode: true,   // Separate vaults + Token-2022
-  cashback: true,      // Enable cashback rewards
-});
-
-// When selling with cashback enabled, include volume accumulator
-const sellIxs = await onlineSdk.sellInstructions({
-  mint: mint.publicKey,
-  user: creator.publicKey,
-  tokenAmount: new BN("1000000"),
-  slippageBps: 500,
-  cashback: true, // Includes userVolumeAccumulator in remaining accounts
+  mayhemMode: true,    // Separate vaults + Token-2022
+  holderReward: true,  // Creator fees go to holderRewardsPda(mint)
 });
 ```
+
+Cashback launches were retired in pump-sdk 2: `cashback: true` throws
+`CashbackDeprecatedError`, because the on-chain `create_v2` rejects it (6082).
 
 ## When to Use Mayhem Mode
 

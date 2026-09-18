@@ -198,7 +198,7 @@ console.log("Cost for 1M tokens:", costFor1M.toNumber() / 1e9, "SOL");
 // Current market cap
 const mcap = bondingCurveMarketCap({
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
 console.log("Market cap:", mcap.toNumber() / 1e9, "SOL");
@@ -210,7 +210,7 @@ console.log("Market cap:", mcap.toNumber() / 1e9, "SOL");
 const bondingCurve = await sdk.fetchBondingCurve(mint);
 
 console.log("Token reserves:", bondingCurve.virtualTokenReserves.toString());
-console.log("SOL reserves:", bondingCurve.virtualSolReserves.toString());
+console.log("SOL reserves:", bondingCurve.virtualQuoteReserves.toString());
 console.log("Creator:", bondingCurve.creator.toBase58());
 console.log("Graduated:", bondingCurve.complete);
 console.log("Mayhem mode:", bondingCurve.isMayhemMode);
@@ -483,7 +483,7 @@ const bcAddress = bondingCurvePda(mint);
 const bcInfo = await connection.getAccountInfo(bcAddress);
 if (bcInfo) {
   const bc = PUMP_SDK.decodeBondingCurve(bcInfo);
-  console.log("Reserves:", bc.virtualSolReserves.toString());
+  console.log("Reserves:", bc.virtualQuoteReserves.toString());
 }
 
 // Decode global config

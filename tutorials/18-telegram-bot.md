@@ -86,19 +86,19 @@ export async function getTokenInfo(mintAddress: string): Promise<TokenInfo | nul
 
     const priceSol = bc.virtualTokenReserves.isZero()
       ? 0
-      : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     let marketCapSol = 0;
     if (!bc.virtualTokenReserves.isZero()) {
       const mc = bondingCurveMarketCap({
         mintSupply: bc.tokenTotalSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       marketCapSol = mc.toNumber() / 1e9;
     }
 
-    const realSol = bc.realSolReserves.toNumber() / 1e9;
+    const realSol = bc.realQuoteReserves.toNumber() / 1e9;
 
     return {
       mint: mintAddress,
@@ -156,19 +156,19 @@ export async function batchGetTokens(mints: string[]): Promise<Map<string, Token
 
     const priceSol = bc.virtualTokenReserves.isZero()
       ? 0
-      : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     let marketCapSol = 0;
     if (!bc.virtualTokenReserves.isZero()) {
       const mc = bondingCurveMarketCap({
         mintSupply: bc.tokenTotalSupply,
-        virtualSolReserves: bc.virtualSolReserves,
+        virtualQuoteReserves: bc.virtualQuoteReserves,
         virtualTokenReserves: bc.virtualTokenReserves,
       });
       marketCapSol = mc.toNumber() / 1e9;
     }
 
-    const realSol = bc.realSolReserves.toNumber() / 1e9;
+    const realSol = bc.realQuoteReserves.toNumber() / 1e9;
 
     results.set(mints[i], {
       mint: mints[i],

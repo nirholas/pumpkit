@@ -4,7 +4,50 @@
 
 ---
 
-## Upgrading to v1.29.0 (Latest)
+## Upgrading to v2.0.0 (Latest)
+
+> Released: 2026-09-18. Tracks the Pump program's 2.0 upgrade. PumpKit's `@pumpkit/core`
+> and `@pumpkit/channel` pin `@nirholas/pump-sdk` `^2.0.0`.
+
+### Breaking Changes
+
+| Change | What to do |
+|--------|-----------|
+| Cashback launches: `createV2Instruction` / `createV2AndBuyInstructions` with `cashback: true` throw `CashbackDeprecatedError` (the program rejects them with 6082) | Launch with `holderReward: true` instead. Trading and claims on existing cashback coins are unchanged. |
+| `holderReward: true` launches route the creator to `holderRewardsPda(mint)` and need `Global.isHolderRewardEnabled` (6084 otherwise, `HolderRewardDisabledError` locally) | Read `fetchGlobal()` first and show a clear message when the gate is off. |
+| `adminSetCreatorInstruction` throws (the program retired `admin_set_creator`) | Use `adminCtoInstruction`. |
+| `BondingCurve.virtualSolReserves` / `realSolReserves` are now `virtualQuoteReserves` / `realQuoteReserves` (same bytes; a curve can be quoted in USDC) | Rename every read of a fetched or decoded `BondingCurve`. The old names read `undefined` with no type error in plain JS. `bondingCurveMarketCap` and `computeFeesBps` take `virtualQuoteReserves`. |
+
+What did **not** change in the fork: `TradeEvent` and `CreateEvent` keep `virtualSolReserves` /
+`realSolReserves`, and `isCreatorUsingSharingConfig` keeps its name (upstream
+`@pump-fun/pump-sdk` 2 renamed it to `hasCoinCreatorMigratedToSharingConfig`; the
+`@nirholas` fork did not).
+
+### New Features
+
+- `holderRewardsPda`, `adminCtoInstruction`, `distributeFeeToHoldersInstruction`
+- New events: `AdminCtoEvent`, `DistributeFeeToHoldersEvent` (also returned by `parsePumpEventsFromLogs`)
+- `CreateEvent.isHolderReward`, `TradeEvent.holderRewards` / `holderRewardsBps`, `BondingCurve.isHolderReward` / `quoteMint` / `creatorFeeBps`
+- IDL synced to the deployed 47-instruction program; `@pump-fun/pump-swap-sdk` 1.20
+
+### Decoding events
+
+The `PUMP_SDK.decode*Event` helpers decode the bare Borsh payload. Strip the 8-byte
+event discriminator first, or use `parsePumpEventsFromLogs(logs)`, which also picks the
+right IDL for the program that emitted each `Program data:` line:
+
+```typescript
+import { parsePumpEventsFromLogs } from '@nirholas/pump-sdk';
+
+for (const ev of parsePumpEventsFromLogs(tx.meta.logMessages ?? [])) {
+  if (ev.type === 'create') console.log(ev.data.symbol, 'holder rewards:', ev.data.isHolderReward);
+  if (ev.type === 'distributeFeeToHolders') console.log('paid', ev.data.recipients.toString(), 'holders');
+}
+```
+
+---
+
+## Upgrading to v1.29.0
 
 > Released: 2026-03-06
 
@@ -110,9 +153,13 @@ const ix = await PUMP_SDK.createInstruction({ mint, name, symbol, uri, creator, 
 const ix = await PUMP_SDK.createV2Instruction({
   mint, name, symbol, uri, creator, user,
   mayhemMode: false,  // NEW — required parameter
-  cashback: false,    // NEW — optional, defaults to false
+  holderReward: false, // pump-sdk 2: true routes creator fees to holders
 });
 ```
+
+> **pump-sdk 2:** `cashback: true` now throws `CashbackDeprecatedError` (the program
+> rejects cashback launches with 6082). Use `holderReward: true` instead, which needs
+> `Global.isHolderRewardEnabled` (6084 otherwise). See the v2.0.0 section above.
 
 ### Breaking: Fee Calculation Signature Change
 
@@ -158,6 +205,7 @@ The same change applies to `getSellSolAmountFromTokenAmount` and `getBuySolAmoun
 
 | Version | Date | Type | Key Changes |
 |---------|------|------|-------------|
+| v2.0.0 | 2026-09-18 | **Breaking** | Cashback launches rejected, holder-reward launches, `adminCtoInstruction`, `*QuoteReserves` on `BondingCurve` |
 | v1.29.0 | 2026-03-06 | **Breaking** | V2 PDAs required on all buy/sell (SDK handles automatically) |
 | v1.28.0 | 2026-02-26 | Feature | Analytics, tutorials, bots, dashboards, x402, social fees |
 | v1.27.x | — | **Breaking** | `createInstruction` → `createV2Instruction`, fee config parameter |

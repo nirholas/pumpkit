@@ -66,23 +66,23 @@ async function getTokenSnapshot(mint: PublicKey): Promise<TokenSnapshot | null> 
 
     if (bc.complete || bc.virtualTokenReserves.isZero()) {
       return { mint, marketCapLamports: new BN(0), pricePerToken: 0,
-               realSolReserves: bc.realSolReserves,
+               realSolReserves: bc.realQuoteReserves,
                realTokenReserves: bc.realTokenReserves, complete: true };
     }
 
     const marketCap = bondingCurveMarketCap({
       mintSupply: bc.tokenTotalSupply,
-      virtualSolReserves: bc.virtualSolReserves,
+      virtualQuoteReserves: bc.virtualQuoteReserves,
       virtualTokenReserves: bc.virtualTokenReserves,
     });
 
-    const price = bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+    const price = bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     return {
       mint,
       marketCapLamports: marketCap,
       pricePerToken: price,
-      realSolReserves: bc.realSolReserves,
+      realSolReserves: bc.realQuoteReserves,
       realTokenReserves: bc.realTokenReserves,
       complete: false,
     };

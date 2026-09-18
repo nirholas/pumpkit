@@ -22,15 +22,24 @@ import { BondingCurve } from "@nirholas/pump-sdk";
 // These are the fields on every BondingCurve account:
 interface BondingCurve {
   virtualTokenReserves: BN;  // Virtual token pool (determines price)
-  virtualSolReserves: BN;    // Virtual SOL pool (determines price)
+  virtualQuoteReserves: BN;  // Virtual quote pool, SOL or USDC (determines price)
   realTokenReserves: BN;     // Real tokens remaining for sale
-  realSolReserves: BN;       // Real SOL collected
+  realQuoteReserves: BN;     // Real quote collected (lamports for SOL pairs)
   tokenTotalSupply: BN;      // Total supply of the token
   complete: boolean;         // True = graduated to AMM
   creator: PublicKey;        // Token creator address
   isMayhemMode: boolean;     // Whether Mayhem mode is active
+  quoteMint: PublicKey;      // Quote mint (PublicKey.default on legacy SOL curves)
+  isCashbackCoin: boolean;   // Legacy cashback coin (new cashback launches are rejected)
+  isHolderReward: boolean;   // Creator fees are paid out to holders
 }
 ```
+
+> **pump-sdk 2:** the `BondingCurve` account fields were renamed from
+> `virtualSolReserves` / `realSolReserves` to `virtualQuoteReserves` /
+> `realQuoteReserves`, because a curve can be quoted in USDC. The byte layout
+> is unchanged. Event payloads such as `TradeEvent` keep the `*SolReserves`
+> names. Reading the old names off a 2.x `BondingCurve` returns `undefined`.
 
 ## Calculating Buy Amounts
 
@@ -106,7 +115,7 @@ import { bondingCurveMarketCap } from "@nirholas/pump-sdk";
 
 const marketCap = bondingCurveMarketCap({
   mintSupply: bondingCurve.tokenTotalSupply,
-  virtualSolReserves: bondingCurve.virtualSolReserves,
+  virtualQuoteReserves: bondingCurve.virtualQuoteReserves,
   virtualTokenReserves: bondingCurve.virtualTokenReserves,
 });
 
@@ -132,7 +141,7 @@ function generatePriceCurve(global: Global, feeConfig: FeeConfig, steps: number 
     const tokensIn = stepSize.muln(i);
     // Simulate the curve state after buying `tokensIn` tokens
     const virtualTokens = curve.virtualTokenReserves.sub(tokensIn);
-    const virtualSol = curve.virtualSolReserves
+    const virtualSol = curve.virtualQuoteReserves
       .mul(curve.virtualTokenReserves)
       .div(virtualTokens);
 

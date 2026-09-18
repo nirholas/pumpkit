@@ -32,28 +32,55 @@ Trader buys tokens
 cashbackFeeBasisPoints applied
 ```
 
-### Step 1: Create a Token with Cashback
+### Step 1: New launches use holder rewards, not cashback
+
+Since pump-sdk 2 the Pump program rejects new cashback launches (`create_v2` fails
+with 6082) and the SDK throws `CashbackDeprecatedError` before building the
+instruction. Everything below about volume accumulators, cashback trades, and
+cashback claims still applies to coins that were launched as cashback coins. For a
+new coin that rewards its community, launch with `holderReward: true`:
 
 ```typescript
 import { Connection, Keypair } from "@solana/web3.js";
-import { PUMP_SDK, OnlinePumpSdk } from "@nirholas/pump-sdk";
+import { PUMP_SDK, OnlinePumpSdk, CashbackDeprecatedError } from "@nirholas/pump-sdk";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 const onlineSdk = new OnlinePumpSdk(connection);
 const creator = Keypair.generate();
 const mint = Keypair.generate();
 
-// Enable cashback at token creation
+const global = await onlineSdk.fetchGlobal();
+if (!global.isHolderRewardEnabled) {
+  throw new Error("Holder-reward launches are paused on-chain (program error 6084)");
+}
+
+// Creator fees accrue on holderRewardsPda(mint) and are paid out to holders
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
-  name: "Cashback Token",
-  symbol: "CASH",
+  name: "Holder Token",
+  symbol: "HOLD",
   uri: "https://example.com/metadata.json",
   creator: creator.publicKey,
   user: creator.publicKey,
   mayhemMode: false,
-  cashback: true, // <-- Enables cashback
+  holderReward: true,
 });
+
+// Asking for cashback now fails locally with a clear error
+try {
+  await PUMP_SDK.createV2Instruction({
+    mint: mint.publicKey,
+    name: "Holder Token",
+    symbol: "HOLD",
+    uri: "https://example.com/metadata.json",
+    creator: creator.publicKey,
+    user: creator.publicKey,
+    mayhemMode: false,
+    cashback: true,
+  });
+} catch (err) {
+  if (err instanceof CashbackDeprecatedError) console.log("cashback launches are retired");
+}
 ```
 
 ### Step 2: Initialize a Volume Accumulator
@@ -346,7 +373,7 @@ const claimPdaIx = await PUMP_SDK.claimSocialFeePdaInstruction({
 For maximum fee distribution, combine all three mechanisms:
 
 ```typescript
-// 1. Create token with cashback
+// 1. Create the token (cashback launches are retired in pump-sdk 2)
 const createIx = await PUMP_SDK.createV2Instruction({
   mint: mint.publicKey,
   name: "Full Featured Token",
@@ -355,7 +382,6 @@ const createIx = await PUMP_SDK.createV2Instruction({
   creator: creator.publicKey,
   user: creator.publicKey,
   mayhemMode: false,
-  cashback: true,
 });
 
 // 2. Set up fee sharing (creator keeps 50%, two partners get 25% each)

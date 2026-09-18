@@ -17,6 +17,7 @@ import { PublicKey } from '@solana/web3.js';
 import BN from 'bn.js';
 import {
     OnlinePumpSdk,
+    normalizeQuoteMint,
     getTokenPrice as sdkGetTokenPrice,
     getGraduationProgress as sdkGetGraduationProgress,
     getBuyTokenAmountFromSolAmount,
@@ -35,13 +36,33 @@ import type {
 
 export interface BondingCurveInfo {
     virtualTokenReserves: string;
-    virtualSolReserves: string;
+    /**
+     * Virtual reserves of the curve's quote token, in the quote mint's base
+     * units (lamports for a SOL-paired coin, micro-USDC for a USDC pair).
+     */
+    virtualQuoteReserves: string;
     realTokenReserves: string;
+    /** Real reserves of the curve's quote token. See {@link BondingCurveInfo.virtualQuoteReserves}. */
+    realQuoteReserves: string;
+    /**
+     * @deprecated Same value as `virtualQuoteReserves`. pump-sdk 2 renamed the
+     * field because a curve can be quoted in USDC, not only SOL.
+     */
+    virtualSolReserves: string;
+    /** @deprecated Same value as `realQuoteReserves`. */
     realSolReserves: string;
     tokenTotalSupply: string;
     complete: boolean;
     creator: string;
     isMayhemMode: boolean;
+    /** Quote mint (wrapped SOL for legacy SOL-paired curves). */
+    quoteMint: string;
+    /** Legacy cashback coin. New cashback launches are rejected on-chain since pump-sdk 2. */
+    isCashbackCoin: boolean;
+    /** Creator fees are distributed to holders through the holder-rewards PDA. */
+    isHolderReward: boolean;
+    /** Per-coin creator fee in basis points. */
+    creatorFeeBps: number;
 }
 
 // Internal helper to fetch all state needed for price calculations
@@ -164,15 +185,23 @@ export async function getBondingCurveState(
     try {
         const sdk = new OnlinePumpSdk(connection);
         const bc = await sdk.fetchBondingCurve(mint);
+        const virtualQuoteReserves = bc.virtualQuoteReserves.toString();
+        const realQuoteReserves = bc.realQuoteReserves.toString();
         return {
             virtualTokenReserves: bc.virtualTokenReserves.toString(),
-            virtualSolReserves: bc.virtualSolReserves.toString(),
+            virtualQuoteReserves,
             realTokenReserves: bc.realTokenReserves.toString(),
-            realSolReserves: bc.realSolReserves.toString(),
+            realQuoteReserves,
+            virtualSolReserves: virtualQuoteReserves,
+            realSolReserves: realQuoteReserves,
             tokenTotalSupply: bc.tokenTotalSupply.toString(),
             complete: bc.complete,
             creator: bc.creator.toBase58(),
             isMayhemMode: bc.isMayhemMode,
+            quoteMint: normalizeQuoteMint(bc.quoteMint).toBase58(),
+            isCashbackCoin: bc.isCashbackCoin,
+            isHolderReward: bc.isHolderReward,
+            creatorFeeBps: bc.creatorFeeBps.toNumber(),
         };
     } catch {
         return null;

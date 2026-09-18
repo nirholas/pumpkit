@@ -70,7 +70,7 @@ Implemented:
 ```typescript
 export function quoteBuy(curve: BondingCurveAccount, quoteIn: bigint): bigint {
   const x = curve.virtualTokenReserves;
-  const y = curve.virtualSolReserves;
+  const y = curve.virtualQuoteReserves;
   return (x * quoteIn) / (y + quoteIn);
 }
 ```
@@ -87,7 +87,7 @@ quote_out = y - (k / (x + tokens_in))
 ```typescript
 export function quoteSell(curve: BondingCurveAccount, tokensIn: bigint): bigint {
   const x = curve.virtualTokenReserves;
-  const y = curve.virtualSolReserves;
+  const y = curve.virtualQuoteReserves;
   return (y * tokensIn) / (x + tokensIn);
 }
 ```
@@ -104,7 +104,7 @@ Implemented:
 
 ```typescript
 export function spotPrice(curve: BondingCurveAccount): number {
-  return Number(curve.virtualSolReserves) / Number(curve.virtualTokenReserves);
+  return Number(curve.virtualQuoteReserves) / Number(curve.virtualTokenReserves);
 }
 ```
 

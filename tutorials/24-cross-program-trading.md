@@ -55,7 +55,7 @@ async function getTokenPhase(mint: PublicKey): Promise<"bonding-curve" | "amm" |
     }
 
     const progress = bondingCurveGraduationProgress({
-      realSolReserves: bc.realSolReserves,
+      realSolReserves: bc.realQuoteReserves,
       realTokenReserves: bc.realTokenReserves,
     });
 
@@ -87,7 +87,7 @@ async function buyOnBondingCurve(mint: PublicKey, user: PublicKey, solAmount: BN
   const feeConfig = await onlineSdk.fetchFeeConfig();
   const tokensOut = getBuyTokenAmountFromSolAmount(
     solAmount,
-    bc.virtualSolReserves,
+    bc.virtualQuoteReserves,
     bc.virtualTokenReserves,
     feeConfig
   );
@@ -114,7 +114,7 @@ async function sellOnBondingCurve(mint: PublicKey, user: PublicKey, tokenAmount:
 
   const solOut = getSellSolAmountFromTokenAmount(
     tokenAmount,
-    bc.virtualSolReserves,
+    bc.virtualQuoteReserves,
     bc.virtualTokenReserves
   );
 
@@ -153,7 +153,7 @@ async function watchForGraduation(
           resolve();
         } else {
           const progress = bondingCurveGraduationProgress({
-            realSolReserves: bc.realSolReserves,
+            realSolReserves: bc.realQuoteReserves,
             realTokenReserves: bc.realTokenReserves,
           });
           console.log(`Progress: ${(progress * 100).toFixed(1)}%`);

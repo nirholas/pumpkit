@@ -20,11 +20,13 @@ import {
 
 ## Setup
 
-Install `@nirholas/pump-sdk` as a peer dependency of your bot:
+Install `@nirholas/pump-sdk` 2.x as a peer dependency of your bot (`@pumpkit/core` requires `^2.0.0`):
 
 ```bash
-npm install @nirholas/pump-sdk @solana/web3.js bn.js
+npm install @nirholas/pump-sdk@^2 @solana/web3.js bn.js
 ```
+
+Upgrading from 1.x? See the [v2.0.0 migration notes](migration.md#upgrading-to-v200-latest).
 
 ## Functions
 
@@ -112,12 +114,26 @@ const state = await getBondingCurveState(connection, mint);
 if (state) {
   console.log('Complete:', state.complete);
   console.log('Creator:', state.creator);
-  console.log('Virtual SOL reserves:', state.virtualSolReserves);
+  console.log('Quote mint:', state.quoteMint);
+  console.log('Virtual quote reserves:', state.virtualQuoteReserves);
+  console.log('Holder rewards:', state.isHolderReward);
   console.log('Mayhem mode:', state.isMayhemMode);
 }
 ```
 
-**Returns:** `BondingCurveInfo | null`
+**Returns:** `BondingCurveInfo | null`. All amounts are decimal strings in the quote mint's
+base units (lamports for SOL pairs, micro-USDC for USDC pairs).
+
+| Field | Meaning |
+|---|---|
+| `virtualTokenReserves`, `realTokenReserves`, `tokenTotalSupply` | Token-side curve state |
+| `virtualQuoteReserves`, `realQuoteReserves` | Quote-side curve state |
+| `virtualSolReserves`, `realSolReserves` | Deprecated aliases of the quote fields, kept for 1.x callers |
+| `quoteMint` | Quote mint, wrapped SOL for legacy curves |
+| `complete`, `creator`, `isMayhemMode` | Graduation flag, creator wallet, mayhem flag |
+| `isCashbackCoin` | Legacy cashback coin (new cashback launches are rejected on-chain) |
+| `isHolderReward` | Creator fees are paid to holders via `holderRewardsPda(mint)` |
+| `creatorFeeBps` | Per-coin creator fee in basis points |
 
 ## Error Handling
 

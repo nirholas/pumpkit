@@ -81,9 +81,9 @@ if (bcInfo) {
 
   console.log("=== Bonding Curve ===");
   console.log("Virtual token reserves:", bc.virtualTokenReserves.toString());
-  console.log("Virtual SOL reserves:", bc.virtualSolReserves.toString());
+  console.log("Virtual SOL reserves:", bc.virtualQuoteReserves.toString());
   console.log("Real token reserves:", bc.realTokenReserves.toString());
-  console.log("Real SOL reserves:", bc.realSolReserves.toString());
+  console.log("Real SOL reserves:", bc.realQuoteReserves.toString());
   console.log("Token total supply:", bc.tokenTotalSupply.toString());
   console.log("Complete (graduated):", bc.complete);
   console.log("Creator:", bc.creator.toBase58());
@@ -181,13 +181,13 @@ async function tokenDashboard(mints: PublicKey[]) {
 
     const price = bc.virtualTokenReserves.isZero()
       ? 0
-      : bc.virtualSolReserves.toNumber() / bc.virtualTokenReserves.toNumber();
+      : bc.virtualQuoteReserves.toNumber() / bc.virtualTokenReserves.toNumber();
 
     return {
       mint: mint.toBase58().slice(0, 12) + "...",
       status: bc.complete ? "GRADUATED" : "ACTIVE",
       priceLamports: price.toFixed(6),
-      realSolReserves: (bc.realSolReserves.toNumber() / 1e9).toFixed(4) + " SOL",
+      realSolReserves: (bc.realQuoteReserves.toNumber() / 1e9).toFixed(4) + " SOL",
       creator: bc.creator.toBase58().slice(0, 12) + "...",
       mayhem: bc.isMayhemMode ? "YES" : "NO",
     };

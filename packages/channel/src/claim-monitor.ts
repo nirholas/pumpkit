@@ -537,21 +537,24 @@ export class ClaimMonitor {
                 const bytes = Buffer.from(b64, 'base64');
                 if (bytes.length < 8) continue;
                 const disc = Buffer.from(bytes.subarray(0, 8)).toString('hex');
+                // The SDK's decode*Event helpers read the bare Borsh payload, so the
+                // 8-byte event discriminator must be stripped before decoding.
+                const payload = bytes.subarray(8);
 
                 if (disc === 'a537817004b3ca28' && def.claimType === 'distribute_creator_fees') {
-                    const ev = PUMP_SDK.decodeDistributeCreatorFeesEvent(bytes);
+                    const ev = PUMP_SDK.decodeDistributeCreatorFeesEvent(payload);
                     tokenMint = ev.mint.toBase58();
                     amountLamports = Number(ev.distributed);
                     // quoteMint is a V2 field the runtime decoder emits but the
-                    // 1.30.0 TS type omits — cast to read it (see SocialFeePda above).
+                    // SDK's TS type omits, so cast to read it (see SocialFeePda below).
                     quoteMint = pubkeyToBase58OrUndefined((ev as { quoteMint?: PublicKey }).quoteMint);
                 } else if (disc === '7a027f010ebf0caf') {
-                    const ev = PUMP_SDK.decodeCollectCreatorFeeEvent(bytes);
+                    const ev = PUMP_SDK.decodeCollectCreatorFeeEvent(payload);
                     amountLamports = Number(ev.creatorFee);
-                    // V2 field omitted from the 1.30.0 TS type — cast to read.
+                    // V2 field omitted from the SDK's TS type, so cast to read.
                     quoteMint = pubkeyToBase58OrUndefined((ev as { quoteMint?: PublicKey }).quoteMint);
                 } else if (disc === 'e2d6f62107f293e5') {
-                    const ev = PUMP_SDK.decodeClaimCashbackEvent(bytes);
+                    const ev = PUMP_SDK.decodeClaimCashbackEvent(payload);
                     amountLamports = Number(ev.amount);
                 } else if (disc === 'e8f5c2eeeada3a59') {
                     // CollectCoinCreatorFeeEvent (PumpAMM) — no SDK decoder yet.
@@ -564,7 +567,7 @@ export class ClaimMonitor {
                     // SocialFeePdaClaimed — SDK's TS type omits the V2 trailing
                     // quote_mint / lifetime_stable_claimed fields, but the IDL
                     // (and the runtime decoder) include them, so cast to read.
-                    const ev = PUMP_SDK.decodeSocialFeePdaClaimedEvent(bytes) as {
+                    const ev = PUMP_SDK.decodeSocialFeePdaClaimedEvent(payload) as {
                         userId: string;
                         platform: number;
                         socialFeePda: PublicKey;
