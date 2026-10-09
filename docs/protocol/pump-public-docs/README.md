@@ -1,19 +1,32 @@
 # Pump Official Public Documentation
 
-> Mirror of [pump-fun/pump-public-docs](https://github.com/pump-fun/pump-public-docs) — the official Pump protocol documentation.
+> Mirror of [pump-fun/pump-public-docs](https://github.com/pump-fun/pump-public-docs), the official Pump protocol documentation. Synced for the October 2026 upgrade (`@pump-fun/pump-sdk` 4.0.0, `@pump-fun/pump-swap-sdk` 2.1.0, `pump-rust-client` 0.4.0). IDLs live in [../pump-official/idl](../pump-official/idl).
 
 ## Documentation Index
 
 | Document | Description |
 |----------|-------------|
-| [PUMP_PROGRAM_README.md](PUMP_PROGRAM_README.md) | Pump bonding curve program — state, instructions, fee recipients |
-| [PUMP_SWAP_README.md](PUMP_SWAP_README.md) | PumpSwap (Pump AMM) program — constant-product AMM pools |
-| [PUMP_SWAP_SDK_README.md](PUMP_SWAP_SDK_README.md) | PumpSwap SDK — create pool, deposit, swap, withdraw |
-| [PUMP_CREATOR_FEE_README.md](PUMP_CREATOR_FEE_README.md) | Pump program creator fee update — creator vault, fee calculation |
-| [PUMP_SWAP_CREATOR_FEE_README.md](PUMP_SWAP_CREATOR_FEE_README.md) | PumpSwap creator fee update — coin creator vault, fee calculation |
-| [FEE_PROGRAM_README.md](FEE_PROGRAM_README.md) | Fee program — tiered fees, fee config, fee sharing |
-| [PUMP_CASHBACK_README.md](PUMP_CASHBACK_README.md) | Cashback rewards — user volume accumulator, claim instructions |
-| [FAQ.md](FAQ.md) | Frequently asked questions — CU optimization, fee calculations |
+| [PUMP_PROGRAM_README.md](PUMP_PROGRAM_README.md) | Pump bonding curve program: state, instructions, fee recipients |
+| [PUMP_SWAP_README.md](PUMP_SWAP_README.md) | PumpSwap (Pump AMM) program: constant-product AMM pools |
+| [PUMP_SWAP_SDK_README.md](PUMP_SWAP_SDK_README.md) | PumpSwap SDK: create pool, deposit, swap, withdraw |
+| [PUMP_CREATOR_FEE_README.md](PUMP_CREATOR_FEE_README.md) | Pump program creator fee update: creator vault, fee calculation |
+| [PUMP_SWAP_CREATOR_FEE_README.md](PUMP_SWAP_CREATOR_FEE_README.md) | PumpSwap creator fee update: coin creator vault, fee calculation |
+| [FEE_PROGRAM_README.md](FEE_PROGRAM_README.md) | Fee program: tiered fees, fee config, fee sharing |
+| [PUMP_CASHBACK_README.md](PUMP_CASHBACK_README.md) | Cashback rewards: user volume accumulator, claim instructions |
+| [instructions/TRADE_V3.md](instructions/TRADE_V3.md) | Bonding curve `buy_v3`, `sell_v3`, `buy_exact_quote_in_v3` (17 accounts) |
+| [instructions/PUMP_SWAP_TRADE_V2.md](instructions/PUMP_SWAP_TRADE_V2.md) | PumpSwap `buy_v2`, `sell_v2`, `buy_exact_quote_in_v2` (17 accounts) |
+| [instructions/MULTI_HOP_SWAP.md](instructions/MULTI_HOP_SWAP.md) | `multi_hop_swap` across pools and bonding curves |
+| [instructions/CREATE_WITH_PUMP_COIN_QUOTE.md](instructions/CREATE_WITH_PUMP_COIN_QUOTE.md) | `create_v2` with a pump coin as the quote mint |
+| [instructions/SWEEP_FEES.md](instructions/SWEEP_FEES.md) | `sweep_protocol_fee` / `sweep_creator_fee` on the curve and pool |
+| [SYNTHETIC_MIGRATION.md](SYNTHETIC_MIGRATION.md) | The last buy on the curve has no max size |
+| [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](NEGATIVE_VIRTUAL_QUOTE_RESERVES.md) | Signed `virtual_quote_reserves` |
+| [VIRTUAL_QUOTE_RESERVES_FEE_ADJUSTMENT.md](VIRTUAL_QUOTE_RESERVES_FEE_ADJUSTMENT.md) | Fees kept in a pool and the price |
+| [HOLDER_REWARDS_README.md](HOLDER_REWARDS_README.md) | Holder rewards coins |
+| [FEE_RECIPIENTS.md](FEE_RECIPIENTS.md) | Fee recipients |
+| [BREAKING_FEE_RECIPIENT.md](BREAKING_FEE_RECIPIENT.md) | Fee recipient breaking change |
+| [CPI_README.md](CPI_README.md) | CPI guide |
+| [instructions/](instructions/) | Per-instruction account lists: BUY, SELL, COIN_CREATION, CLAIM_CASHBACK, COLLECT_CREATOR_FEE, CREATOR_FEE_SHARING |
+| [FAQ.md](FAQ.md) | Frequently asked questions: CU optimization, fee calculations |
 
 ## Programs
 
@@ -79,9 +92,9 @@ await PUMP_SDK.createSharingConfigWithSocialRecipients({
 
 ### Changes Summary
 
-1. **BondingCurve and Pool struct size increase** — `bondingCurve` account needs at least **82 bytes** (was 81), `pool` needs **244 bytes** (was 243). New `is_mayhem_mode` boolean field.
-2. **New `create_v2` instruction** — Uses Token2022 program for token creation and metadata.
-3. **New fee recipient requirement** — For `is_mayhem_mode = true` coins, pass a Mayhem fee recipient.
+1. **BondingCurve and Pool struct size increase**: `bondingCurve` account needs at least **82 bytes** (was 81), `pool` needs **244 bytes** (was 243). New `is_mayhem_mode` boolean field.
+2. **New `create_v2` instruction**: Uses Token2022 program for token creation and metadata.
+3. **New fee recipient requirement**: For `is_mayhem_mode = true` coins, pass a Mayhem fee recipient.
 
 ### Action Items
 
