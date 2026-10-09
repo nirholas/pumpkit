@@ -10,6 +10,27 @@ Set up and manage creator fee distribution among multiple shareholders.
 
 Fee sharing allows token creators to split their accumulated trading fees among up to 10 shareholders. This is managed through the **PumpFees** program and works for both bonding curve tokens and graduated AMM tokens.
 
+## Sweep first (October 2026 upgrade)
+
+Since the October 2026 upgrade, `buy_v3` / `sell_v3` on the curve and `buy_v2` / `sell_v2` on PumpSwap keep the creator fee where the trade happened (`BondingCurve.creator_fee`, `Pool.creator_fees`) instead of paying the creator vault on every trade. Every instruction in this guide that changes the creator or pays the vault out refuses to run while such a fee waits:
+
+| Instruction | Error if not swept |
+|---|---|
+| `create_fee_sharing_config` | `CreatorFeesNotSwept` 6095 (Pump) or 6081 (PumpSwap) |
+| `update_fee_shares` / `update_fee_shares_v2` | `PoolCreatorFeesNotSwept` 6033 (Pump Fees), or 6095 from the distribution it runs first |
+| `distribute_creator_fees` / `distribute_creator_fees_v2` | `CreatorFeesNotSwept` 6095 |
+
+Put the permissionless sweeps first in the **same** transaction (a v3 trade between two transactions leaves a new fee behind). `getCreatorFeeSweepInstructions` from `@pumpkit/core` returns exactly the sweeps that are needed, or none. The sweep builders, the new fee fields and `buildDistributeCreatorFeesInstructions` that adds the sweeps itself need `@pump-fun/pump-sdk` 4.0.0 or newer:
+
+```typescript
+import { getCreatorFeeSweepInstructions } from "@pumpkit/core";
+
+const sweep = await getCreatorFeeSweepInstructions(connection, mint, wallet.publicKey);
+const tx = new Transaction().add(...sweep.instructions, ix); // ix: the instruction from any step below
+```
+
+A full, typechecked walkthrough is in [tutorial 47](../tutorials/47-v2-creator-fees.md); background in [tutorial 55](../tutorials/55-october-2026-trade-upgrade.md) and the upstream [SWEEP_FEES.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/SWEEP_FEES.md).
+
 ## Prerequisites
 
 ```typescript
@@ -51,7 +72,9 @@ const ix = await PUMP_SDK.createFeeSharingConfig({
 });
 ```
 
-> **Note:** For graduated tokens (`bondingCurve.complete === true`), you must provide the pool address. For ungraduated tokens, pass `pool: null`.
+> **Note:** For graduated tokens (`bondingCurve.complete === true`), you must provide the pool address. For ungraduated tokens, pass `pool: null`. Send the creator fee sweeps first in the same transaction (see [Sweep first](#sweep-first-october-2026-upgrade)).
+
+After this instruction the curve creator (and `pool.coin_creator` if graduated) is the `sharing_config` PDA, and the default shareholder list is the creator alone at 10,000 bps.
 
 ## Step 2: Set Up Shareholders
 
@@ -67,10 +90,12 @@ const shareholders = [
 const ix = await PUMP_SDK.updateFeeShares({
   authority: creator,          // The config admin
   mint,
-  currentShareholders: [],     // Empty on first setup
+  currentShareholders: [creator], // set by createFeeSharingConfig
   newShareholders: shareholders,
 });
 ```
+
+`updateFeeShares` is for SOL-quoted coins. For a USDC or pump-coin quoted coin use `updateFeeSharesV2`, which also takes `quoteMint` and `quoteTokenProgram` (`OnlinePumpSdk.fetchQuoteTokenProgram(quoteMint)`). Both distribute pending fees to the current shareholders before applying the new list, so sweep first.
 
 ### Validation Rules
 
@@ -102,14 +127,14 @@ console.log("Token graduated:", result.isGraduated);
 When fees are ready, build and send the distribution transaction:
 
 ```typescript
-const { instructions, isGraduated } =
-  await onlineSdk.buildDistributeCreatorFeesInstructions(mint);
+const { instructions, isGraduated, sweepCount } =
+  await onlineSdk.buildDistributeCreatorFeesInstructions(mint, { payer: wallet.publicKey });
 
 const tx = new Transaction().add(...instructions);
 const sig = await sendAndConfirmTransaction(connection, tx, [wallet]);
 ```
 
-For graduated tokens, the method automatically includes a `transferCreatorFeesToPump` instruction to consolidate AMM vault fees before distributing.
+For graduated tokens, the method automatically includes a `transferCreatorFeesToPump` instruction to consolidate AMM vault fees before distributing. With `@pump-fun/pump-sdk` 4.0.0 the first `sweepCount` instructions are the creator fee sweeps; pass `payer` so the pool sweep is included. A large sharing config can exceed one legacy transaction, so send it as a v0 transaction with an address lookup table rather than splitting the sweeps off.
 
 ## Checking Fee Sharing Status
 
@@ -127,7 +152,7 @@ if (isSharing) {
 
 ## Updating Shareholders
 
-To change the distribution, pass both current and new shareholders:
+The update revokes the admin, so a second call on the same config fails with `SharingConfigAdminRevoked` (6009, "sharing config can only be updated once"). The parameters below show the shape of an update while the admin is still active: pass both current and new shareholders, and sweep first.
 
 ```typescript
 const currentShareholders = [
@@ -154,8 +179,13 @@ const ix = await PUMP_SDK.updateFeeShares({
 If fee sharing is not set up, creators can collect fees directly:
 
 ```typescript
-// Collect from both Pump and AMM programs
-const instructions = await onlineSdk.collectCoinCreatorFeeInstructions(creator);
+// Sweep fees v3 / pool v2 trades kept back, then collect from both programs
+const sweep = await getCreatorFeeSweepInstructions(connection, mint, creator);
+const instructions = [
+  ...sweep.instructions,
+  ...(await onlineSdk.collectCoinCreatorFeeInstructions(creator)), // SOL vaults
+];
+// For USDC or pump-coin quotes: onlineSdk.collectCoinCreatorFeeAllQuotesInstructions(creator)
 
 // Check balance before collecting
 const balance = await onlineSdk.getCreatorVaultBalanceBothPrograms(creator);

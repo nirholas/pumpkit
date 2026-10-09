@@ -34,7 +34,18 @@ The PDA's data is a packed struct. Field order and types are authoritative in [@
 | `token_total_supply` | `u64` | Total supply minted at creation |
 | `complete` | `bool` | True once graduated to AMM |
 | `creator` | `PublicKey` | Original deployer |
-| `quote_mint` | `PublicKey` (V2) | WSOL or USDC, depending on pair |
+| `quote_mint` | `PublicKey` (V2) | WSOL, USDC or a pump coin, depending on pair |
+| `creator_fee_bps` | `u64` | Coin's own creator fee rate; 0 means the fee schedule applies |
+| `can_edit_creator_fee` | `bool` | Retired, always `false` on new curves |
+| `is_holder_reward` | `bool` | Creator fees go to holders |
+| `creator_fee` | `u64` | Creator fee v3 trades kept on the curve, waiting for `sweep_creator_fee` |
+| `protocol_fees` | `u64` | Protocol fee v3 trades kept on the curve, waiting for `sweep_protocol_fee` |
+| `depth` | `u8` | 0 for SOL or whitelisted quotes; `Q.depth + 1` for a coin quoted in pump coin Q |
+| `initial_virtual_quote_reserves` | `u64` | Virtual quote reserves at creation |
+| `post_complete_base_out` | `u64` | Synthetic migration: tokens the completing buy took from the pool part |
+| `post_complete_quote_in` | `u64` | Synthetic migration: net quote the completing buy paid in |
+
+The fields from `creator_fee` down were added by the October 2026 upgrade. Curves written before it are shorter; read missing trailing fields as `0` (the account grows on its next v3 trade or sweep, or through `extend_account`). The authoritative layout is the `BondingCurve` type in the official IDL ([docs/pump-protocol/idl](../docs/pump-protocol/idl)) and in `@pump-fun/pump-sdk` 4.0.0.
 
 > Field names/sizes may differ slightly per SDK version. Always read the SDK's `.d.ts` file rather than copying from this table.
 
@@ -131,6 +142,8 @@ console.log({
 
 Don't hardcode fee bps. They change.
 
+**Where the fee goes depends on the instruction.** `buy` / `sell` / `buy_v2` / `sell_v2` pay the protocol fee recipient and the creator vault in the trade. `buy_v3` / `sell_v3` / `buy_exact_quote_in_v3` keep both on the curve and record them in `protocol_fees` / `creator_fee`; the buyback slice is still paid in the trade. The kept amounts sit in the curve's lamports (SOL pairs) or quote token account and are not reserves, so the pricing above is unchanged. Permissionless sweeps pay them out later; a creator collect must put `sweep_creator_fee` first. See [tutorial 47](47-v2-creator-fees.md) and [tutorial 55](55-october-2026-trade-upgrade.md).
+
 ## Graduation
 
 A coin graduates from the bonding curve to the AMM when `real_token_reserves` drops below a protocol-defined threshold (call it `T_graduate`). At that moment:
@@ -138,6 +151,8 @@ A coin graduates from the bonding curve to the AMM when `real_token_reserves` dr
 1. The pump program calls into the AMM program to seed an LP pool.
 2. The bonding curve's `complete` flag flips to `true`.
 3. Subsequent buys/sells route through the AMM, not the curve.
+
+**Synthetic migration.** A `buy_v3` or `buy_exact_quote_in_v3` that asks for more than the curve has left no longer fails with `NotEnoughTokensToBuy` (6021). It buys the rest of the curve, completes it (`CompleteEvent`), and fills the remainder against the canonical pool the migration will create, emitting `PostCompleteBuyEvent`. The pool part is stored on the curve as `post_complete_base_out` / `post_complete_quote_in` and folded into the migration deposit. The buyer's total is the `TradeEvent` amounts plus the `PostCompleteBuyEvent` amounts. Mayhem coins never take this path, and older buy instructions still stop at the curve. Upstream: [SYNTHETIC_MIGRATION.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md).
 
 To detect imminent graduation offline:
 

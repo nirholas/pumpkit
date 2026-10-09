@@ -511,7 +511,7 @@ Specialized fee-claim tracker. Subscribe by token contract address or by X/Twitt
 - [npm Packages](docs/npm.md) — Package installation and usage
 
 ### Pump Protocol Reference
-- [Protocol Overview](docs/pump-protocol/) — All 9 official protocol specs + IDLs
+- [Protocol Overview](docs/pump-protocol/): the official protocol specs, per-instruction references (v3/v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes) and IDLs, synced with the October 2026 upgrade
 - [Bonding Curve Math](docs/guides/bonding-curve-math.md) — Constant-product formula, buy/sell calculations
 - [Fee Tiers](docs/guides/fee-tiers.md) — Market-cap-based dynamic fee selection
 - [Fee Sharing](docs/guides/fee-sharing.md) — Multi-shareholder fee distribution
@@ -854,25 +854,29 @@ import {
   PUMP_PROGRAM_ID,
   PUMP_AMM_PROGRAM_ID,
   PUMP_FEE_PROGRAM_ID,
-  decodePumpLogs,
+  parsePumpLogEvents,
+  aggregateTrades,
 } from '@pumpkit/core';
+import { PublicKey } from '@solana/web3.js';
 
-const connection = createRpcConnection({
+const rpc = createRpcConnection({
   url: process.env.SOLANA_RPC_URL!,
   fallbackUrls: ['https://backup1.example.com'],
   commitment: 'confirmed',
 });
+const connection = rpc.getConnection();
 
-connection.onLogs(PUMP_PROGRAM_ID, (logInfo) => {
-  const events = decodePumpLogs(logInfo.logs);
+connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), (logInfo) => {
+  const events = parsePumpLogEvents(logInfo.logs);
   for (const event of events) {
     switch (event.type) {
-      case 'create': /* ... */
-      case 'buy': /* ... */
-      case 'sell': /* ... */
+      case 'trade': /* every buy/sell version (buy_v3, sell_v3, multi-hop hops, ...) */
+      case 'postCompleteBuy': /* pool part of a buy that completed the curve */
       case 'complete': /* graduation */
+      case 'sweep': /* fee sweep */
     }
   }
+  const trades = aggregateTrades(events); // synthetic-migration buys folded into one trade
 });
 ```
 

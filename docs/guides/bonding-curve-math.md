@@ -173,6 +173,13 @@ if (bondingCurve.complete) {
 }
 ```
 
+### October 2026: synthetic migration and fees kept on the curve
+
+- **A `buy_v3` that crosses the remaining supply no longer fails.** It buys the curve's last `realTokenReserves`, completes the curve, and fills the rest of the order against the canonical PumpSwap pool in the same instruction. The logs carry `TradeEvent` (curve part), `CompleteEvent`, then `PostCompleteBuyEvent` (pool part), and the buyer's total is the sum of both parts. The curve records the pool part in `postCompleteBaseOut` / `postCompleteQuoteIn`. The "cap at real reserves" step above still describes the curve part; quote a completing buy with `getBuyV3TokenAmountFromQuoteAmount` from `@pump-fun/pump-sdk` 4.0.0, which includes the pool part (it needs `curveBaseTokenBalance`, the curve's token account balance). Mayhem curves get no synthetic migration: the quote stops at the remaining supply, and the buy needs `partialFill` set or it fails with `NotEnoughTokensToBuy`.
+- **`buy_v3` / `sell_v3` keep the protocol and creator fee in the curve's balance** and count them in `BondingCurve.protocolFees` / `creatorFee` until a permissionless `sweep_protocol_fee` / `sweep_creator_fee` pays them out. They are not liquidity, so the formulas on this page are unchanged.
+
+See [tutorial 55](../../tutorials/55-october-2026-trade-upgrade.md) and the [upstream synthetic migration spec](https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md).
+
 ## Migrated Curves
 
 Once a bonding curve has been migrated, its `virtualTokenReserves` is set to zero. All SDK math functions return `BN(0)` when they detect this:

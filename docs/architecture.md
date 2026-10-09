@@ -209,8 +209,8 @@ PumpKit monitors 3 on-chain programs:
 
 ```typescript
 // WebSocket — subscribe to program logs
-connection.onLogs(PUMP_PROGRAM_ID, (logs) => {
-  const events = decodePumpLogs(logs);
+connection.onLogs(PUMP_PROGRAM_ID, ({ logs }) => {
+  const events = parsePumpLogEvents(logs);
   events.forEach(event => eventBus.emit(event.type, event));
 });
 
@@ -218,7 +218,7 @@ connection.onLogs(PUMP_PROGRAM_ID, (logs) => {
 const sigs = await connection.getSignaturesForAddress(PUMP_PROGRAM_ID, { limit: 50 });
 for (const sig of sigs) {
   const tx = await connection.getParsedTransaction(sig.signature);
-  const events = parsePumpTransaction(tx);
+  const events = parsePumpLogEvents(tx?.meta?.logMessages ?? []);
   // ... deduplicate and process
 }
 ```

@@ -4,6 +4,47 @@
 
 ---
 
+## October 2026 Pump / PumpSwap upgrade (`@pump-fun/pump-sdk` 4.0.0)
+
+> A program upgrade, not a `@nirholas/pump-sdk` release: the fork has no October 2026
+> version, so the new instructions come from the official `@pump-fun/pump-sdk` 4.0.0 and
+> `@pump-fun/pump-swap-sdk` 2.1.0. `@pumpkit/core` takes `@pump-fun/pump-sdk` `^4.0.0` as an
+> optional peer dependency for its v3 quotes and creator fee sweeps; everything else keeps
+> working on `@nirholas/pump-sdk` 2. Walkthrough: [tutorial 55](../tutorials/55-october-2026-trade-upgrade.md).
+> Upstream specs: [docs/pump-protocol/](pump-protocol/).
+
+### What changed on chain
+
+| Change | What to do |
+|--------|-----------|
+| New curve trades `buy_v3`, `sell_v3`, `buy_exact_quote_in_v3` keep the protocol and creator fee on the curve (`BondingCurve.protocolFees` / `creatorFee`). Their `TradeEvent.feeRecipient` is the zero key | Indexers: count `fee` / `creatorFee` from the event, not from a fee recipient balance change. Use `ixName` to tell versions apart. Cashback coins cannot use v3 (6094); keep the legacy instructions for them |
+| New PumpSwap trades `buy_v2`, `sell_v2`, `buy_exact_quote_in_v2` keep fees in the pool (`Pool.protocolFees` / `creatorFees`) | Liquidity is the quote vault minus both buckets. Cashback pools stay on v1 (6079); mayhem pools work with v2 |
+| `Pool.virtual_quote_reserves` is a signed `i128` | Price against `vault + virtualQuoteReserves` (`effectivePoolQuoteReserves`); payouts are capped by the vault (6063) |
+| Permissionless `sweep_protocol_fee` / `sweep_creator_fee` on Pump and PumpSwap | Put `sweep_creator_fee` in front of every creator fee collect (`getCreatorFeeSweepInstructions`). Distribution, CTO and share updates refuse to run while a creator bucket is nonzero (6095 Pump, 6081 PumpSwap, 6033 PumpFees). A sweep with nothing waiting is a no-op |
+| A `buy_v3` past the remaining supply completes the curve and fills the rest against the canonical pool (synthetic migration) | The logs carry `TradeEvent`, `CompleteEvent`, `PostCompleteBuyEvent`; the buyer's total is both legs (`aggregateTrades`) |
+| `multi_hop_swap` routes through curves and pools in one instruction | Each curve hop emits its own `TradeEvent` |
+| Coins can be quoted in another pump coin (`CREATE_WITH_PUMP_COIN_QUOTE`) | Resolve the quote with `OnlinePumpSdk.resolveQuoteMint(mint)`; amounts are in that coin's base units. New errors 6105 (`CurveDepthExceeded`) and 6107 (`QuoteCurveAwaitingMigration`) |
+
+### New PumpKit exports
+
+- Decoders: `parsePumpLogEvents`, `aggregateTrades`, `decodeTradeEvent`, `decodePostCompleteBuyEvent`, `decodeCompleteEvent`, `decodeSweepBondingCurveFeeEvent`, `decodeSweepPoolFeeEvent`, `decodePumpPool`, `effectivePoolQuoteReserves`
+- SDK bridge: `getBuyV3Quote`, `getBuyV3Cost`, `getCreatorFeeSweepInstructions`
+- Constants: the v3 / v2 / multi-hop / sweep discriminators, `FEE_KEPT_ON_CURVE_RECIPIENT`, `SWEEP_FEE_BUCKET`, `PUMP_ERROR_CODES`, `PUMP_AMM_ERROR_CODES`, `PUMP_FEES_ERROR_CODES`
+
+See [core-api.md](core-api.md#parsepumplogeventslogs-pumplogevent).
+
+### Migration steps
+
+```bash
+npm install @pump-fun/pump-sdk@^4.0.0
+```
+
+1. Monitors and indexers: decode with `parsePumpLogEvents` + `aggregateTrades` so v3 trades and synthetic migration buys report full amounts.
+2. Fee claimers: prepend `getCreatorFeeSweepInstructions(...).instructions` to the collect transaction.
+3. Pool readers: use `decodePumpPool` and `effectivePoolQuoteReserves` instead of the raw vault balance.
+
+---
+
 ## Upgrading to v2.0.0 (Latest)
 
 > Released: 2026-09-18. Tracks the Pump program's 2.0 upgrade. PumpKit's `@pumpkit/core`
@@ -205,6 +246,7 @@ The same change applies to `getSellSolAmountFromTokenAmount` and `getBuySolAmoun
 
 | Version | Date | Type | Key Changes |
 |---------|------|------|-------------|
+| Program upgrade | 2026-10 | **Behavior** | v3 curve trades and v2 pool trades keep fees until swept, synthetic migration, multi-hop swaps, pump-coin quotes (`@pump-fun/pump-sdk` 4.0.0) |
 | v2.0.0 | 2026-09-18 | **Breaking** | Cashback launches rejected, holder-reward launches, `adminCtoInstruction`, `*QuoteReserves` on `BondingCurve` |
 | v1.29.0 | 2026-03-06 | **Breaking** | V2 PDAs required on all buy/sell (SDK handles automatically) |
 | v1.28.0 | 2026-02-26 | Feature | Analytics, tutorials, bots, dashboards, x402, social fees |

@@ -183,18 +183,19 @@ Detects fee distribution events to shareholders.
 
 ## `solana/` — Solana Utilities
 
-### `createRpcConnection(options): Connection`
+### `createRpcConnection(options): RpcFallback`
 
-Creates a Solana Connection with fallback URL rotation.
+Creates an `RpcFallback` that rotates across fallback URLs. `getConnection()` returns the current Solana `Connection`, and `withFallback(fn)` retries a call on the next URL when one fails.
 
 ```typescript
 import { createRpcConnection } from '@pumpkit/core';
 
-const connection = createRpcConnection({
+const rpc = createRpcConnection({
   url: process.env.SOLANA_RPC_URL!,
   fallbackUrls: ['https://backup1.example.com', 'https://backup2.example.com'],
   commitment: 'confirmed',
 });
+const connection = rpc.getConnection();
 ```
 
 ### Program Constants
@@ -207,25 +208,70 @@ import { PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID } from '@pump
 // PUMP_FEE_PROGRAM_ID = 'pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ'
 ```
 
-### `decodePumpLogs(logs): PumpEvent[]`
+### `parsePumpLogEvents(logs): PumpLogEvent[]`
 
-Decodes Pump program log messages into typed events.
+Decodes the trade, completion and fee sweep events out of a transaction's log lines, in emission order. It tracks the invoke stack, so each `Program data:` line is matched against the program that emitted it (Pump and PumpSwap share the sweep instruction names). Dependency-free: no SDK needed.
 
 ```typescript
-import { decodePumpLogs } from '@pumpkit/core';
+import { parsePumpLogEvents, aggregateTrades, PUMP_PROGRAM_ID } from '@pumpkit/core';
+import { PublicKey } from '@solana/web3.js';
 
-connection.onLogs(PUMP_PROGRAM_ID, (logInfo) => {
-  const events = decodePumpLogs(logInfo.logs);
+connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), ({ logs, err }) => {
+  if (err) return;
+  const events = parsePumpLogEvents(logs);
   for (const event of events) {
     switch (event.type) {
-      case 'create': // ...
-      case 'buy': // ...
-      case 'sell': // ...
-      case 'complete': // graduation
+      case 'trade':           // TradeEvent (every buy/sell version, multi-hop curve hops included)
+      case 'postCompleteBuy': // pool part of a buy that completed the curve (synthetic migration)
+      case 'complete':        // CompleteEvent: the curve graduated
+      case 'sweep':           // SweepBondingCurveFeeEvent or SweepPoolFeeEvent
     }
+  }
+  // One entry per trade, with a synthetic-migration buy's pool part folded in.
+  for (const trade of aggregateTrades(events)) {
+    console.log(trade.ixName, trade.isBuy ? 'buy' : 'sell', trade.solAmount, trade.tokenAmount,
+      trade.syntheticMigration ? '(completed the curve)' : '');
   }
 });
 ```
+
+`onLogs` only delivers the log lines of the program you subscribe to, so subscribe to `PUMP_AMM_PROGRAM_ID` as well to see PumpSwap sweeps. Amounts are `bigint` in the quote mint's base units.
+
+| Export | Returns |
+|--------|---------|
+| `decodeTradeEvent(bytes)` | `PumpTradeEvent \| null`. Adds `ixName`, `quoteMint`, `buybackFee`, `creatorFeeUnclaimed`, and `feeKeptOnCurve` (true when a v3 trade left the fee on the curve; `feeRecipient` is then `FEE_KEPT_ON_CURVE_RECIPIENT`) |
+| `decodePostCompleteBuyEvent(bytes)` | `PostCompleteBuyEvent \| null` |
+| `decodeCompleteEvent(bytes)` | `PumpCompleteEvent \| null` |
+| `decodeSweepBondingCurveFeeEvent(bytes)` / `decodeSweepPoolFeeEvent(bytes)` | `SweepFeeEvent \| null`, with `program` (`'pump'` or `'pump-amm'`) and `bucket` (`'protocol'` or `'creator'`) |
+| `aggregateTrades(events)` | `AggregatedTrade[]`: the buyer's full amounts and fees, with `syntheticMigration` and `postComplete` |
+| `decodePumpPool(data)` | `PumpPoolState \| null` for a PumpSwap `Pool` account: `coinCreator`, signed `virtualQuoteReserves`, and the `protocolFees` / `creatorFees` v2 trades keep in the pool. Fields older, shorter pools lack read as zero |
+| `effectivePoolQuoteReserves(vaultAmount, virtualQuoteReserves)` | The quote reserves a pool prices against: quote vault balance plus the signed `virtualQuoteReserves` |
+
+Each single decoder takes the full `Program data:` bytes (discriminator included) and returns `null` on a different discriminator.
+
+The October 2026 instruction and event discriminators are exported too (`BUY_V3_DISCRIMINATOR`, `SELL_V3_DISCRIMINATOR`, `BUY_EXACT_QUOTE_IN_V3_DISCRIMINATOR`, `AMM_BUY_V2_DISCRIMINATOR`, `AMM_SELL_V2_DISCRIMINATOR`, `AMM_BUY_EXACT_QUOTE_IN_V2_DISCRIMINATOR`, `MULTI_HOP_SWAP_DISCRIMINATOR`, `MULTI_HOP_CURVE_SWAP_DISCRIMINATOR`, `SWEEP_PROTOCOL_FEE_DISCRIMINATOR`, `SWEEP_CREATOR_FEE_DISCRIMINATOR`, `POST_COMPLETE_BUY_EVENT_DISCRIMINATOR`, `SWEEP_BONDING_CURVE_FEE_EVENT_DISCRIMINATOR`, `SWEEP_POOL_FEE_EVENT_DISCRIMINATOR`), along with the error codes the upgrade added (`PUMP_ERROR_CODES`, `PUMP_AMM_ERROR_CODES`, `PUMP_FEES_ERROR_CODES`) and `SWEEP_FEE_BUCKET`.
+
+### v3 quotes and creator fee sweeps
+
+These load `@pump-fun/pump-sdk` 4 on first use (an optional peer dependency: `npm install @pump-fun/pump-sdk@^4.0.0`).
+
+```typescript
+import { getBuyV3Quote, getBuyV3Cost, getCreatorFeeSweepInstructions } from '@pumpkit/core';
+import BN from 'bn.js';
+
+// buy_exact_quote_in_v3: tokens for 0.5 SOL, fees included. A buy past the
+// remaining supply continues into the pool (crossesCurve: true).
+const quote = await getBuyV3Quote(connection, mint, wallet.publicKey, new BN(500_000_000));
+
+// buy_v3: what 1,000,000 tokens (6 decimals) cost, fees included.
+const cost = await getBuyV3Cost(connection, mint, wallet.publicKey, new BN(1_000_000_000_000));
+
+// Sweeps to put first in a creator fee collect transaction.
+const sweep = await getCreatorFeeSweepInstructions(connection, mint, wallet.publicKey);
+console.log(sweep.curveCreatorFee.toString(), sweep.poolCreatorFee.toString(), sweep.instructions.length);
+```
+
+`getBuyV3Quote` / `getBuyV3Cost` return `BuyV3Quote | null` (`null` when the curve is missing or complete). `getCreatorFeeSweepInstructions` returns `CreatorFeeSweep`: the permissionless `sweep_creator_fee` instructions for the curve and, once migrated, the canonical pool, and an empty list when nothing is waiting. Collecting without them misses the fees v3 / v2 trades kept, and fee sharing distribution refuses to run while a creator bucket is nonzero (6095 / 6081 / 6033). See [tutorial 55](../tutorials/55-october-2026-trade-upgrade.md).
 
 ---
 

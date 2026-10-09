@@ -13,6 +13,18 @@ Every buy/sell on Pump incurs two types of fees:
 
 Fees are calculated in **basis points (BPS)** where 100 BPS = 1%.
 
+### When the fee is paid (October 2026 upgrade)
+
+The amount is the same for every instruction; only the moment it moves differs:
+
+| Instructions | Protocol and creator fee |
+|---|---|
+| Curve `buy` / `sell` / `buy_v2` / `sell_v2` / `buy_exact_quote_in_v2`, PumpSwap `buy` / `sell` / `buy_exact_quote_in` | Paid out in the trade |
+| Curve `buy_v3` / `sell_v3` / `buy_exact_quote_in_v3` | Kept on the curve in `BondingCurve.protocol_fees` / `creator_fee` |
+| PumpSwap `buy_v2` / `sell_v2` / `buy_exact_quote_in_v2`, `multi_hop_swap` | Kept in the pool in `Pool.protocol_fees` / `creator_fees` (curve hops keep theirs on the curve) |
+
+The buyback part of the protocol fee and the PumpSwap LP fee are always paid in the trade. Kept fees are paid out by the permissionless `sweep_protocol_fee` (pump.fun runs it) and `sweep_creator_fee` (put it first in the transaction that collects or distributes creator fees). The v3 `TradeEvent` reports the fee amounts with `fee_recipient` set to the zero key. Details: [tutorial 55](./55-october-2026-trade-upgrade.md), [tutorial 47](./47-v2-creator-fees.md).
+
 ## Tiered Fee Structure
 
 Fees vary based on the bonding curve's **market cap**. Higher market cap = different fee tier:
@@ -129,6 +141,8 @@ if (PublicKey.default.equals(bc.creator)) {
   console.log("Creator fees → single creator wallet:", bc.creator.toBase58());
 }
 ```
+
+Whichever destination applies, fees from v3 curve trades reach it only after `sweep_creator_fee` (pending amount: `bc.creatorFee` with `@pump-fun/pump-sdk` 4.0.0), and fees from PumpSwap v2 trades only after the pool's `sweep_creator_fee` (`Pool.creator_fees`, read with `decodePumpPool` from `@pumpkit/core`).
 
 ## Simulating Fees Before Trading
 

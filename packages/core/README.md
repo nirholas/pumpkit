@@ -107,11 +107,31 @@ const fallback = new RpcFallback(['https://rpc1.example.com', 'https://rpc2.exam
 const wsUrl = deriveWsUrl('https://api.mainnet-beta.solana.com');
 ```
 
+### `solana/events`: Pump and PumpSwap Event Decoders
+
+Dependency-free decoders for the events the October 2026 upgrade changed or added, and a log parser that matches each `Program data:` line to the program that emitted it.
+
+```typescript
+import { parsePumpLogEvents, aggregateTrades, decodePumpPool, effectivePoolQuoteReserves } from '@pumpkit/core';
+
+const events = parsePumpLogEvents(tx.meta.logMessages); // trade | postCompleteBuy | complete | sweep
+const trades = aggregateTrades(events);                 // a buy that completed the curve, folded into one trade
+
+const pool = decodePumpPool(poolAccount.data);          // coinCreator, signed virtualQuoteReserves, kept fees
+```
+
+Single decoders: `decodeTradeEvent`, `decodePostCompleteBuyEvent`, `decodeCompleteEvent`, `decodeSweepBondingCurveFeeEvent`, `decodeSweepPoolFeeEvent`. The v3 / v2 trade, multi-hop and sweep instruction discriminators and the new error codes are exported as constants.
+
 ### `solana/sdk-bridge` — Pump SDK Wrappers
 
 ```typescript
-import { getTokenPrice, getBuyQuote, getGraduationProgress } from '@pumpkit/core';
+import {
+  getTokenPrice, getBuyQuote, getGraduationProgress,
+  getBuyV3Quote, getBuyV3Cost, getCreatorFeeSweepInstructions,
+} from '@pumpkit/core';
 ```
+
+`getBuyV3Quote` / `getBuyV3Cost` quote `buy_exact_quote_in_v3` / `buy_v3`, including a buy that completes the curve and continues into the pool. `getCreatorFeeSweepInstructions` returns the `sweep_creator_fee` instructions (curve and canonical pool) to put in front of a creator fee collect. These three load the optional peer `@pump-fun/pump-sdk` 4 on first use. Full reference: [docs/core-api.md](../../docs/core-api.md#v3-quotes-and-creator-fee-sweeps).
 
 ### `formatter/` — Telegram HTML Templates
 

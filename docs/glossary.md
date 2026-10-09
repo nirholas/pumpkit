@@ -17,6 +17,12 @@
 | **Social Fees** | Fee collection via social identity (e.g., Twitter handle) instead of a Solana wallet address. |
 | **Cashback** | Volume-based PUMP token rewards. Users earn rewards based on trading volume tracked by `UserVolumeAccumulator`. |
 | **Fee Tier** | Dynamic fee rates based on a pool's market cap. Higher market cap → potentially different fee rates. |
+| **v3 / v2 trades** | The October 2026 trade instructions: `buy_v3`, `sell_v3`, `buy_exact_quote_in_v3` on the bonding curve and `buy_v2`, `sell_v2`, `buy_exact_quote_in_v2` on PumpSwap. They price like the older instructions but keep the protocol and creator fee on the curve or in the pool instead of paying them out on every trade. Cashback coins keep the older instructions. |
+| **Fee Sweep** | The permissionless `sweep_protocol_fee` / `sweep_creator_fee` instructions (Pump and PumpSwap) that pay out the fees v3 / v2 trades kept. Anyone can send one; with nothing waiting it is a no-op. A creator fee collect should put `sweep_creator_fee` first. |
+| **Synthetic Migration** | A curve buy for more than the curve has left: it buys the rest, completes the curve, and fills the remainder against the canonical PumpSwap pool in the same instruction. Logs show `TradeEvent`, `CompleteEvent`, then `PostCompleteBuyEvent`; the buyer's total is both legs. Not available on mayhem coins. |
+| **Multi-hop Swap** | `multi_hop_swap`: one instruction that routes a trade through several bonding curves and pump pools, each hop emitting its own trade event. |
+| **Pump-coin Quote** | A coin launched with another pump coin (not SOL or USDC) as its quote mint. Amounts are in that coin's base units; `OnlinePumpSdk.resolveQuoteMint(mint)` reports `source: 'pumpCoin'` and the accounts the launch needs. |
+| **Signed Virtual Quote Reserves** | `Pool.virtual_quote_reserves`, a signed `i128` on PumpSwap pools. The pool prices against `quote vault + virtualQuoteReserves`; it can be negative while kept fees exceed the pool's boost, and payouts are capped by the real vault balance. |
 
 ## Solana
 

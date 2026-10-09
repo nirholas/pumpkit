@@ -78,9 +78,29 @@ const ix = await PUMP_SDK.ammSellInstruction({
 });
 ```
 
+### v2 trades (October 2026 upgrade)
+
+PumpSwap added `buy_v2`, `sell_v2` and `buy_exact_quote_in_v2`. They take the same arguments and the same quote math as v1, but keep the protocol and creator fee in the pool's quote vault (`Pool.protocol_fees`, `Pool.creator_fees`) for a later sweep instead of transferring them on every trade. The buyback part of the protocol fee and the LP fee are unchanged.
+
+- Build them with `@pump-fun/pump-swap-sdk` 2.1.0: `buyV2Instructions`, `buyExactQuoteInV2Instructions`, `sellV2Instructions`, or pass `{ v2: true }` to `buyBaseInput` / `buyQuoteInput` / `sellBaseInput` / `sellQuoteInput`, which use v2 wherever `supportsTradeV2(pool)` is true.
+- Cashback pools refuse v2 (`CashbackCoinNotSupported`, 6079). Keep v1 for them. Mayhem pools work with v2 (`supportsTradeV2(pool)` in `@pump-fun/pump-swap-sdk` 2.1.0 is `!pool.isCashbackCoin`); the upstream docs list `MayhemPoolNotSupported` (6080) for a multi-hop swap routed through a mayhem pool.
+- To route through several pools and curves in one instruction, use `multi_hop_swap`. See [tutorial 55](../tutorials/55-october-2026-trade-upgrade.md#5-multi-hop-swaps).
+
+### Signed `virtual_quote_reserves`
+
+`Pool.virtual_quote_reserves` is an **`i128`** at byte offset 245, and v2 trades push it below zero by the fees they keep, so kept fees never count as liquidity. Price every pool with:
+
+```text
+effective_quote_reserves = pool_quote_token_account.amount + virtual_quote_reserves
+```
+
+Read it as a signed integer; an unsigned read turns a small negative number into an enormous price. Older pools that predate the field are shorter and read it as `0`. `decodePumpPool` and `effectivePoolQuoteReserves` from `@pumpkit/core` do both. Payouts are capped by the real vault (`InsufficientRealQuoteReserves`, 6063). Upstream: [NEGATIVE_VIRTUAL_QUOTE_RESERVES.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/NEGATIVE_VIRTUAL_QUOTE_RESERVES.md).
+
 ---
 
 ## Liquidity Provision
+
+> A pool that has not traded since the upgrade has the older, shorter account layout. Call the permissionless `extend_account` on it before `deposit` or `withdraw`.
 
 ### Deposit (Add Liquidity)
 
@@ -125,6 +145,8 @@ const ix = await PUMP_SDK.ammCollectCoinCreatorFeeInstruction({
   creator: creatorWallet,
 });
 ```
+
+Fees from v2 trades wait in `Pool.creator_fees` until PumpSwap `sweep_creator_fee` moves them into the coin creator vault. Put the sweep first in the same transaction: `getCreatorFeeSweepInstructions(connection, mint, payer)` from `@pumpkit/core` returns it (and the curve sweep) only when something waits. The same sweep must come before `transfer_creator_fees_to_pump`, CTO or a creator change, which otherwise fail with `CreatorFeesNotSwept` (6081). See [tutorial 47](../tutorials/47-v2-creator-fees.md).
 
 ### Transfer Creator Fees to Pump
 
@@ -207,6 +229,9 @@ const createPoolEvent = PUMP_SDK.decodeCreatePoolEvent(eventData);
 | `cashback` | `BN` | Cashback earned |
 | `pool` | `PublicKey` | Pool address |
 | `user` | `PublicKey` | Buyer address |
+| `buybackFee` | `BN` | Buyback part of the protocol fee |
+| `virtualQuoteReserves` | `i128` | Signed virtual quote reserves after the trade |
+| `creatorFeeUnclaimed` | `BN` | Creator fee waiting in the pool after the trade |
 
 ### AmmSellEvent Fields
 
@@ -219,6 +244,11 @@ const createPoolEvent = PUMP_SDK.decodeCreatePoolEvent(eventData);
 | `protocolFee` | `BN` | Fee to protocol |
 | `coinCreatorFee` | `BN` | Fee to token creator |
 | `cashback` | `BN` | Cashback earned |
+| `buybackFee` | `BN` | Buyback part of the protocol fee |
+| `virtualQuoteReserves` | `i128` | Signed virtual quote reserves after the trade |
+| `creatorFeeUnclaimed` | `BN` | Creator fee waiting in the pool after the trade |
+
+The full list, including `canBoost`, `baseSupply` and holder rewards, is in the [Events Reference](./events-reference.md#ammbuyevent). Fee sweeps emit `SweepPoolFeeEvent`.
 
 ---
 

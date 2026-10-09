@@ -92,6 +92,9 @@ Telegram Bot API — posts to channel/DM
 | `collect_coin_creator_fee` | PumpAMM | AMM pool creator fees |
 | `distribute_creator_fees` | PumpFees | Fee distribution to shareholders |
 | `claim_cashback` | PumpFees | Volume-based cashback rewards |
+| `collect_creator_fee_v2`, `distribute_creator_fees_v2`, `transfer_creator_fees_to_pump_v2` | Pump / PumpAMM | Quote-mint aware versions (SOL, USDC, pump-coin quotes) |
+
+Since the October 2026 upgrade, v3 curve trades and v2 pool trades keep the creator fee on the curve or pool until a `sweep_creator_fee`. A sweep only moves the fee into the creator vault, so it is not a claim and the bot does not post it; the collect or distribute that follows it in the same transaction is, and its amount includes the swept fee. See [tutorial 47](./47-v2-creator-fees.md).
 
 ### Claim Card Anatomy
 

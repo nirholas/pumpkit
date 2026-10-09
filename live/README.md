@@ -53,8 +53,8 @@ Real-time Solana trade analytics with whale detection.
 
 | Event | Description | Color |
 |-------|-------------|-------|
-| `buy` | Token purchase from bonding curve | Green |
-| `sell` | Token sale back to bonding curve | Red |
+| `buy` | Token purchase from bonding curve (every version: `buy`, `buy_exact_sol_in`, `buy_v3`, `buy_exact_quote_in_v3`, and curve hops of `multi_hop_swap`). A buy that completes the curve adds its `PostCompleteBuyEvent` pool part, so the amount is the buyer's full total | Green |
+| `sell` | Token sale back to bonding curve (`sell`, `sell_v3`, multi-hop hops) | Red |
 | `create` | New token launch | Blue |
 | `graduation` | Token completes bonding curve | Gold |
 | `migration` | Token migrates to PumpAMM | Purple |
@@ -157,7 +157,7 @@ Each `.html` file is fully self-contained — CSS, JavaScript, and markup are al
 The dashboards decode PumpFun program logs directly in the browser. This includes:
 
 - **Borsh deserialization** — reads binary instruction data (strings, public keys, u64/i64 integers)
-- **Discriminator matching** — identifies CreateEvent, TradeEvent, CompleteEvent by their 8-byte discriminators
+- **Discriminator matching**: identifies CreateEvent, TradeEvent, CompleteEvent by their 8-byte discriminators. Trades are classified by the TradeEvent's own `is_buy` flag rather than the instruction name, so the October 2026 v3 instructions and multi-hop swaps are covered, and a create-and-buy transaction's TradeEvent is never read as launch data
 - **Base58 encoding** — converts raw bytes to Solana addresses
 
 ### Connection Resilience

@@ -15,6 +15,8 @@ The Pump protocol has four claimable reward streams:
 
 This tutorial shows how to monitor all of them.
 
+> **October 2026 upgrade:** `buy_v3` / `sell_v3` on the curve and `buy_v2` / `sell_v2` on PumpSwap keep the creator fee on the coin's curve or pool until a permissionless `sweep_creator_fee` moves it into the creator vault. Vault balances therefore miss those fees, and a collect or distribute without the sweep under-pays (distribute even fails with `CreatorFeesNotSwept`, 6095). The examples below sweep per coin with `getCreatorFeeSweepInstructions` from `@pumpkit/core`, which needs `@pump-fun/pump-sdk` 4.0.0 installed. Background: [tutorial 55](./55-october-2026-trade-upgrade.md).
+
 ---
 
 ## Setup
@@ -31,6 +33,7 @@ import {
   creatorVaultPda,
   GLOBAL_VOLUME_ACCUMULATOR_PDA,
 } from "@nirholas/pump-sdk";
+import { getCreatorFeeSweepInstructions } from "@pumpkit/core";
 import BN from "bn.js";
 
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
@@ -176,12 +179,26 @@ async function checkCreatorVault(creator: PublicKey) {
 
   return { pumpBalance, ammBalance, totalBalance };
 }
+
+// Fees v3 / pool v2 trades kept back are per coin, not per creator vault
+async function checkPendingCreatorFees(mint: PublicKey, payer: PublicKey) {
+  const { curveCreatorFee, poolCreatorFee, quoteMint } =
+    await getCreatorFeeSweepInstructions(connection, mint, payer);
+  console.log("Waiting on curve:", curveCreatorFee.toString(), "| in pool:", poolCreatorFee.toString(), "| quote:", quoteMint);
+  return curveCreatorFee.add(poolCreatorFee);
+}
 ```
 
 ### Collect Creator Fees
 
 ```typescript
-async function collectCreatorFees(creator: Keypair) {
+async function collectCreatorFees(creator: Keypair, mints: PublicKey[]) {
+  // Sweep every coin first, in the same transaction, so nothing is left behind
+  const sweepIxs = [];
+  for (const mint of mints) {
+    const sweep = await getCreatorFeeSweepInstructions(connection, mint, creator.publicKey);
+    sweepIxs.push(...sweep.instructions);
+  }
   const collectIxs = await onlineSdk.collectCoinCreatorFeeInstructions(
     creator.publicKey,
     creator.publicKey, // feePayer
@@ -191,7 +208,7 @@ async function collectCreatorFees(creator: Keypair) {
   const message = new TransactionMessage({
     payerKey: creator.publicKey,
     recentBlockhash: blockhash,
-    instructions: collectIxs,
+    instructions: [...sweepIxs, ...collectIxs],
   }).compileToV0Message();
 
   const tx = new VersionedTransaction(message);
@@ -304,12 +321,14 @@ async function distributeFees(mint: PublicKey, admin: Keypair) {
     sharingConfig: config,
     sharingConfigAddress: sharingPda,
   });
+  // The curve creator is the sharing config now; the helper sweeps against it
+  const sweep = await getCreatorFeeSweepInstructions(connection, mint, admin.publicKey);
 
   const { blockhash } = await connection.getLatestBlockhash("confirmed");
   const message = new TransactionMessage({
     payerKey: admin.publicKey,
     recentBlockhash: blockhash,
-    instructions: [distributeIx],
+    instructions: [...sweep.instructions, distributeIx],
   }).compileToV0Message();
 
   const tx = new VersionedTransaction(message);
@@ -481,7 +500,7 @@ console.log(JSON.stringify(dashboard, null, 2));
 ## 6. Polling Loop: Claim When Ready
 
 ```typescript
-async function monitorAndClaim(user: Keypair, intervalMs = 60_000) {
+async function monitorAndClaim(user: Keypair, myCoins: PublicKey[], intervalMs = 60_000) {
   console.log("Starting claims monitor for", user.publicKey.toBase58());
 
   while (true) {
@@ -514,9 +533,13 @@ async function monitorAndClaim(user: Keypair, intervalMs = 60_000) {
       }
 
       // Check creator vault
-      const vaultBalance = await onlineSdk.getCreatorVaultBalanceBothPrograms(user.publicKey);
+      const sweeps = await Promise.all(
+        myCoins.map((mint) => getCreatorFeeSweepInstructions(connection, mint, user.publicKey)),
+      );
+      const pending = sweeps.reduce((sum, s) => sum.add(s.curveCreatorFee).add(s.poolCreatorFee), new BN(0));
+      const vaultBalance = (await onlineSdk.getCreatorVaultBalanceBothPrograms(user.publicKey)).add(pending);
       if (vaultBalance.gt(new BN(10_000_000))) { // > 0.01 SOL threshold
-        console.log(`[${new Date().toISOString()}] Creator vault: ${(vaultBalance.toNumber() / 1e9).toFixed(6)} SOL`);
+        console.log(`[${new Date().toISOString()}] Creator fees: ${(vaultBalance.toNumber() / 1e9).toFixed(6)} SOL`);
 
         const collectIxs = await onlineSdk.collectCoinCreatorFeeInstructions(
           user.publicKey,
@@ -527,7 +550,7 @@ async function monitorAndClaim(user: Keypair, intervalMs = 60_000) {
         const message = new TransactionMessage({
           payerKey: user.publicKey,
           recentBlockhash: blockhash,
-          instructions: collectIxs,
+          instructions: [...sweeps.flatMap((s) => s.instructions), ...collectIxs],
         }).compileToV0Message();
 
         const tx = new VersionedTransaction(message);
@@ -559,7 +582,9 @@ async function monitorAndClaim(user: Keypair, intervalMs = 60_000) {
 | `claimTokenIncentivesBothPrograms(user, payer)` | `Ix[]` | Pump + AMM |
 | `getCreatorVaultBalance(creator)` | `BN` | Pump |
 | `getCreatorVaultBalanceBothPrograms(creator)` | `BN` | Pump + AMM |
-| `collectCoinCreatorFeeInstructions(creator, payer)` | `Ix[]` | Pump + AMM |
+| `collectCoinCreatorFeeInstructions(creator, payer)` | `Ix[]` | Pump + AMM (SOL vaults) |
+| `collectCoinCreatorFeeAllQuotesInstructions(creator, payer)` | `Ix[]` | Pump + AMM, every quote mint (`@pump-fun/pump-sdk` 4.0.0) |
+| `getCreatorFeeSweepInstructions(connection, mint, payer)` | `{ instructions, curveCreatorFee, poolCreatorFee }` | Pump + AMM sweeps (`@pumpkit/core`) |
 | `distributeCreatorFees({...})` | `Ix` | Pump |
 | `claimCashbackInstruction({user})` | `Ix` | Pump |
 | `syncUserVolumeAccumulator(user)` | `Ix` | Pump |

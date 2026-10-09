@@ -16,6 +16,17 @@ const tradeEvent = PUMP_SDK.decodeTradeEvent(data);
 const createEvent = PUMP_SDK.decodeCreateEvent(data);
 ```
 
+`@pumpkit/core` ships dependency-free decoders for the events that changed in the October 2026 upgrade, plus a log parser that keeps track of which program emitted each `Program data:` line (Pump and PumpSwap reuse event names):
+
+```typescript
+import { parsePumpLogEvents, aggregateTrades } from "@pumpkit/core";
+
+const events = parsePumpLogEvents(tx.meta.logMessages);  // trade | postCompleteBuy | complete | sweep
+const trades = aggregateTrades(events);                  // a synthetic migration buy folded into one trade
+```
+
+Single decoders: `decodeTradeEvent`, `decodePostCompleteBuyEvent`, `decodeCompleteEvent`, `decodeSweepBondingCurveFeeEvent`, `decodeSweepPoolFeeEvent`. Each returns `null` on a different discriminator and reads fields older events lack as zero.
+
 ---
 
 ## Pump Program Events
@@ -51,8 +62,20 @@ Emitted on every bonding curve buy/sell.
 | `mayhemMode` | `boolean` | Whether mayhem mode was active |
 | `cashbackFeeBasisPoints` | `BN` | Cashback fee rate (BPS) |
 | `cashback` | `BN` | Cashback amount |
+| `buybackFeeBasisPoints` | `BN` | Buyback part of the protocol fee (BPS) |
+| `buybackFee` | `BN` | Buyback fee, paid in the trade |
+| `shareholders` | `Shareholder[]` | Fee sharing shareholders, when the creator is a sharing config |
+| `quoteMint` | `PublicKey` | Quote mint (WSOL, USDC or a pump coin) |
+| `quoteAmount` | `BN` | Quote amount, in the quote mint's units |
+| `virtualQuoteReserves` | `BN` | Virtual quote reserves after trade |
+| `realQuoteReserves` | `BN` | Real quote reserves after trade |
+| `holderRewardsBps` | `BN` | Holder rewards rate (BPS) |
+| `holderRewards` | `BN` | Holder rewards amount |
+| `creatorFeeUnclaimed` | `BN` | Creator fee waiting on the curve (`BondingCurve.creator_fee`) after this trade |
 
 **Decoder:** `PUMP_SDK.decodeTradeEvent(data)`
+
+**`buy_v3` / `sell_v3` / `buy_exact_quote_in_v3`** keep the protocol and creator fee on the curve. Their TradeEvent has `feeRecipient` set to the zero key (`11111111111111111111111111111111`, exported as `FEE_KEPT_ON_CURVE_RECIPIENT`), while `fee` and `creatorFee` still report the amounts. Read `ixName` to tell the versions apart, and `creatorFeeUnclaimed` for the running total until the next sweep. See [tutorial 55](../../tutorials/55-october-2026-trade-upgrade.md).
 
 ---
 
@@ -92,8 +115,50 @@ Emitted when a bonding curve reaches 100% and triggers graduation.
 | `mint` | `PublicKey` | Token mint |
 | `bondingCurve` | `PublicKey` | Bonding curve PDA |
 | `timestamp` | `BN` | Unix timestamp |
+| `quoteMint` | `PublicKey` | Quote mint of the curve |
 
 **Decoder:** `PUMP_SDK.decodeCompleteEvent(data)`
+
+---
+
+### PostCompleteBuyEvent
+
+Emitted after `CompleteEvent` when a buy empties the curve and the rest of the order fills against the canonical pool in the same instruction (synthetic migration). The sequence is `TradeEvent` (curve part), `CompleteEvent`, `PostCompleteBuyEvent` (pool part). **The buyer's total is the sum of both events**; `quoteIn` already includes the pool fees.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `user` | `PublicKey` | Buyer |
+| `mint` | `PublicKey` | Token mint |
+| `bondingCurve` | `PublicKey` | Bonding curve PDA |
+| `quoteMint` | `PublicKey` | Quote mint |
+| `timestamp` | `BN` | Unix timestamp |
+| `baseOut` | `BN` | Tokens bought from the pool |
+| `quoteIn` | `BN` | Quote paid to the pool, fees included |
+| `feeBasisPoints` / `fee` | `BN` | Protocol fee on the pool part |
+| `creatorFeeBasisPoints` / `creatorFee` | `BN` | Creator fee on the pool part |
+| `buybackFee` | `BN` | Buyback fee on the pool part |
+| `poolBaseReservesBefore` / `poolQuoteReservesBefore` | `BN` | Pool reserves before the pool part |
+| `poolBaseReservesAfter` / `poolQuoteReservesAfter` | `BN` | Pool reserves after the pool part |
+
+**Decoder:** `PUMP_SDK.decodePostCompleteBuyEvent(data)` (`@pump-fun/pump-sdk` 4.0.0), or `decodePostCompleteBuyEvent` from `@pumpkit/core`. Upstream spec: [SYNTHETIC_MIGRATION.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md).
+
+---
+
+### SweepBondingCurveFeeEvent
+
+Emitted by Pump `sweep_protocol_fee` and `sweep_creator_fee`, which pay out the fees v3 trades kept on the curve.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | `BN` | Unix timestamp |
+| `mint` | `PublicKey` | Token mint |
+| `bondingCurve` | `PublicKey` | Bonding curve PDA |
+| `quoteMint` | `PublicKey` | Quote mint |
+| `recipient` | `PublicKey` | Fee recipient or creator vault |
+| `amount` | `BN` | Amount swept |
+| `bucket` | `u8` | `0` = protocol fee, `1` = creator fee (`SWEEP_FEE_BUCKET`) |
+
+**Decoder:** `decodeSweepBondingCurveFeeEvent` from `@pumpkit/core`. Upstream spec: [SWEEP_FEES.md](https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/SWEEP_FEES.md).
 
 ---
 
@@ -264,6 +329,19 @@ Emitted when an account is extended (resized).
 
 Emitted on AMM pool buys. See [AMM Trading](../amm-trading.md) for key fields.
 
+Fields added for the October 2026 upgrade, on both `BuyEvent` and `SellEvent`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `buybackFeeBasisPoints` / `buybackFee` | `BN` | Buyback part of the protocol fee, paid in the trade |
+| `virtualQuoteReserves` | `i128` | Signed virtual quote reserves of the pool after the trade. Price uses `pool_quote_token_reserves + virtualQuoteReserves` |
+| `canBoost` | `boolean` | Whether the pool can be boosted |
+| `baseSupply` | `BN` | Base mint supply |
+| `holderRewardsBps` / `holderRewards` | `BN` | Holder rewards rate and amount |
+| `creatorFeeUnclaimed` | `BN` | Creator fee waiting in the pool (`Pool.creator_fees`) after this trade |
+
+`buy_v2` / `sell_v2` / `buy_exact_quote_in_v2` keep the protocol and creator fee in the pool's quote vault, so the recipient token accounts in the event do not receive them in that trade.
+
 **Decoder:** `PUMP_SDK.decodeAmmBuyEvent(data)`
 
 ### AmmSellEvent
@@ -271,6 +349,22 @@ Emitted on AMM pool buys. See [AMM Trading](../amm-trading.md) for key fields.
 Emitted on AMM pool sells.
 
 **Decoder:** `PUMP_SDK.decodeAmmSellEvent(data)`
+
+### SweepPoolFeeEvent
+
+Emitted by PumpSwap `sweep_protocol_fee` and `sweep_creator_fee`, which pay out the fees v2 pool trades kept in the quote vault.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | `BN` | Unix timestamp |
+| `pool` | `PublicKey` | Pool |
+| `baseMint` / `quoteMint` | `PublicKey` | Pool mints |
+| `recipient` | `PublicKey` | Fee recipient or coin creator vault authority |
+| `payer` | `PublicKey` | Who paid the rent costs |
+| `amount` | `BN` | Amount swept |
+| `bucket` | `u8` | `0` = protocol fee, `1` = creator fee |
+
+**Decoder:** `decodeSweepPoolFeeEvent` from `@pumpkit/core`.
 
 ### DepositEvent
 
@@ -394,3 +488,4 @@ See [Social Fees](./social-fees.md).
 - [Social Fees](./social-fees.md) — Social fee events
 - [Token Incentives](./token-incentives.md) — Volume rewards
 - [Tutorial 29](../../tutorials/29-event-parsing-analytics.md) — Event parsing guide
+- [Tutorial 55](../../tutorials/55-october-2026-trade-upgrade.md): v3 / v2 trades, sweeps and synthetic migration

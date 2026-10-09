@@ -96,6 +96,7 @@ Hands-on guides for building PumpFun Telegram bots.
 | 37 | [V1 → V2 Migration](52-v1-to-v2-migration.md) | Audit-and-migrate playbook: trade adapter, decoders, schema, phased rollout — additive, V1 keeps working |
 | 38 | [USDC Trading Bot](53-usdc-trading-bot.md) | End-to-end V2 USDC bot: monitor → strategy → executor → positions → Telegram |
 | 39 | [Indexing V2 Events at Scale](54-indexing-v2-events.md) | RPC vs Geyser vs webhooks, schema design, dedup, backfill, cost/latency tables |
+| 40 | [October 2026 Trade Upgrade](55-october-2026-trade-upgrade.md) | v3 curve trades, PumpSwap v2, multi-hop swaps, pump-coin quotes, sweeping creator fees before a claim, synthetic migration events, signed pool reserves |
 
 ## Prerequisites
 

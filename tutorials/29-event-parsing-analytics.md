@@ -22,6 +22,9 @@ The Pump ecosystem emits events across three programs:
 | `CreateEvent` | New token created on bonding curve |
 | `TradeEvent` | Buy or sell on bonding curve |
 | `CompleteEvent` | Bonding curve filled, ready to migrate |
+| `PostCompleteBuyEvent` | A v3 buy emptied the curve and filled the rest against the pool (synthetic migration) |
+| `SweepBondingCurveFeeEvent` | Fees v3 trades kept on the curve were swept out (`bucket` 0 protocol, 1 creator) |
+| `DistributeCreatorFeesEvent` | Creator vault paid out to sharing config shareholders |
 | `CompletePumpAmmMigrationEvent` | Token migrated to PumpAMM |
 | `SetCreatorEvent` | Creator address changed |
 | `AdminSetCreatorEvent` | Admin overrode creator |
@@ -42,6 +45,9 @@ The Pump ecosystem emits events across three programs:
 | `AmmSellEvent` | Sell on AMM pool |
 | `DepositEvent` | Liquidity deposited |
 | `WithdrawEvent` | Liquidity withdrawn |
+| `SweepPoolFeeEvent` | Fees v2 pool trades kept in the quote vault were swept out |
+
+> The PumpAMM IDL names its trade events `BuyEvent` and `SellEvent`; the SDK decoders call them `decodeAmmBuyEvent` / `decodeAmmSellEvent`. An Anchor `EventParser` reports the IDL name, which is what the router below switches on. The events added in the October 2026 upgrade are only in the current IDLs: sync them from [pump-public-docs](https://github.com/pump-fun/pump-public-docs/tree/main/idl) (mirrored in `docs/pump-protocol/idl`) or use `@pump-fun/pump-sdk` 4.0.0. For a dependency-free alternative, `parsePumpLogEvents` from `@pumpkit/core` decodes trades, synthetic migration, completion and sweeps.
 
 ### PumpFees Events
 | Event | When It Fires |
@@ -139,15 +145,18 @@ function routeEvent(name: string, data: any, signature: string) {
     case "CompleteEvent":
       handleComplete(data, ctx);
       break;
+    case "PostCompleteBuyEvent":
+      handlePostCompleteBuy(data, ctx);
+      break;
     case "CompletePumpAmmMigrationEvent":
       handleMigration(data, ctx);
       break;
 
     // AMM trading
-    case "AmmBuyEvent":
+    case "BuyEvent":
       handleAmmBuy(data, ctx);
       break;
-    case "AmmSellEvent":
+    case "SellEvent":
       handleAmmSell(data, ctx);
       break;
 
@@ -168,6 +177,10 @@ function routeEvent(name: string, data: any, signature: string) {
       break;
     case "ClaimTokenIncentivesEvent":
       handleIncentiveClaim(data, ctx);
+      break;
+    case "SweepBondingCurveFeeEvent":
+    case "SweepPoolFeeEvent":
+      handleSweep(name, data, ctx);
       break;
 
     // Fee sharing
@@ -246,6 +259,11 @@ function handleTrade(data: any, ctx: EventContext) {
   console.log(`  User:        ${data.user.toBase58()}`);
   console.log(`  Fee:         ${fee.toFixed(6)} SOL (${data.feeBasisPoints.toString()} bps)`);
   console.log(`  Creator fee: ${creatorFee.toFixed(6)} SOL`);
+
+  // buy_v3 / sell_v3 keep both fees on the curve: the recipient is the zero key
+  if (data.feeRecipient.equals(PublicKey.default)) {
+    console.log(`  Fees kept on curve (${data.ixName}), creator fee waiting: ${data.creatorFeeUnclaimed.toString()}`);
+  }
 
   if (data.cashback.toNumber() > 0) {
     console.log(`  Cashback:    ${data.cashback.toNumber() / 1e9} SOL`);
@@ -327,6 +345,23 @@ function handleComplete(data: any, ctx: EventContext) {
   console.log(`🎓 BONDING CURVE COMPLETE`);
   console.log(`  Mint: ${data.mint.toBase58()}`);
   console.log(`  Ready for migration to PumpAMM`);
+}
+
+// A v3 buy that empties the curve emits TradeEvent, CompleteEvent, then this.
+// The buyer's total is the TradeEvent amounts plus these (quoteIn includes fees).
+function handlePostCompleteBuy(data: any, ctx: EventContext) {
+  const quoteIn = data.quoteIn.toNumber() / 1e9;
+  tradeStats.totalBuyVolumeSol += quoteIn;
+  tradeStats.totalFeesSol += data.fee.toNumber() / 1e9;
+  tradeStats.totalCreatorFeesSol += data.creatorFee.toNumber() / 1e9;
+  console.log(`🔀 SYNTHETIC MIGRATION BUY: +${data.baseOut.toString()} tokens for ${quoteIn.toFixed(4)} SOL`);
+  console.log(`  Mint: ${data.mint.toBase58()}  User: ${data.user.toBase58()}`);
+}
+
+function handleSweep(name: string, data: any, ctx: EventContext) {
+  const bucket = data.bucket === 0 ? "protocol" : "creator";
+  const where = name === "SweepPoolFeeEvent" ? `pool ${data.pool.toBase58()}` : `curve ${data.bondingCurve.toBase58()}`;
+  console.log(`🧹 ${bucket.toUpperCase()} FEE SWEPT: ${data.amount.toString()} (${where}) -> ${data.recipient.toBase58()}`);
 }
 
 function handleMigration(data: any, ctx: EventContext) {

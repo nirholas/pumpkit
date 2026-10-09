@@ -15,6 +15,9 @@ import {
   getBuyQuote,
   getSellQuote,
   getBondingCurveState,
+  getBuyV3Quote,
+  getBuyV3Cost,
+  getCreatorFeeSweepInstructions,
 } from '@pumpkit/core';
 ```
 
@@ -27,6 +30,12 @@ npm install @nirholas/pump-sdk@^2 @solana/web3.js bn.js
 ```
 
 Upgrading from 1.x? See the [v2.0.0 migration notes](migration.md#upgrading-to-v200-latest).
+
+The October 2026 helpers (`getBuyV3Quote`, `getBuyV3Cost`, `getCreatorFeeSweepInstructions`) use the official `@pump-fun/pump-sdk` 4, an optional peer dependency loaded on first use:
+
+```bash
+npm install @pump-fun/pump-sdk@^4.0.0
+```
 
 ## Functions
 
@@ -135,9 +144,43 @@ base units (lamports for SOL pairs, micro-USDC for USDC pairs).
 | `isHolderReward` | Creator fees are paid to holders via `holderRewardsPda(mint)` |
 | `creatorFeeBps` | Per-coin creator fee in basis points |
 
+### `getBuyV3Quote(connection, mint, user, quoteAmount)` / `getBuyV3Cost(connection, mint, user, tokenAmount)`
+
+Quote the October 2026 `buy_exact_quote_in_v3` (tokens for a quote budget) and `buy_v3` (quote cost for a token amount), fees included, exactly as the program fills them: a buy past the curve's remaining supply completes the curve and continues into the canonical pool (synthetic migration).
+
+```typescript
+import { getBuyV3Quote } from '@pumpkit/core';
+import BN from 'bn.js';
+
+const quote = await getBuyV3Quote(connection, mint, wallet.publicKey, new BN(100_000_000)); // 0.1 SOL
+if (quote) {
+  console.log('Tokens:', quote.tokens.toString(), 'quote mint:', quote.quoteMint);
+  if (quote.crossesCurve) console.log('This buy completes the curve');
+}
+```
+
+**Returns:** `{ tokens: BN, quoteAmount: BN, quoteMint: string, crossesCurve: boolean } | null` (`null` when the curve is missing or complete).
+
+### `getCreatorFeeSweepInstructions(connection, mint, payer)`
+
+v3 curve trades and PumpSwap v2 trades keep the creator fee on the curve and in the pool until a permissionless `sweep_creator_fee` moves it into the creator vault. Put these instructions first in the same transaction as a creator fee collect or a fee sharing distribution.
+
+```typescript
+import { getCreatorFeeSweepInstructions } from '@pumpkit/core';
+import { Transaction, type TransactionInstruction } from '@solana/web3.js';
+
+// collectIxs: your collect_creator_fee / collect_coin_creator_fee instructions.
+async function collectWithSweep(collectIxs: TransactionInstruction[]) {
+  const sweep = await getCreatorFeeSweepInstructions(connection, mint, wallet.publicKey);
+  return new Transaction().add(...sweep.instructions, ...collectIxs);
+}
+```
+
+**Returns:** `{ instructions, curveCreatorFee: BN, poolCreatorFee: BN, quoteMint: string, pool: string | null }`. `instructions` is empty when nothing is waiting. Throws when `mint` has no bonding curve. See [tutorial 47](../tutorials/47-v2-creator-fees.md) and [tutorial 55](../tutorials/55-october-2026-trade-upgrade.md).
+
 ## Error Handling
 
-All bridge functions return `null` when the bonding curve account doesn't exist (e.g., token hasn't been created yet, or account was closed). Network errors are caught internally and also return `null`.
+The read-only bridge functions return `null` when the bonding curve account doesn't exist (e.g., token hasn't been created yet, or account was closed). Network errors are caught internally and also return `null`.
 
 ```typescript
 const price = await getTokenPrice(connection, mint);

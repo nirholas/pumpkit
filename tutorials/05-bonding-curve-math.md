@@ -32,8 +32,17 @@ interface BondingCurve {
   quoteMint: PublicKey;      // Quote mint (PublicKey.default on legacy SOL curves)
   isCashbackCoin: boolean;   // Legacy cashback coin (new cashback launches are rejected)
   isHolderReward: boolean;   // Creator fees are paid out to holders
+  // Added by the October 2026 upgrade (@pump-fun/pump-sdk 4.0.0). Zero on older, shorter curves.
+  creatorFee: BN;            // Creator fee v3 trades left on the curve, waiting for sweep_creator_fee
+  protocolFees: BN;          // Protocol fee v3 trades left on the curve, waiting for sweep_protocol_fee
+  depth: number;             // 0 for SOL / whitelisted quotes, Q.depth + 1 for a coin quoted in pump coin Q
+  initialVirtualQuoteReserves: BN; // virtualQuoteReserves at creation
+  postCompleteBaseOut: BN;   // Synthetic migration: tokens the completing buy took from the pool part
+  postCompleteQuoteIn: BN;   // Synthetic migration: net quote the completing buy paid in
 }
 ```
+
+> **Fees kept on the curve:** `buy_v3` / `sell_v3` keep the protocol and creator fee in the curve's own balance and count them in `protocolFees` / `creatorFee`. Those amounts are not liquidity: the curve math above uses only the virtual and real reserves, so prices are unchanged. See [tutorial 55](./55-october-2026-trade-upgrade.md).
 
 > **pump-sdk 2:** the `BondingCurve` account fields were renamed from
 > `virtualSolReserves` / `realSolReserves` to `virtualQuoteReserves` /
@@ -165,7 +174,7 @@ console.table(pricePoints);
 
 1. **All amounts use `BN` (bn.js)** — never JavaScript `number` for financial math
 2. **SOL amounts are in lamports** — 1 SOL = 1,000,000,000 lamports
-3. **`complete === true`** means the token graduated to PumpAMM — bonding curve is closed
+3. **`complete === true`** means the token graduated to PumpAMM and the bonding curve is closed. A `buy_v3` that crosses the remaining supply no longer fails: it completes the curve and fills the rest against the canonical pool in the same instruction (synthetic migration, see [tutorial 55](./55-october-2026-trade-upgrade.md#2-quote-a-v3-buy-including-one-that-completes-the-curve))
 4. **`virtualTokenReserves === 0`** means fully migrated
 5. Fees are subtracted from the SOL amount before the swap calculation
 
