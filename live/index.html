@@ -488,6 +488,16 @@ function bytesToBase58(bytes) {
 }
 
 // ── Borsh reader for Anchor CreateEvent ─────────────────────────────
+// CreateEvent discriminator (first 8 bytes of its Program data line).
+const CREATE_EVENT_DISC = [0x1b, 0x72, 0xa9, 0x4d, 0xde, 0xeb, 0x63, 0x76];
+// Wrapped SOL. Legacy curves store the default (all-zero) key instead; both mean SOL.
+const WSOL_MINT = 'So11111111111111111111111111111111111111112';
+
+function isCreateEvent(raw) {
+  for (let i = 0; i < 8; i++) if (raw[i] !== CREATE_EVENT_DISC[i]) return false;
+  return true;
+}
+
 function readBorshString(buf, offset) {
   if (offset + 4 > buf.length) return { val: '', end: offset };
   const len = buf[offset] | (buf[offset+1] << 8) | (buf[offset+2] << 16) | (buf[offset+3] << 24);
@@ -535,6 +545,8 @@ function parseCreateLogs(logs, signature) {
     realTokenReserves: 0,
     tokenTotalSupply: 0,
     marketCapSol: 0,
+    quoteMint: null,
+    decoded: false,
     imageUrl: null,
   };
 
@@ -548,9 +560,11 @@ function parseCreateLogs(logs, signature) {
         const b64 = line.slice('Program data: '.length).trim();
         const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
-        // Skip 8-byte Anchor event discriminator
+        // Only the CreateEvent: a create-and-buy also logs a TradeEvent,
+        // which must not be read as launch data.
+        if (raw.length < 50 || !isCreateEvent(raw) || info.decoded) continue;
+        info.decoded = true;
         let off = 8;
-        if (raw.length < 50) continue; // too short for CreateEvent
 
         // Read strings: name, symbol, uri
         const name = readBorshString(raw, off); off = name.end;
@@ -599,8 +613,17 @@ function parseCreateLogs(logs, signature) {
         info.realTokenReserves = rTok.val;
         info.tokenTotalSupply = supply.val;
 
+        // token_program(32) + is_mayhem_mode(1) + is_cashback_enabled(1) + quote_mint(32).
+        // Coins quoted in USDC or another pump coin carry reserves in that
+        // mint's units, so a SOL market cap is only computed for SOL quotes.
+        if (off + 66 <= raw.length) {
+          const isDefaultKey = raw.subarray(off + 34, off + 66).every(b => b === 0);
+          const quoteMint = readPubkey(raw, off + 34);
+          if (!isDefaultKey && quoteMint.val !== WSOL_MINT) info.quoteMint = quoteMint.val;
+        }
+
         // Calculate market cap in SOL: vSol * totalSupply / vToken / 1e9
-        if (vTok.val > 0 && vSol.val > 0 && supply.val > 0) {
+        if (!info.quoteMint && vTok.val > 0 && vSol.val > 0 && supply.val > 0) {
           const price = vSol.val / vTok.val;
           info.marketCapSol = (price * supply.val) / 1e9;
         }

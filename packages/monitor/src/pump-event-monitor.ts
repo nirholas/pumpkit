@@ -8,7 +8,8 @@
  *
  * Listens to the Pump program for on-chain events:
  *   - Graduation (CompleteEvent, CompletePumpAmmMigrationEvent)
- *   - Whale trades (TradeEvent above a SOL threshold)
+ *   - Whale trades (TradeEvent above a SOL threshold, SOL-quoted curves only;
+ *     a buy that completes the curve adds its PostCompleteBuyEvent pool part)
  *   - Creator fee distributions (DistributeCreatorFeesEvent)
  *
  * Events are decoded directly from "Program data:" log lines emitted
@@ -39,6 +40,7 @@ import {
     COMPLETE_EVENT_DISCRIMINATOR,
     COMPLETE_AMM_MIGRATION_DISCRIMINATOR,
     DEFAULT_GRADUATION_SOL_THRESHOLD,
+    POST_COMPLETE_BUY_EVENT_DISCRIMINATOR,
     PUMP_PROGRAM_ID,
     TRADE_EVENT_DISCRIMINATOR,
 } from './types.js';
@@ -55,6 +57,22 @@ const MAX_WS_ERRORS = 5;
 
 /** Default token total supply (1 billion tokens with 6 decimals) */
 const DEFAULT_TOKEN_TOTAL_SUPPLY = 1_000_000_000_000_000;
+
+/** Quote mints that make a trade's amounts SOL: the default key (legacy SOL curves) and wrapped SOL. */
+const SOL_QUOTE_MINTS = new Set([
+    '11111111111111111111111111111111',
+    'So11111111111111111111111111111111111111112',
+]);
+
+/** Pool part of a synthetic-migration buy, folded into the TradeEvent it continues. */
+interface PostCompleteBuy {
+    user: string;
+    mint: string;
+    baseOut: number;
+    quoteIn: number;
+    fee: number;
+    creatorFee: number;
+}
 
 // ============================================================================
 // Pump Event Monitor Class
@@ -367,6 +385,7 @@ export class PumpEventMonitor {
         blockTime: number,
     ): Array<GraduationEvent | TradeAlertEvent | FeeDistributionEvent> {
         const events: Array<GraduationEvent | TradeAlertEvent | FeeDistributionEvent> = [];
+        const postCompleteBuys = this.config.enableTradeAlerts ? this.extractPostCompleteBuys(logs) : [];
 
         for (const line of logs) {
             if (!line.startsWith('Program data: ')) continue;
@@ -404,7 +423,7 @@ export class PumpEventMonitor {
                     this.config.enableTradeAlerts &&
                     hex === TRADE_EVENT_DISCRIMINATOR
                 ) {
-                    const event = this.parseTradeEvent(bytes, signature, slot, blockTime);
+                    const event = this.parseTradeEvent(bytes, signature, slot, blockTime, postCompleteBuys);
                     if (event) events.push(event);
                     continue;
                 }
@@ -554,13 +573,20 @@ export class PumpEventMonitor {
      *   creator: pubkey (32)
      *   creator_fee_basis_points: u64 (8)
      *   creator_fee: u64 (8)
-     *   ... (remaining fields: track_volume, volume accumulators, ix_name, mayhem_mode, cashback)
+     *   track_volume, volume accumulator stats, ix_name (string), mayhem_mode,
+     *   cashback bps + amount, buyback bps + amount, shareholders (vec),
+     *   quote_mint (pubkey), quote_amount, quote reserves, holder rewards,
+     *   creator_fee_unclaimed
+     *
+     * Everything after creator_fee is optional: older events end earlier and
+     * newer ones may append fields, so each read is length-guarded.
      */
     private parseTradeEvent(
         bytes: Buffer,
         signature: string,
         slot: number,
         blockTime: number,
+        postCompleteBuys: PostCompleteBuy[],
     ): TradeAlertEvent | null {
         // Minimum size through creator_fee field
         const MIN_SIZE = 8 + 32 + 8 + 8 + 1 + 32 + 8 + 8 + 8 + 8 + 8 + 32 + 8 + 8 + 32 + 8 + 8;
@@ -616,37 +642,18 @@ export class PumpEventMonitor {
         const creatorFeeLamports = this.readU64(bytes, offset);
         offset += 8;
 
-        // Read remaining fields for mayhem_mode
-        // track_volume: bool, total_unclaimed_tokens: u64, total_claimed_tokens: u64,
-        // current_sol_volume: u64, last_update_timestamp: i64, ix_name: string
-        // mayhem_mode: bool
-        let mayhemMode = false;
-        try {
-            offset += 1; // track_volume
-            offset += 8; // total_unclaimed_tokens
-            offset += 8; // total_claimed_tokens
-            offset += 8; // current_sol_volume
-            offset += 8; // last_update_timestamp
+        const tail = this.readTradeEventTail(bytes, offset);
 
-            // ix_name: Borsh string (u32 len + bytes)
-            if (offset + 4 <= bytes.length) {
-                const strLen =
-                    bytes[offset] |
-                    (bytes[offset + 1] << 8) |
-                    (bytes[offset + 2] << 16) |
-                    (bytes[offset + 3] << 24);
-                offset += 4 + strLen;
-
-                // mayhem_mode: bool
-                if (offset < bytes.length) {
-                    mayhemMode = bytes[offset] === 1;
-                }
-            }
-        } catch {
-            // Partial parse is fine — mayhemMode defaults to false
+        // The threshold is in SOL: a USDC or pump-coin quoted trade's amounts
+        // are in that mint's units, so they are not comparable.
+        if (tail.quoteMint && !SOL_QUOTE_MINTS.has(tail.quoteMint)) {
+            return null;
         }
 
-        const solAmount = solAmountLamports / LAMPORTS_PER_SOL;
+        // A buy that emptied the curve continues into the new pool; the
+        // buyer's total is the TradeEvent amounts plus the pool part.
+        const post = isBuy ? this.takePostCompleteBuy(postCompleteBuys, mint, user) : null;
+        const solAmount = (solAmountLamports + (post?.quoteIn ?? 0)) / LAMPORTS_PER_SOL;
 
         // ── Whale threshold filter ───────────────────────────────────────
         if (solAmount < this.config.whaleThresholdSol) {
@@ -670,20 +677,22 @@ export class PumpEventMonitor {
                 : 0;
 
         return {
-            bondingCurveProgress: Math.round(bondingCurveProgress * 10) / 10,
+            bondingCurveProgress: post ? 100 : Math.round(bondingCurveProgress * 10) / 10,
+            completedCurve: post !== null,
             creator,
-            creatorFee: creatorFeeLamports / LAMPORTS_PER_SOL,
-            fee: feeLamports / LAMPORTS_PER_SOL,
+            creatorFee: (creatorFeeLamports + (post?.creatorFee ?? 0)) / LAMPORTS_PER_SOL,
+            fee: (feeLamports + (post?.fee ?? 0)) / LAMPORTS_PER_SOL,
+            ...(tail.ixName ? { instruction: tail.ixName } : {}),
             isBuy,
             marketCapSol: Math.round(marketCapSol * 100) / 100,
-            mayhemMode,
+            mayhemMode: tail.mayhemMode,
             mintAddress: mint,
             realSolReserves: realSolReserves / LAMPORTS_PER_SOL,
             realTokenReserves,
             slot,
             solAmount,
             timestamp: timestamp || blockTime,
-            tokenAmount,
+            tokenAmount: tokenAmount + (post?.baseOut ?? 0),
             txSignature: signature,
             user,
             virtualSolReserves: virtualSolReserves / LAMPORTS_PER_SOL,
@@ -811,6 +820,70 @@ export class PumpEventMonitor {
             );
             this.onFeeDistribution(event as FeeDistributionEvent);
         }
+    }
+
+    /**
+     * Optional TradeEvent fields after creator_fee. Stops at the first field
+     * the event is too short to hold.
+     */
+    private readTradeEventTail(
+        bytes: Buffer,
+        start: number,
+    ): { ixName: string | null; mayhemMode: boolean; quoteMint: string | null } {
+        const tail = { ixName: null as string | null, mayhemMode: false, quoteMint: null as string | null };
+        let offset = start + 1 + 8 + 8 + 8 + 8; // track_volume + volume accumulator stats
+        if (offset + 4 > bytes.length) return tail;
+        const nameLen = bytes.readUInt32LE(offset);
+        offset += 4;
+        if (offset + nameLen > bytes.length) return tail;
+        tail.ixName = bytes.subarray(offset, offset + nameLen).toString('utf8');
+        offset += nameLen;
+        if (offset + 1 > bytes.length) return tail;
+        tail.mayhemMode = bytes[offset] === 1;
+        offset += 1;
+        offset += 8 * 4; // cashback bps + amount, buyback bps + amount
+        if (offset + 4 > bytes.length) return tail;
+        const shareholders = bytes.readUInt32LE(offset);
+        offset += 4 + shareholders * (32 + 2);
+        if (offset + 32 > bytes.length) return tail;
+        tail.quoteMint = this.readPubkey(bytes, offset);
+        return tail;
+    }
+
+    /**
+     * Decode every PostCompleteBuyEvent in a transaction's logs.
+     *
+     * Layout (after 8-byte discriminator): user, mint, bonding_curve,
+     * quote_mint (pubkeys), timestamp i64, base_out, quote_in,
+     * fee_basis_points, fee, creator_fee_basis_points, creator_fee,
+     * buyback_fee, then four pool reserve snapshots (u64).
+     */
+    private extractPostCompleteBuys(logs: string[]): PostCompleteBuy[] {
+        const SIZE = 8 + 32 * 4 + 8 + 8 * 11;
+        const found: PostCompleteBuy[] = [];
+        for (const line of logs) {
+            if (!line.startsWith('Program data: ')) continue;
+            const bytes = Buffer.from(line.slice('Program data: '.length), 'base64');
+            if (bytes.length < SIZE) continue;
+            if (bytes.subarray(0, 8).toString('hex') !== POST_COMPLETE_BUY_EVENT_DISCRIMINATOR) continue;
+            const amounts = 8 + 32 * 4 + 8;
+            found.push({
+                user: this.readPubkey(bytes, 8),
+                mint: this.readPubkey(bytes, 40),
+                baseOut: this.readU64(bytes, amounts),
+                quoteIn: this.readU64(bytes, amounts + 8),
+                fee: this.readU64(bytes, amounts + 24),
+                creatorFee: this.readU64(bytes, amounts + 40),
+            });
+        }
+        return found;
+    }
+
+    /** Remove and return the pool part of a buy by `user` on `mint`, if there is one. */
+    private takePostCompleteBuy(pending: PostCompleteBuy[], mint: string, user: string): PostCompleteBuy | null {
+        const index = pending.findIndex((p) => p.mint === mint && p.user === user);
+        if (index === -1) return null;
+        return pending.splice(index, 1)[0] ?? null;
     }
 
     // ──────────────────────────────────────────────────────────────────────

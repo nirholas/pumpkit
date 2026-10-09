@@ -213,6 +213,10 @@ export interface TradeAlertEvent {
     mayhemMode: boolean;
     marketCapSol: number;
     bondingCurveProgress: number;
+    /** Instruction that produced the trade, e.g. `buy_v3`, `sell_v3`, `multi_hop_swap`. */
+    instruction?: string;
+    /** True when this buy emptied the curve and continued into the new pool (synthetic migration). */
+    completedCurve?: boolean;
 }
 
 export interface FeeDistributionEvent {

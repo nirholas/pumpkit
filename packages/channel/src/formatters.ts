@@ -914,6 +914,9 @@ export function formatWhaleFeed(
     lines.push('');
 
     lines.push(`${emoji}  <b>${event.solAmount.toFixed(2)} SOL</b>`);
+    if (event.completedCurve) {
+        lines.push('🎓  Completed the bonding curve and bought into the new pool');
+    }
 
     const trader = `<a href="https://pump.fun/profile/${event.user}">${shortAddr(event.user)}</a>`;
     lines.push(`👤  Trader: ${trader}`);

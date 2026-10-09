@@ -50,11 +50,17 @@ export interface WhaleTradeEvent {
   mint: string;
   trader: string;
   side: 'buy' | 'sell';
+  /** SOL paid or received, fees included (UI units). */
   solAmount: number;
+  /** Tokens bought or sold (UI units, 6 decimals). */
   tokenAmount: number;
   tokenSymbol?: string;
   progress?: number;
   timestamp: number;
+  /** Instruction that produced the trade, e.g. `buy_v3`, `sell_v3`, `multi_hop_swap`. */
+  instruction?: string;
+  /** True when the buy emptied the curve and continued into the new pool (synthetic migration). */
+  syntheticMigration?: boolean;
 }
 
 /** Creator transfer / takeover event */

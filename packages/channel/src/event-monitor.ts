@@ -9,17 +9,22 @@
  * Monitors the Pump program for on-chain events:
  *   - Token launches (CreateEvent, CreateV2Event)
  *   - Graduation (CompleteEvent, CompletePumpAmmMigrationEvent)
- *   - Whale trades (TradeEvent above a SOL threshold)
+ *   - Whale trades (TradeEvent above a SOL threshold, SOL-quoted curves only;
+ *     a buy that completes the curve and continues into the new pool counts
+ *     its PostCompleteBuyEvent part too)
  *   - Fee distributions (DistributeCreatorFeesEvent)
  *
  * Events are decoded from "Program data:" log lines with the SDK's
  * program-aware `parsePumpEventsFromLogs`, which strips the 8-byte event
  * discriminator before handing the payload to the IDL decoder.
+ * PostCompleteBuyEvent (October 2026 synthetic migration) is not in that
+ * SDK's IDL yet, so it is decoded with the official @pump-fun/pump-sdk.
  * Two modes: WebSocket (real-time) or HTTP polling (fallback).
  */
 
 
 import { parsePumpEventsFromLogs } from '@nirholas/pump-sdk';
+import { PUMP_SDK, type PostCompleteBuyEvent } from '@pump-fun/pump-sdk';
 import type {
     CompleteEvent,
     CompletePumpAmmMigrationEvent,
@@ -58,6 +63,16 @@ const MAX_WS_ERRORS = 5;
 const DEFAULT_TOKEN_TOTAL_SUPPLY = 1_000_000_000_000_000;
 const WS_HEARTBEAT_INTERVAL_MS = 60_000;
 const WS_HEARTBEAT_TIMEOUT_MS = 90_000;
+const PROGRAM_DATA_PREFIX = 'Program data: ';
+const POST_COMPLETE_BUY_EVENT_DISCRIMINATOR = Buffer.from('6fb06d8b316cd5fb', 'hex');
+/** Quote mints that make a trade's amounts SOL: the default key (legacy SOL curves) and wrapped SOL. */
+const SOL_QUOTE_MINTS = new Set([
+    '11111111111111111111111111111111',
+    'So11111111111111111111111111111111111111112',
+]);
+
+/** TradeEvent as emitted since the October 2026 upgrade (pump-sdk 2 types omit the quote fields). */
+type QuotedTradeEvent = TradeEvent & { quoteMint?: PublicKey };
 
 // ============================================================================
 // Event Monitor
@@ -209,16 +224,22 @@ export class EventMonitor {
             return;
         }
 
+        const postCompleteBuys = decodePostCompleteBuys(logLines);
         for (const ev of events) {
             try {
-                this.dispatchEvent(ev, signature, blockTime);
+                this.dispatchEvent(ev, signature, blockTime, postCompleteBuys);
             } catch (err) {
                 log.debug('Failed to handle %s event in %s: %s', ev.type, signature.slice(0, 8), err);
             }
         }
     }
 
-    private dispatchEvent(ev: PumpEvent, signature: string, blockTime?: number | null): void {
+    private dispatchEvent(
+        ev: PumpEvent,
+        signature: string,
+        blockTime: number | null | undefined,
+        postCompleteBuys: PostCompleteBuyEvent[],
+    ): void {
         switch (ev.type) {
             case 'create':
                 this.handleLaunch(ev.data, signature);
@@ -230,7 +251,7 @@ export class EventMonitor {
                 this.handleMigration(ev.data, signature, blockTime);
                 break;
             case 'trade':
-                this.handleTrade(ev.data, signature);
+                this.handleTrade(ev.data, signature, takePostCompleteBuy(postCompleteBuys, ev.data));
                 break;
             case 'distributeCreatorFees':
                 this.handleFeeDistribution(ev.data, signature);
@@ -348,8 +369,15 @@ export class EventMonitor {
         this.onGraduation(event);
     }
 
-    private handleTrade(ev: TradeEvent, signature: string): void {
-        const solAmount = Number(ev.solAmount) / LAMPORTS_PER_SOL;
+    private handleTrade(ev: QuotedTradeEvent, signature: string, post: PostCompleteBuyEvent | null): void {
+        // The threshold is in SOL: a USDC or pump-coin quoted trade's amounts
+        // are in that mint's units, so they are not comparable.
+        if (ev.quoteMint && !SOL_QUOTE_MINTS.has(ev.quoteMint.toBase58())) return;
+
+        // A buy that emptied the curve continues into the new pool; the buyer's
+        // total is the TradeEvent amounts plus the PostCompleteBuyEvent amounts.
+        const quoteLamports = Number(ev.solAmount) + (post ? Number(post.quoteIn) : 0);
+        const solAmount = quoteLamports / LAMPORTS_PER_SOL;
 
         if (solAmount < this.config.whaleThresholdSol) return;
 
@@ -376,9 +404,9 @@ export class EventMonitor {
             creator: ev.creator.toBase58(),
             isBuy: ev.isBuy,
             solAmount,
-            tokenAmount: Number(ev.tokenAmount),
-            fee: Number(ev.fee) / LAMPORTS_PER_SOL,
-            creatorFee: Number(ev.creatorFee) / LAMPORTS_PER_SOL,
+            tokenAmount: Number(ev.tokenAmount) + (post ? Number(post.baseOut) : 0),
+            fee: (Number(ev.fee) + (post ? Number(post.fee) : 0)) / LAMPORTS_PER_SOL,
+            creatorFee: (Number(ev.creatorFee) + (post ? Number(post.creatorFee) : 0)) / LAMPORTS_PER_SOL,
             holderRewards: Number(ev.holderRewards ?? 0) / LAMPORTS_PER_SOL,
             virtualSolReserves,
             virtualTokenReserves,
@@ -386,7 +414,9 @@ export class EventMonitor {
             realTokenReserves: Number(ev.realTokenReserves),
             mayhemMode: ev.mayhemMode,
             marketCapSol,
-            bondingCurveProgress,
+            bondingCurveProgress: post ? 100 : bondingCurveProgress,
+            instruction: ev.ixName,
+            completedCurve: post !== null,
         };
 
         this.onWhale(event);
@@ -432,4 +462,39 @@ function extractGithubUrlsFromString(text: string): string[] {
     const matches = text.match(GITHUB_RE);
     if (!matches) return [];
     return [...new Set(matches)];
+}
+
+// ============================================================================
+// PostCompleteBuyEvent (synthetic migration)
+// ============================================================================
+
+/**
+ * Decode every PostCompleteBuyEvent in a transaction's logs. Only the Pump
+ * program emits this discriminator; the official SDK decoder takes the
+ * payload without the 8-byte discriminator.
+ */
+export function decodePostCompleteBuys(logLines: readonly string[]): PostCompleteBuyEvent[] {
+    const events: PostCompleteBuyEvent[] = [];
+    for (const line of logLines) {
+        if (!line.startsWith(PROGRAM_DATA_PREFIX)) continue;
+        const bytes = Buffer.from(line.slice(PROGRAM_DATA_PREFIX.length), 'base64');
+        if (bytes.length < 8 || !bytes.subarray(0, 8).equals(POST_COMPLETE_BUY_EVENT_DISCRIMINATOR)) continue;
+        try {
+            events.push(PUMP_SDK.decodePostCompleteBuyEvent(bytes.subarray(8)));
+        } catch (err) {
+            log.debug('Undecodable PostCompleteBuyEvent: %s', err);
+        }
+    }
+    return events;
+}
+
+/** Remove and return the pool part of `trade`, when the buy completed the curve. */
+export function takePostCompleteBuy(
+    pending: PostCompleteBuyEvent[],
+    trade: TradeEvent,
+): PostCompleteBuyEvent | null {
+    if (!trade.isBuy) return null;
+    const index = pending.findIndex((p) => p.mint.equals(trade.mint) && p.user.equals(trade.user));
+    if (index === -1) return null;
+    return pending.splice(index, 1)[0] ?? null;
 }

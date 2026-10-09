@@ -46,6 +46,45 @@ function UserBubble({ children, time }: { children: React.ReactNode; time?: stri
   );
 }
 
+const BUY_V3_SNIPPET = `import {
+  OnlinePumpSdk,
+  PUMP_SDK,
+  getBuyV3TokenAmountFromQuoteAmount,
+} from "@pump-fun/pump-sdk";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import BN from "bn.js";
+
+const online = new OnlinePumpSdk(connection);
+const [global, feeConfig, state] = await Promise.all([
+  online.fetchGlobal(),
+  online.fetchFeeConfig(),
+  online.fetchBuyState(mint, wallet.publicKey, TOKEN_2022_PROGRAM_ID),
+]);
+
+const quoteAmount = new BN(500_000_000); // 0.5 SOL, fees included
+const tokensOut = getBuyV3TokenAmountFromQuoteAmount({
+  global,
+  feeConfig,
+  mintSupply: state.bondingCurve.tokenTotalSupply,
+  bondingCurve: state.bondingCurve,
+  amount: quoteAmount,
+  curveBaseTokenBalance: state.curveBaseTokenBalance,
+});
+
+const buyIxs = await PUMP_SDK.buyExactQuoteInV3Instructions({
+  bondingCurve: state.bondingCurve,
+  associatedUserAccountInfo: state.associatedUserAccountInfo,
+  mint,
+  user: wallet.publicKey,
+  amount: tokensOut,
+  quoteAmount,
+  slippage: 1,
+  tokenProgram: TOKEN_2022_PROGRAM_ID,
+  quoteTokenProgram: state.quoteTokenProgram,
+});
+// A budget past the remaining supply completes the curve and
+// buys the rest from the new pool in the same transaction.`;
+
 const lifecycle = [
   {
     emoji: '🪙',
@@ -215,35 +254,12 @@ const instructions = await PUMP_SDK.createV2Instruction({
         </div>
       </BotBubble>
 
-      {/* 5. Code — Buy Tokens */}
+      {/* 5. Code: Buy Tokens (buy_exact_quote_in_v3, October 2026) */}
       <UserBubble time="14:04">
         <p className="text-sm font-medium mb-2">📈 Buy tokens on the bonding curve:</p>
         <div className="bg-[#1a2332] rounded-lg p-3 overflow-x-auto relative group">
-          <CopyButton text={`import { OnlinePumpSdk } from "@nirholas/pump-sdk";
-import BN from "bn.js";
-
-const online = new OnlinePumpSdk(connection);
-const global = await online.fetchGlobal();
-const state = await online.fetchBuyState(mint, user);`} />
-          <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{`import { OnlinePumpSdk } from "@nirholas/pump-sdk";
-import BN from "bn.js";
-
-const online = new OnlinePumpSdk(connection);
-const global = await online.fetchGlobal();
-const state = await online.fetchBuyState(mint, user);
-
-const buyIxs = await PUMP_SDK.buyInstructions({
-  global,
-  bondingCurve: state.bondingCurve,
-  bondingCurveAccountInfo: state.bondingCurveAccountInfo,
-  associatedUserAccountInfo: state.associatedUserAccountInfo,
-  mint,
-  user: wallet.publicKey,
-  solAmount: new BN(500_000_000), // 0.5 SOL
-  amount: tokensOut,
-  slippage: 1,
-  tokenProgram: TOKEN_PROGRAM_ID,
-});`}</pre>
+          <CopyButton text={BUY_V3_SNIPPET} />
+          <pre className="font-mono text-xs text-zinc-300 whitespace-pre">{BUY_V3_SNIPPET}</pre>
         </div>
       </UserBubble>
 
@@ -289,20 +305,40 @@ const buyIxs = await PUMP_SDK.buyInstructions({
         </div>
       </UserBubble>
 
-      {/* 7b. V2 USDC rollout note (2026-05-21) */}
+      {/* 7b. Quote-mint and trade-instruction rollout notes */}
       <BotBubble time="14:06">
-        <p className="text-sm font-semibold mb-2">🆕 V2 quote-mint support — May 21, 2026</p>
+        <p className="text-sm font-semibold mb-2">🆕 v3 trades, multi-hop swaps and fee sweeps: October 2026</p>
         <p className="text-sm text-zinc-300 leading-relaxed">
-          pump.fun now lets coins be paired against either <strong>SOL</strong> or <strong>USDC</strong>.
-          USDC-paired coins can only be traded through the new <code className="text-pump-green">_v2</code> instructions —
-          they accept a <code className="text-pump-green">quote_mint</code> argument.
-          SOL-paired coins keep working with the legacy instructions (the V2 ones still work and just need
-          <code className="text-pump-green"> WSOL</code> passed as the quote mint).
+          Bonding curve trades move to <code className="text-pump-green">buy_v3</code>,{' '}
+          <code className="text-pump-green">sell_v3</code> and{' '}
+          <code className="text-pump-green">buy_exact_quote_in_v3</code>. Only the buyback slice of the
+          protocol fee leaves in the trade; the rest of the protocol fee and the creator fee stay on the curve
+          until <code className="text-pump-green">sweep_protocol_fee</code> /{' '}
+          <code className="text-pump-green">sweep_creator_fee</code> pay them out, so creators sweep before they collect.
+          A buy larger than the remaining supply completes the curve and buys the rest from the new pool
+          in the same transaction. PumpSwap adds <code className="text-pump-green">buy_v2</code> /{' '}
+          <code className="text-pump-green">sell_v2</code> and <code className="text-pump-green">multi_hop_swap</code>,
+          and a coin can now be quoted in another pump coin.
         </p>
         <p className="text-xs text-zinc-400 mt-2">
-          PumpKit&apos;s observability packages already parse the new event layouts. Trading-side V2 builders
-          (<code className="text-zinc-300">buy_v2</code> / <code className="text-zinc-300">sell_v2</code>) land in the next
-          <code className="text-zinc-300"> @nirholas/pump-sdk</code> release — until then use the existing SOL-only builders for SOL pairs.
+          PumpKit&apos;s monitors decode the new events (<code className="text-zinc-300">PostCompleteBuyEvent</code>, fee sweeps,
+          multi-hop hops) and only compare SOL-quoted trades against SOL whale thresholds. Build v3 trades with the
+          official <code className="text-zinc-300">@pump-fun/pump-sdk</code> 4.0.0, as above.
+        </p>
+        <p className="text-xs text-zinc-400 mt-2">
+          Docs: <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/TRADE_V3.md" target="_blank" rel="noopener noreferrer">TRADE_V3</a> ·{' '}
+          <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/SWEEP_FEES.md" target="_blank" rel="noopener noreferrer">SWEEP_FEES</a> ·{' '}
+          <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/SYNTHETIC_MIGRATION.md" target="_blank" rel="noopener noreferrer">SYNTHETIC_MIGRATION</a> ·{' '}
+          <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs/blob/main/docs/instructions/MULTI_HOP_SWAP.md" target="_blank" rel="noopener noreferrer">MULTI_HOP_SWAP</a>
+        </p>
+      </BotBubble>
+
+      <BotBubble time="14:06">
+        <p className="text-sm font-semibold mb-2">💵 Quote-mint support: May 21, 2026</p>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          pump.fun lets coins be paired against <strong>SOL</strong> or <strong>USDC</strong>.
+          USDC-paired coins trade through instructions that take a <code className="text-pump-green">quote_mint</code>;
+          SOL-paired coins keep working with the legacy instructions.
         </p>
         <p className="text-xs text-zinc-400 mt-2">
           Docs: <a className="text-tg-blue" href="https://github.com/pump-fun/pump-public-docs" target="_blank" rel="noopener noreferrer">pump-public-docs</a> ·{' '}

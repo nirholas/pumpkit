@@ -47,6 +47,8 @@ export const CREATE_DISCRIMINATOR = '181ec828051c0777';
 export const COMPLETE_EVENT_DISCRIMINATOR = '5f72619cd42e9808';
 export const COMPLETE_AMM_MIGRATION_DISCRIMINATOR = 'bde95db95c94ea94';
 export const TRADE_EVENT_DISCRIMINATOR = 'bddb7fd34ee661ee';
+/** PostCompleteBuyEvent: pool part of a buy that emptied the curve (synthetic migration, October 2026). */
+export const POST_COMPLETE_BUY_EVENT_DISCRIMINATOR = '6fb06d8b316cd5fb';
 
 export const DEFAULT_GRADUATION_SOL_THRESHOLD = 85;
 
@@ -238,6 +240,10 @@ export interface TradeAlertEvent {
     mayhemMode: boolean;
     marketCapSol: number;
     bondingCurveProgress: number;
+    /** Instruction that produced the trade, e.g. `buy_v3`, `sell_v3`, `multi_hop_swap`. */
+    instruction?: string;
+    /** True when this buy emptied the curve and continued into the new pool (synthetic migration). */
+    completedCurve?: boolean;
 }
 
 export interface FeeDistributionEvent {

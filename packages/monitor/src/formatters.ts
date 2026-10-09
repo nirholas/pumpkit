@@ -539,6 +539,9 @@ export function formatTradeAlertNotification(event: TradeAlertEvent): string {
     if (event.mayhemMode) {
         mayhemLine = `⚡ <b>Mayhem Mode:</b> Active\n`;
     }
+    const completedLine = event.completedCurve
+        ? `🎓 <b>Completed the curve</b> and bought into the new pool\n`
+        : '';
 
     return (
         `🐋 <b>Whale ${action}!</b>\n\n` +
@@ -549,6 +552,7 @@ export function formatTradeAlertNotification(event: TradeAlertEvent): string {
         `📊 <b>Graduation:</b> [${progressBar}] ${event.bondingCurveProgress.toFixed(1)}%\n` +
         `💰 <b>Fee:</b> ${event.fee.toFixed(4)} SOL | <b>Creator Fee:</b> ${event.creatorFee.toFixed(4)} SOL\n` +
         mayhemLine +
+        completedLine +
         `🕐 <b>Time:</b> ${timeStr}\n\n` +
         `🔗 <a href="${solscanTx}">View TX</a> · ` +
         `<a href="${solscanMint}">Solscan</a> · ` +

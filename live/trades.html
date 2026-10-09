@@ -703,20 +703,30 @@ function readU64(buf, off) {
 }
 
 // ── Classify event type from program logs ───────────────────────────
+// Anchor event discriminators (first 8 bytes of each Program data line).
+// Matching on them, not on "Instruction: Buy" text, catches every trade
+// version (buy, buy_v2, buy_v3, buy_exact_quote_in_v3, sell_v3) and the
+// curve hops of a multi_hop_swap, and skips the CompleteEvent and
+// PostCompleteBuyEvent that follow a buy that completes the curve.
+const CREATE_EVENT_DISC = [0x1b, 0x72, 0xa9, 0x4d, 0xde, 0xeb, 0x63, 0x76];
+const TRADE_EVENT_DISC = [0xbd, 0xdb, 0x7f, 0xd3, 0x4e, 0xe6, 0x61, 0xee];
+const POST_COMPLETE_BUY_DISC = [0x6f, 0xb0, 0x6d, 0x8b, 0x31, 0x6c, 0xd5, 0xfb];
+
+function hasDisc(bytes, disc) {
+  if (bytes.length < 8) return false;
+  for (let i = 0; i < 8; i++) if (bytes[i] !== disc[i]) return false;
+  return true;
+}
+
 function classifyEvent(logsText, logs, signature) {
-  let type = null;
+  let isBuy = null;
+  let created = false;
   let solLamports = 0;
   let tokenAmount = 0;
   let mint = null;
   let trader = null;
   let tokenName = null;
   let tokenSymbol = null;
-
-  if (logsText.includes('Instruction: Sell')) type = 'sell';
-  else if (logsText.includes('Instruction: Buy')) type = 'buy';
-  else if (logsText.includes('Instruction: Create')) type = 'create';
-  else if (logsText.includes('Instruction: Migrate')) type = 'migrate';
-  else return null;
 
   for (const line of logs) {
     if (!line.startsWith('Program data: ')) {
@@ -730,8 +740,9 @@ function classifyEvent(logsText, logs, signature) {
       const b64 = line.slice('Program data: '.length).trim();
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
-      if (type === 'create' && bytes.length > 50) {
-        // CreateEvent: disc(8) + name(str) + symbol(str) + uri(str) + mint(32) + ...
+      if (hasDisc(bytes, CREATE_EVENT_DISC) && !created) {
+        // CreateEvent: disc(8) + name(str) + symbol(str) + uri(str) + mint(32) + bonding_curve(32) + user(32)
+        created = true;
         let off = 8;
         const name = readBorshStr(bytes, off); off = name.e;
         const sym = readBorshStr(bytes, off); off = sym.e;
@@ -744,22 +755,39 @@ function classifyEvent(logsText, logs, signature) {
         if (mk.v && mk.v.length >= 32) mint = mk.v;
         if (usr.v && usr.v.length >= 32) trader = usr.v;
         if (uri.v) fetchTokenMeta(uri.v, signature, mint);
-      } else if ((type === 'buy' || type === 'sell') && bytes.length >= 81) {
+      } else if (hasDisc(bytes, TRADE_EVENT_DISC) && isBuy === null && bytes.length >= 89) {
         // TradeEvent: disc(8) + mint(32) + sol(8) + token(8) + is_buy(1) + user(32)
         const mk = readPk(bytes, 8);
         if (mk.v && mk.v.length >= 32) mint = mk.v;
         const sol = readU64(bytes, 40); solLamports = sol.v > 1e18 ? 0 : sol.v;
         const tok = readU64(bytes, 48); tokenAmount = tok.v > 1e30 ? 0 : tok.v;
+        isBuy = bytes[56] === 1;
         const usr = readPk(bytes, 57);
         if (usr.v && usr.v.length >= 32) trader = usr.v;
-        // Look up cached name
-        if (mint && tokenMap.has(mint)) {
-          const t = tokenMap.get(mint);
-          if (t.name) tokenName = t.name;
-          if (t.symbol) tokenSymbol = t.symbol;
+      } else if (hasDisc(bytes, POST_COMPLETE_BUY_DISC) && isBuy === true && bytes.length >= 160) {
+        // PostCompleteBuyEvent (synthetic migration): the pool part of a buy
+        // that completed the curve. disc(8) + user(32) + mint(32) +
+        // bonding_curve(32) + quote_mint(32) + timestamp(8) + base_out(8) + quote_in(8).
+        // The buyer's total is this plus the TradeEvent before it.
+        const mk = readPk(bytes, 40);
+        if (mk.v === mint) {
+          tokenAmount += readU64(bytes, 144).v;
+          solLamports += readU64(bytes, 152).v;
         }
       }
     } catch {}
+  }
+
+  let type;
+  if (isBuy !== null) type = isBuy ? 'buy' : 'sell';
+  else if (created) type = 'create';
+  else if (logsText.includes('Instruction: Migrate')) type = 'migrate';
+  else return null;
+
+  if (mint && tokenMap.has(mint)) {
+    const t = tokenMap.get(mint);
+    if (t.name && !tokenName) tokenName = t.name;
+    if (t.symbol && !tokenSymbol) tokenSymbol = t.symbol;
   }
 
   return { type, signature, time: new Date().toLocaleTimeString(),
