@@ -2868,3 +2868,7 @@ Developed by **nirholas** / **nichxbt**
 
 - X (Twitter): [x.com/nichxbt](https://x.com/nichxbt)
 - GitHub: [github.com/nirholas](https://github.com/nirholas)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nirholas/pumpkit&type=Date)](https://www.star-history.com/#nirholas/pumpkit&Date)
