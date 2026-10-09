@@ -41,7 +41,7 @@
         "lint": "node ../../tools/lint-check.mjs ."
     },
     "dependencies": {
-        "@solana/web3.js": "^1.98.0",
+        "@solana/web3.js": "^1.99.0",
         "bs58": "^6.0.0",
         "dotenv": "^17.4.2",
         "grammy": "^1.45.1"
