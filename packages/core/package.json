@@ -42,7 +42,7 @@
     "@pump-fun/pump-sdk": "^4.0.0",
     "@solana/web3.js": "^1.98.0",
     "better-sqlite3": "^11.0.0",
-    "grammy": "^1.45.1"
+    "grammy": "^1.46.0"
   },
   "peerDependenciesMeta": {
     "grammy": {
