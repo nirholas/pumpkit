@@ -1,16 +1,15 @@
+# pumpkit
+
+> Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts: build your own or use ours.
+
 # PumpKit   
-
-<!-- three.ws:badges -->
-[![GitHub stars](https://img.shields.io/github/stars/nirholas/pumpkit?style=flat&logo=github)](https://github.com/nirholas/pumpkit/stargazers) [![Last commit](https://img.shields.io/github/last-commit/nirholas/pumpkit?style=flat)](https://github.com/nirholas/pumpkit/commits) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat)](https://github.com/nirholas/pumpkit/pulls) [![AI agent friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20llms.txt-6d5dfc?style=flat)](https://github.com/nirholas/pumpkit/blob/HEAD/AGENTS.md)
-<!-- /three.ws:badges -->
-
 
 > **GitHub claim safety:** an on-chain social-fee withdrawal is not automatic
 > developer endorsement. The channel package distinguishes verified repository
 > and creator-wallet relationships from identity mismatches, unverified links,
 > and pooled withdrawals that cannot safely be assigned to one CA.
 
-> Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts — build your own or use ours.
+> Open-source framework for building PumpFun Telegram bots on Solana. Claim monitors, channel feeds, group trackers, whale alerts: build your own or use ours.
 >
 >  [PumpKit Web App + Documentation](https://pumpk.it)
 
@@ -20,9 +19,9 @@
 
 If you are not a developer and the rest of this README looks intimidating, here is the one-paragraph version:
 
-> **PumpFun** is a website on the Solana blockchain where anyone can launch a coin in seconds. The coin starts cheap, gets more expensive the more people buy it (this is called a "bonding curve"), and if it gets popular enough it "graduates" to a regular trading pool. The creator earns small fees on every trade. **PumpKit** is a toolkit that lets you (or your team) run a **Telegram bot** that watches PumpFun in real time and posts when something interesting happens — a new coin launched, a coin graduated, a whale (large buyer) just bought, someone claimed their creator fees, etc. The bots are already built. You only need a Telegram bot token (free, takes 30 seconds from a Telegram account called BotFather) and a Solana RPC URL (free tier is fine for testing).
+> **PumpFun** is a website on the Solana blockchain where anyone can launch a coin in seconds. The coin starts cheap, gets more expensive the more people buy it (this is called a "bonding curve"), and if it gets popular enough it "graduates" to a regular trading pool. The creator earns small fees on every trade. **PumpKit** is a toolkit that lets you (or your team) run a **Telegram bot** that watches PumpFun in real time and posts when something interesting happens: a new coin launched, a coin graduated, a whale (large buyer) just bought, someone claimed their creator fees, etc. The bots are already built. You only need a Telegram bot token (free, takes 30 seconds from a Telegram account called BotFather) and a Solana RPC URL (free tier is fine for testing).
 
-If you *are* a developer, the rest of this README is the manual: framework architecture, every module of `@pumpkit/core`, the full Pump protocol reference (bonding curve math, fee tiers, fee sharing, social fees, cashback, token incentives, mayhem mode, AMM trading, every on-chain event), deployment guides, performance benchmarks, RPC best practices, error reference, troubleshooting, migration notes, glossary, FAQ, security model, vision, and roadmap. It is intentionally long — everything from [`docs/`](docs/) is inlined here so you can `Ctrl+F` instead of opening 30 tabs.
+If you *are* a developer, the rest of this README is the manual: framework architecture, every module of `@pumpkit/core`, the full Pump protocol reference (bonding curve math, fee tiers, fee sharing, social fees, cashback, token incentives, mayhem mode, AMM trading, every on-chain event), deployment guides, performance benchmarks, RPC best practices, error reference, troubleshooting, migration notes, glossary, FAQ, security model, vision, and roadmap. It is intentionally long: everything from [`docs/`](docs/) is inlined here so you can `Ctrl+F` instead of opening 30 tabs.
 
 ---
 
@@ -41,10 +40,10 @@ If you *are* a developer, the rest of this README is the manual: framework archi
 - [Tech Stack](#tech-stack)
 - [Documentation](#documentation)
 - [Development Guide](#development-guide)
-- [`@pumpkit/core` — Full API Reference](#pumpkitcore--full-api-reference)
-- [Monitor Bot — Feature Specification](#monitor-bot--feature-specification)
-- [Tracker Bot — Feature Specification](#tracker-bot--feature-specification)
-- [Channel Bot — Architecture](#channel-bot--architecture)
+- [`@pumpkit/core`: Full API Reference](#pumpkitcore--full-api-reference)
+- [Monitor Bot: Feature Specification](#monitor-bot--feature-specification)
+- [Tracker Bot: Feature Specification](#tracker-bot--feature-specification)
+- [Channel Bot: Architecture](#channel-bot--architecture)
 - [SDK Integration](#sdk-integration)
 - [Pump Protocol Reference](#pump-protocol-reference)
 - [USDC Quote Pair (V2)](#usdc-quote-pair-v2)
@@ -52,7 +51,7 @@ If you *are* a developer, the rest of this README is the manual: framework archi
 - [Deployment](#deployment)
 - [Performance & Benchmarks](#performance--benchmarks)
 - [Security Model](#security-model)
-- [CLI Guide — Vanity Addresses](#cli-guide--vanity-addresses)
+- [CLI Guide: Vanity Addresses](#cli-guide--vanity-addresses)
 - [Error Reference](#error-reference)
 - [Troubleshooting](#troubleshooting)
 - [Glossary](#glossary)
@@ -72,15 +71,15 @@ If you *are* a developer, the rest of this README is the manual: framework archi
 
 PumpKit is a TypeScript framework and collection of production-ready bots for monitoring PumpFun activity on Solana via Telegram. It provides:
 
-- **`@pumpkit/core`** — Shared framework: bot scaffolding, Solana monitoring, formatters, storage, config, health checks
-- **`@pumpkit/monitor`** — All-in-one monitoring bot (fee claims, launches, graduations, whale trades, CTO alerts)
-- **`@pumpkit/tracker`** — Group call-tracking bot (leaderboards, PNL cards, rankings, multi-chain)
+- **`@pumpkit/core`**: Shared framework: bot scaffolding, Solana monitoring, formatters, storage, config, health checks
+- **`@pumpkit/monitor`**: All-in-one monitoring bot (fee claims, launches, graduations, whale trades, CTO alerts)
+- **`@pumpkit/tracker`**: Group call-tracking bot (leaderboards, PNL cards, rankings, multi-chain)
 
 > **Plain English:** PumpKit is the "WordPress of PumpFun Telegram bots." Instead of every developer rewriting the same Solana plumbing, the same grammy bot setup, and the same message formatting code, you get a shared core and several ready-to-deploy bots that you can run as-is or fork.
 
 ## Why PumpKit?
 
-Claim bots and PumpFun monitors are some of the most popular Telegram bots in crypto. But every builder starts from scratch — writing the same grammy setup, Solana RPC connections, message formatters, and deployment configs.
+Claim bots and PumpFun monitors are some of the most popular Telegram bots in crypto. But every builder starts from scratch: writing the same grammy setup, Solana RPC connections, message formatters, and deployment configs.
 
 PumpKit gives you production-tested building blocks so you can ship a bot in hours, not weeks.
 
@@ -131,12 +130,12 @@ Repo layout at a glance:
 ```
 pumpkit/
 ├── packages/
-│   ├── core/              @pumpkit/core — shared framework
-│   ├── monitor/           @pumpkit/monitor — monitoring bot
-│   ├── channel/           @pumpkit/channel — read-only channel feed
-│   ├── claim/             @pumpkit/claim — fee claim tracker
-│   ├── tracker/           @pumpkit/tracker — group tracker bot
-│   └── web/               @pumpkit/web — dashboard (skeleton)
+│   ├── core/              @pumpkit/core: shared framework
+│   ├── monitor/           @pumpkit/monitor: monitoring bot
+│   ├── channel/           @pumpkit/channel: read-only channel feed
+│   ├── claim/             @pumpkit/claim: fee claim tracker
+│   ├── tracker/           @pumpkit/tracker: group tracker bot
+│   └── web/               @pumpkit/web: dashboard (skeleton)
 ├── docs/                  documentation (everything in this README is also here)
 ├── tutorials/             numbered, hands-on guides (45+)
 ├── examples/              starter dashboards & templates
@@ -148,7 +147,7 @@ pumpkit/
 └── turbo.json             monorepo build pipeline
 ```
 
-Package dependency graph — `@pumpkit/core` has zero internal dependencies, only external npm packages:
+Package dependency graph: `@pumpkit/core` has zero internal dependencies, only external npm packages:
 
 ```
 @pumpkit/monitor ──→ @pumpkit/core
@@ -206,7 +205,7 @@ bot.launch();
 
 ## Getting Started (Detailed)
 
-> Build your own PumpFun bot in minutes — start-to-finish walk-through.
+> Build your own PumpFun bot in minutes: start-to-finish walk-through.
 
 ### Prerequisites
 
@@ -214,7 +213,7 @@ bot.launch();
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
 - A Solana RPC URL (free tier: [Helius](https://helius.dev), [QuickNode](https://quicknode.com), or public `https://api.mainnet-beta.solana.com`)
 
-### Option 1 — Run a Pre-Built Bot
+### Option 1: Run a Pre-Built Bot
 
 **Monitor Bot** (fee claims, launches, whales, graduations):
 
@@ -256,7 +255,7 @@ npm run dev --workspace=@pumpkit/tracker
 
 Add the bot to a Telegram group. Members can paste token CAs to start tracking calls.
 
-### Option 2 — Build a Custom Bot
+### Option 2: Build a Custom Bot
 
 #### 1. Create a new project
 
@@ -284,7 +283,7 @@ TELEGRAM_BOT_TOKEN=your-bot-token
 SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 ```
 
-#### 3. Write your bot — `src/index.ts`
+#### 3. Write your bot: `src/index.ts`
 
 ```typescript
 import 'dotenv/config';
@@ -298,9 +297,9 @@ const bot = createBot({
       'Send /watch <wallet> to track a wallet.'
     ),
     help: (ctx) => ctx.reply(
-      '/watch <wallet> — Track fee claims\n' +
-      '/unwatch <wallet> — Stop tracking\n' +
-      '/list — Show watched wallets'
+      '/watch <wallet>: Track fee claims\n' +
+      '/unwatch <wallet>: Stop tracking\n' +
+      '/list: Show watched wallets'
     ),
   },
 });
@@ -357,7 +356,7 @@ process.on('SIGTERM', shutdown);
 npx tsx src/index.ts
 ```
 
-#### 5. Iterate — add more monitors
+#### 5. Iterate: add more monitors
 
 ```typescript
 import { LaunchMonitor, WhaleMonitor, formatLaunch, formatWhaleTrade } from '@pumpkit/core';
@@ -412,7 +411,7 @@ createHealthServer({
 
 | Package | Description | Status |
 |---------|-------------|--------|
-| [`@pumpkit/core`](packages/core/) | Shared framework — logger, health server, config, shutdown, types | ✅ Ready |
+| [`@pumpkit/core`](packages/core/) | Shared framework: logger, health server, config, shutdown, types | ✅ Ready |
 | [`@pumpkit/monitor`](packages/monitor/) | All-in-one PumpFun monitor bot (DM + channel + API) | ✅ Ready |
 | [`@pumpkit/channel`](packages/channel/) | Read-only Telegram channel feed (broadcasts token events) | ✅ Ready |
 | [`@pumpkit/claim`](packages/claim/) | Fee claim tracker by token CA or X handle | ✅ Ready |
@@ -427,9 +426,9 @@ Production bots running on Telegram, powered by PumpKit:
 
 | Bot | Link | Description |
 |-----|------|-------------|
-| **PumpFun Claims** | [@pumpfunclaims](https://t.me/pumpfunclaims) | Channel feed — broadcasts first fee claims by GitHub-assigned developers |
-| **Migrated PumpFun** | [@migratedpumpfun](https://t.me/migratedpumpfun) | Channel feed — tracks token graduations from bonding curve to PumpSwap AMM |
-| **Cryptocurrency Vision** | [@cryptocurrencyvisionbot](https://t.me/cryptocurrencyvisionbot) | Interactive bot — PumpFun token analytics, whale alerts, and market insights |
+| **PumpFun Claims** | [@pumpfunclaims](https://t.me/pumpfunclaims) | Channel feed: broadcasts first fee claims by GitHub-assigned developers |
+| **Migrated PumpFun** | [@migratedpumpfun](https://t.me/migratedpumpfun) | Channel feed: tracks token graduations from bonding curve to PumpSwap AMM |
+| **Cryptocurrency Vision** | [@cryptocurrencyvisionbot](https://t.me/cryptocurrencyvisionbot) | Interactive bot: PumpFun token analytics, whale alerts, and market insights |
 
 ## Features
 
@@ -475,7 +474,7 @@ Consolidates 3 existing production bots into one:
 | Whale trades | `FEED_WHALES` | `true` |
 | Fee distributions | `FEED_FEE_DISTRIBUTIONS` | `true` |
 
-The channel bot is a one-way feed — no commands, no interactive UI. It monitors Solana, builds compact HTML messages, and pushes them to a channel. See [Channel Bot — Architecture](#channel-bot--architecture) for the data flow.
+The channel bot is a one-way feed: no commands, no interactive UI. It monitors Solana, builds compact HTML messages, and pushes them to a channel. See [Channel Bot: Architecture](#channel-bot--architecture) for the data flow.
 
 ### Claim Bot (`@pumpkit/claim`)
 
@@ -503,42 +502,42 @@ Specialized fee-claim tracker. Subscribe by token contract address or by X/Twitt
 ## Documentation
 
 ### Getting Started
-- [Getting Started](docs/getting-started.md) — Setup, configuration, first bot
-- [Development](docs/development.md) — Local environment, commands, debugging
-- [Architecture](docs/architecture.md) — System design, module boundaries, data flow
-- [Deployment](docs/deployment.md) — Railway, Docker, Vercel setup
-- [FAQ](docs/faq.md) — Common questions and troubleshooting
+- [Getting Started](docs/getting-started.md): Setup, configuration, first bot
+- [Development](docs/development.md): Local environment, commands, debugging
+- [Architecture](docs/architecture.md): System design, module boundaries, data flow
+- [Deployment](docs/deployment.md): Railway, Docker, Vercel setup
+- [FAQ](docs/faq.md): Common questions and troubleshooting
 
 ### Package Docs
-- [Core API](docs/core-api.md) — `@pumpkit/core` module reference
-- [Monitor Bot](docs/monitor-bot.md) — Feature spec, commands, configuration
-- [Tracker Bot](docs/tracker-bot.md) — Feature spec, commands, configuration
-- [npm Packages](docs/npm.md) — Package installation and usage
+- [Core API](docs/core-api.md): `@pumpkit/core` module reference
+- [Monitor Bot](docs/monitor-bot.md): Feature spec, commands, configuration
+- [Tracker Bot](docs/tracker-bot.md): Feature spec, commands, configuration
+- [npm Packages](docs/npm.md): Package installation and usage
 
 ### Pump Protocol Reference
 - [Protocol Overview](docs/pump-protocol/): the official protocol specs, per-instruction references (v3/v2 trades, multi-hop swaps, fee sweeps, pump-coin quotes) and IDLs, synced with the October 2026 upgrade
-- [Bonding Curve Math](docs/guides/bonding-curve-math.md) — Constant-product formula, buy/sell calculations
-- [Fee Tiers](docs/guides/fee-tiers.md) — Market-cap-based dynamic fee selection
-- [Fee Sharing](docs/guides/fee-sharing.md) — Multi-shareholder fee distribution
-- [Social Fees](docs/guides/social-fees.md) — GitHub identity-based fee sharing
-- [Cashback](docs/guides/cashback.md) — Trader cashback opt-in system
-- [Token Incentives](docs/guides/token-incentives.md) — Volume-based PUMP rewards
-- [Mayhem Mode](docs/guides/mayhem-mode.md) — Alternate vault routing, Token2022
-- [Events Reference](docs/guides/events-reference.md) — 20+ on-chain event types
-- [Analytics](docs/guides/analytics.md) — Price impact, graduation progress, market cap
-- [End-to-End Workflow](docs/guides/end-to-end-workflow.md) — Full token lifecycle
+- [Bonding Curve Math](docs/guides/bonding-curve-math.md): Constant-product formula, buy/sell calculations
+- [Fee Tiers](docs/guides/fee-tiers.md): Market-cap-based dynamic fee selection
+- [Fee Sharing](docs/guides/fee-sharing.md): Multi-shareholder fee distribution
+- [Social Fees](docs/guides/social-fees.md): GitHub identity-based fee sharing
+- [Cashback](docs/guides/cashback.md): Trader cashback opt-in system
+- [Token Incentives](docs/guides/token-incentives.md): Volume-based PUMP rewards
+- [Mayhem Mode](docs/guides/mayhem-mode.md): Alternate vault routing, Token2022
+- [Events Reference](docs/guides/events-reference.md): 20+ on-chain event types
+- [Analytics](docs/guides/analytics.md): Price impact, graduation progress, market cap
+- [End-to-End Workflow](docs/guides/end-to-end-workflow.md): Full token lifecycle
 
 ### Reference
-- [Glossary](docs/glossary.md) — Key terms and definitions
-- [Code Examples](docs/examples.md) — Practical code samples
-- [Error Reference](docs/errors.md) — Custom error classes and fixes
-- [RPC Best Practices](docs/rpc-best-practices.md) — Provider selection, batching, rate limiting
-- [Performance](docs/performance.md) — Benchmarks, latency, and optimization tips
-- [Security Guide](docs/guides/security.md) — Crypto library rules, key management
-- [Wallet & Keypair Safety](docs/guides/wallet-safety.md) — Keypair handling, gitignore patterns, leak recovery
-- [Troubleshooting](docs/troubleshooting.md) — Common issues and solutions
-- [Support](docs/support.md) — Getting help, bug reports, feature requests
-- [Roadmap](docs/roadmap.md) — Where PumpKit is headed
+- [Glossary](docs/glossary.md): Key terms and definitions
+- [Code Examples](docs/examples.md): Practical code samples
+- [Error Reference](docs/errors.md): Custom error classes and fixes
+- [RPC Best Practices](docs/rpc-best-practices.md): Provider selection, batching, rate limiting
+- [Performance](docs/performance.md): Benchmarks, latency, and optimization tips
+- [Security Guide](docs/guides/security.md): Crypto library rules, key management
+- [Wallet & Keypair Safety](docs/guides/wallet-safety.md): Keypair handling, gitignore patterns, leak recovery
+- [Troubleshooting](docs/troubleshooting.md): Common issues and solutions
+- [Support](docs/support.md): Getting help, bug reports, feature requests
+- [Roadmap](docs/roadmap.md): Where PumpKit is headed
 
 ### Tutorials
 
@@ -573,10 +572,10 @@ Specialized fee-claim tracker. Subscribe by token contract address or by X/Twitt
 | [Understanding Events](tutorials/43-understanding-pumpfun-events.md) | On-chain event types and parsing |
 
 ### Community
-- [Contributing](CONTRIBUTING.md) — How to contribute
-- [Code of Conduct](CODE_OF_CONDUCT.md) — Community standards
-- [Security Policy](SECURITY.md) — Vulnerability reporting
-- [Changelog](CHANGELOG.md) — Release history
+- [Contributing](CONTRIBUTING.md): How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md): Community standards
+- [Security Policy](SECURITY.md): Vulnerability reporting
+- [Changelog](CHANGELOG.md): Release history
 
 ---
 
@@ -632,13 +631,13 @@ There's also a [`Makefile`](Makefile) with shortcuts (`make dev-monitor`, `make 
 
 PumpKit uses [Turborepo](https://turbo.build/) for monorepo orchestration. The pipeline is defined in `turbo.json`:
 
-- `build` — Compiles TypeScript (`tsc`) for each package
-- `dev` — Runs in watch mode (`tsx watch`)
-- `typecheck` — Type checks without emitting (`tsc --noEmit`)
-- `lint` — Runs ESLint
-- `clean` — Removes `dist/` and `node_modules/`
+- `build`: Compiles TypeScript (`tsc`) for each package
+- `dev`: Runs in watch mode (`tsx watch`)
+- `typecheck`: Type checks without emitting (`tsc --noEmit`)
+- `lint`: Runs ESLint
+- `clean`: Removes `dist/` and `node_modules/`
 
-Tasks respect dependency order — `@pumpkit/monitor` waits for `@pumpkit/core` to build first.
+Tasks respect dependency order: `@pumpkit/monitor` waits for `@pumpkit/core` to build first.
 
 ### TypeScript Configuration
 
@@ -674,7 +673,7 @@ cp packages/tracker/.env.example packages/tracker/.env
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Yes | — | From [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_BOT_TOKEN` | Yes |: | From [@BotFather](https://t.me/BotFather) |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
 | `SOLANA_WS_URL` | No | Derived from RPC URL | WebSocket endpoint |
 | `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error` |
@@ -688,7 +687,7 @@ cp packages/tracker/.env.example packages/tracker/.env
 | `ENABLE_GRADUATION_ALERTS` | `true` | Alert on bonding curve graduations |
 | `ENABLE_TRADE_ALERTS` | `false` | Alert on trades |
 | `WHALE_THRESHOLD_SOL` | `10` | Minimum SOL to trigger whale alert |
-| `ALLOWED_USER_IDS` | — | Comma-separated Telegram user IDs |
+| `ALLOWED_USER_IDS` |: | Comma-separated Telegram user IDs |
 
 **Tracker-Specific:**
 
@@ -722,7 +721,7 @@ brew install pkg-config cairo pango libpng jpeg giflib librsvg
 
 **RPC errors:**
 1. Verify reachability: `curl <RPC_URL> -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"getHealth"}'`
-2. Public endpoints are rate-limited — use a paid provider for production
+2. Public endpoints are rate-limited: use a paid provider for production
 3. Set `SOLANA_RPC_URLS` (comma-separated) for fallbacks
 
 **SQLite issues (tracker):**
@@ -732,13 +731,13 @@ brew install pkg-config cairo pango libpng jpeg giflib librsvg
 
 ### Code Style
 
-- **TypeScript strict mode** — no implicit `any`, no unchecked index access
-- **ES modules** — `import`/`export`, `.js` extension in relative imports
-- **grammy** for Telegram — not Telegraf or node-telegram-bot-api
-- **HTML** for Telegram messages — not Markdown
-- **Leveled logging** — use `log.info/warn/error/debug`, never `console.log`
-- **Graceful shutdown** — every entry point handles `SIGINT`/`SIGTERM`
-- **BN.js** for financial amounts — never JavaScript `number`
+- **TypeScript strict mode**: no implicit `any`, no unchecked index access
+- **ES modules**: `import`/`export`, `.js` extension in relative imports
+- **grammy** for Telegram: not Telegraf or node-telegram-bot-api
+- **HTML** for Telegram messages: not Markdown
+- **Leveled logging**: use `log.info/warn/error/debug`, never `console.log`
+- **Graceful shutdown**: every entry point handles `SIGINT`/`SIGTERM`
+- **BN.js** for financial amounts: never JavaScript `number`
 
 ### Adding a New Package
 
@@ -752,14 +751,14 @@ brew install pkg-config cairo pango libpng jpeg giflib librsvg
 
 ---
 
-## `@pumpkit/core` — Full API Reference
+## `@pumpkit/core`: Full API Reference
 
 > Shared framework modules for building PumpFun Telegram bots.
 
 > **Not on the npm registry yet.** See [Build a Custom Bot](#option-2--build-a-custom-bot)
 > above for the workspace install that works today.
 
-### `bot/` — Telegram Scaffolding
+### `bot/`: Telegram Scaffolding
 
 #### `createBot(options): Bot`
 
@@ -784,7 +783,7 @@ await bot.launch();
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `token` | `string` | ✅ | — | Telegram bot token from BotFather |
+| `token` | `string` | ✅ |: | Telegram bot token from BotFather |
 | `commands` | `Record<string, CommandHandler>` | ❌ | `{}` | Command handlers |
 | `onError` | `(err: Error) => void` | ❌ | `console.error` | Global error handler |
 | `parseMode` | `'HTML' \| 'MarkdownV2'` | ❌ | `'HTML'` | Default parse mode |
@@ -795,7 +794,7 @@ await bot.broadcast([chatId1, chatId2], formatClaim(event)); // Auto rate-limit 
 bot.notifyAdmins('Bot restarted');
 ```
 
-### `monitor/` — Event Monitors
+### `monitor/`: Event Monitors
 
 All monitors share the same lifecycle:
 
@@ -849,9 +848,9 @@ interface LaunchEvent {
 
 #### `GraduationMonitor`, `WhaleMonitor`, `CTOMonitor`, `FeeDistMonitor`
 
-Same shape — pass an `rpcUrl` and an `on...` callback. `WhaleMonitor` adds a `thresholdSol` parameter.
+Same shape: pass an `rpcUrl` and an `on...` callback. `WhaleMonitor` adds a `thresholdSol` parameter.
 
-### `solana/` — Utilities
+### `solana/`: Utilities
 
 ```typescript
 import {
@@ -885,7 +884,7 @@ connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), (logInfo) => {
 });
 ```
 
-### `formatter/` — Message Formatting
+### `formatter/`: Message Formatting
 
 ```typescript
 import { formatClaim, formatLaunch, formatGraduation, formatWhaleTrade, formatCTO, formatFeeDistribution,
@@ -906,7 +905,7 @@ pumpFunToken(mint);
 
 All formatters return HTML compatible with Telegram's `parse_mode: 'HTML'`.
 
-### `storage/` — Persistence
+### `storage/`: Persistence
 
 ```typescript
 import { FileStore, SqliteStore } from '@pumpkit/core';
@@ -921,7 +920,7 @@ const calls = db.query('SELECT * FROM calls WHERE group_id = ?', [groupId]);
 db.close();
 ```
 
-### `config/` — Configuration Loader
+### `config/`: Configuration Loader
 
 ```typescript
 import { loadConfig } from '@pumpkit/core';
@@ -936,7 +935,7 @@ const config = loadConfig({
 });
 ```
 
-### `health/` — Health Checks
+### `health/`: Health Checks
 
 ```typescript
 createHealthServer({
@@ -946,7 +945,7 @@ createHealthServer({
 // GET /health → { status: 'ok', uptime: '3600s', monitors: {...} }
 ```
 
-### `logger/` — Logging
+### `logger/`: Logging
 
 ```typescript
 import { log } from '@pumpkit/core';
@@ -954,7 +953,7 @@ log.debug(...); log.info(...); log.warn(...); log.error(...);
 // LOG_LEVEL env var: debug | info | warn | error
 ```
 
-### `api/` — REST + SSE + Webhooks
+### `api/`: REST + SSE + Webhooks
 
 ```typescript
 const api = createApiServer({
@@ -969,7 +968,7 @@ const api = createApiServer({
 });
 ```
 
-### `social/` — Integrations
+### `social/`: Integrations
 
 ```typescript
 const twitter = new TwitterClient({ bearerToken: process.env.TWITTER_BEARER_TOKEN! });
@@ -991,13 +990,13 @@ import type {
 
 ---
 
-## Monitor Bot — Feature Specification
+## Monitor Bot: Feature Specification
 
 The Monitor Bot consolidates 3 production bots into one (`telegram-bot` + `channel-bot` + `claim-bot` → ~20 files in `@pumpkit/monitor`).
 
 ### Interaction Modes
 
-**Mode 1 — Interactive DM:**
+**Mode 1: Interactive DM:**
 
 ```
 User: /watch 7xKXt...
@@ -1009,7 +1008,7 @@ Bot: 🔔 Fee Claimed!
      Token: $PUMP (PumpCoin)
 ```
 
-**Mode 2 — Channel Broadcast:**
+**Mode 2: Channel Broadcast:**
 
 ```
 Channel: PumpFun Activity
@@ -1025,7 +1024,7 @@ Bot: 🐋 Whale Buy
      500 SOL → $DEGEN  Progress: ████████░░ 82%
 ```
 
-**Mode 3 — Group Chat:**
+**Mode 3: Group Chat:**
 
 ```
 Group Member: /watch 7xKXt...
@@ -1086,9 +1085,9 @@ Enabled via `API_ENABLED=true`. All endpoints require `Authorization: Bearer <to
 
 ### Social Integrations
 
-- **Twitter/X** — Track tokens by handle, show follower counts, flag influencer follows
-- **GitHub** — Look up social fee PDAs, enrich claim cards with repo info
-- **Groq LLM** — Optional AI-generated token summaries (`GROQ_API_KEY`)
+- **Twitter/X**: Track tokens by handle, show follower counts, flag influencer follows
+- **GitHub**: Look up social fee PDAs, enrich claim cards with repo info
+- **Groq LLM**: Optional AI-generated token summaries (`GROQ_API_KEY`)
 
 ### File Structure
 
@@ -1124,7 +1123,7 @@ packages/monitor/
 
 ---
 
-## Tracker Bot — Feature Specification
+## Tracker Bot: Feature Specification
 
 The Tracker Bot is adapted from **outsiders-bot** (11 files). It operates in Telegram groups where members paste token CAs, and the bot tracks performance, builds leaderboards, and generates PNL cards.
 
@@ -1142,8 +1141,8 @@ Group Chat: "Alpha Calls"
 │
 ├── @bob: /leaderboard
 │   Bot: 🏆 Top Calls (7d)
-│        1. @alice — 15.2x $PUMP ⭐⭐⭐⭐⭐
-│        2. @charlie — 8.7x $MOON ⭐⭐⭐⭐
+│        1. @alice: 15.2x $PUMP ⭐⭐⭐⭐⭐
+│        2. @charlie: 8.7x $MOON ⭐⭐⭐⭐
 │
 ├── @alice: /pnl
 │   Bot: [Canvas-rendered PNL card image]
@@ -1151,8 +1150,8 @@ Group Chat: "Alpha Calls"
 
 ### Call Modes
 
-- **Auto Mode** — Call registered automatically after 30-second confirmation window
-- **Button Mode** — Manual confirm with alpha/gamble selection buttons
+- **Auto Mode**: Call registered automatically after 30-second confirmation window
+- **Button Mode**: Manual confirm with alpha/gamble selection buttons
 
 ### Points System
 
@@ -1260,9 +1259,9 @@ CREATE TABLE blocked_users (
 
 ---
 
-## Channel Bot — Architecture
+## Channel Bot: Architecture
 
-The channel bot is a **one-way feed** — it monitors Solana for PumpFun events and posts formatted messages to a Telegram channel. No interactive commands. Channel: [@pumpfunclaims](https://t.me/pumpfunclaims).
+The channel bot is a **one-way feed**: it monitors Solana for PumpFun events and posts formatted messages to a Telegram channel. No interactive commands. Channel: [@pumpfunclaims](https://t.me/pumpfunclaims).
 
 ### Data flow
 
@@ -1277,7 +1276,7 @@ Solana RPC (WebSocket)  ──► Event Monitor ──► Claim Tracker ──�
 
 1. **Event Monitor** subscribes to Solana program logs via WebSocket (HTTP polling fallback)
 2. On a fee-claim transaction, extract the event
-3. **Claim Tracker** checks if this is the **first ever claim** on the token — drops it otherwise
+3. **Claim Tracker** checks if this is the **first ever claim** on the token: drops it otherwise
 4. **Pump Client** enriches in parallel (token info, creator profile, holders, trades, SOL/USD, GitHub URLs, bonding curve progress)
 5. **Formatter** builds a compact emoji-dense HTML caption
 6. With an image, send via `sendPhoto`; otherwise fall back to `sendMessage`
@@ -1300,7 +1299,7 @@ Capacity: 50,000 entries with LRU eviction.
 | Mode | Method | Latency | Reliability |
 |------|--------|---------|-------------|
 | WebSocket | `connection.onLogs(PUMP_PROGRAM_ID)` | < 2s | May disconnect |
-| HTTP Polling | `getSignaturesForAddress` + `getTransaction` | 5–10s | Reliable fallback |
+| HTTP Polling | `getSignaturesForAddress` + `getTransaction` | 5-10s | Reliable fallback |
 
 ### Example message
 
@@ -1328,9 +1327,9 @@ Capacity: 50,000 entries with LRU eviction.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | ✅ | — | Bot token from BotFather |
-| `TELEGRAM_CHANNEL_ID` | ✅ | — | Channel to post to |
-| `SOLANA_RPC_URL` | ✅ | — | RPC endpoint |
+| `TELEGRAM_BOT_TOKEN` | ✅ |: | Bot token from BotFather |
+| `TELEGRAM_CHANNEL_ID` | ✅ |: | Channel to post to |
+| `SOLANA_RPC_URL` | ✅ |: | RPC endpoint |
 | `SOLANA_WS_URL` | ❌ | Derived | WebSocket endpoint |
 | `FEED_CLAIMS` | ❌ | `true` | Enable fee claim feed |
 | `FEED_LAUNCHES` | ❌ | `true` | Enable token launch feed |
@@ -1393,8 +1392,8 @@ The Pump bonding curve uses a **constant-product AMM formula** (similar to Unisw
 
 | Reserve | Purpose |
 |---------|---------|
-| `virtualTokenReserves` | Token side of the constant-product — includes virtual liquidity |
-| `virtualSolReserves` | SOL side of the constant-product — includes virtual liquidity |
+| `virtualTokenReserves` | Token side of the constant-product: includes virtual liquidity |
+| `virtualSolReserves` | SOL side of the constant-product: includes virtual liquidity |
 | `realTokenReserves` | Tokens actually available for purchase |
 | `realSolReserves` | SOL actually deposited |
 
@@ -1440,7 +1439,7 @@ marketCap = (virtualSolReserves × mintSupply) / virtualTokenReserves
 
 **Graduation:** curve completes when `realTokenReserves` reaches zero and `bondingCurve.complete = true`. Use `migrateInstruction()` to move it to the AMM.
 
-**Worked example** — typical initial reserves:
+**Worked example**: typical initial reserves:
 
 | Parameter | Value |
 |-----------|-------|
@@ -1460,7 +1459,7 @@ Each trade incurs two fees:
 | Protocol fee | Pump protocol treasury |
 | Creator fee | Token creator (or fee-sharing config) |
 
-Both are **basis points (bps)** — 1 bps = 0.01%. LP fees only apply after graduation.
+Both are **basis points (bps)**: 1 bps = 0.01%. LP fees only apply after graduation.
 
 **Tier selection:**
 
@@ -1531,9 +1530,9 @@ For graduated tokens this automatically calls `transferCreatorFeesToPump` first.
 
 **Authority management:**
 
-- `transferFeeSharingAuthorityInstruction` — move admin control
-- `resetFeeSharingConfigInstruction` — reset config + assign new admin
-- `revokeFeeSharingAuthorityInstruction` — irreversibly lock shareholders
+- `transferFeeSharingAuthorityInstruction`: move admin control
+- `resetFeeSharingConfigInstruction`: reset config + assign new admin
+- `revokeFeeSharingAuthorityInstruction`: irreversibly lock shareholders
 
 ### Social Fees
 
@@ -1680,7 +1679,7 @@ interface UserVolumeAccumulator {
 
 ### Mayhem Mode
 
-Alternate operating mode — set at token creation, **cannot be changed**. Uses separate PDAs, fee recipients, and Token-2022 vaults under the Mayhem program.
+Alternate operating mode: set at token creation, **cannot be changed**. Uses separate PDAs, fee recipients, and Token-2022 vaults under the Mayhem program.
 
 | Aspect | Normal Mode | Mayhem Mode |
 |--------|-------------|-------------|
@@ -1776,7 +1775,7 @@ await PUMP_SDK.migrateBondingCurveCreatorInstruction({ mint });
 
 ### Analytics
 
-Pure functions — run offline given bonding curve state.
+Pure functions: run offline given bonding curve state.
 
 ```typescript
 import {
@@ -1796,7 +1795,7 @@ interface PriceImpactResult {
 }
 
 interface GraduationProgress {
-  progressBps: number;       // 0–10000
+  progressBps: number;       // 0-10000
   isGraduated: boolean;
   tokensRemaining: BN;
   tokensTotal: BN;
@@ -1846,10 +1845,10 @@ Complete catalog of events emitted by Pump, PumpAMM, and PumpFees.
 
 | Event | Decoder | Notes |
 |-------|---------|-------|
-| `TradeEvent` | `decodeTradeEvent` | Every bonding curve buy/sell — includes `mayhemMode`, `cashbackFeeBasisPoints`, `cashback`, `trackVolume`, `currentSolVolume` |
-| `CreateEvent` | `decodeCreateEvent` | New token — `isMayhemMode`, `isCashbackEnabled` |
+| `TradeEvent` | `decodeTradeEvent` | Every bonding curve buy/sell: includes `mayhemMode`, `cashbackFeeBasisPoints`, `cashback`, `trackVolume`, `currentSolVolume` |
+| `CreateEvent` | `decodeCreateEvent` | New token: `isMayhemMode`, `isCashbackEnabled` |
 | `CompleteEvent` | `decodeCompleteEvent` | Bonding curve reaches 100% |
-| `CompletePumpAmmMigrationEvent` | `decodeCompletePumpAmmMigrationEvent` | Migration to AMM — includes `pool` |
+| `CompletePumpAmmMigrationEvent` | `decodeCompletePumpAmmMigrationEvent` | Migration to AMM: includes `pool` |
 | `SetCreatorEvent` | `decodeSetCreatorEvent` | Creator set/updated |
 | `CollectCreatorFeeEvent` | `decodeCollectCreatorFeeEvent` | Creator collects fees |
 | `AdminSetCreatorEvent` | `decodeAdminSetCreatorEvent` | Admin overrides creator |
@@ -1961,11 +1960,11 @@ For cashback coins on PumpAMM, `user_volume_accumulator_wsol_ata` is also prepen
 
 | Aspect | Free (Public) | Paid Provider |
 |--------|---------------|---------------|
-| Rate limit | 40 req/sec (shared) | 500–5000+ req/sec |
+| Rate limit | 40 req/sec (shared) | 500-5000+ req/sec |
 | Reliability | ≤95% uptime, frequent 429s | ≥99.9% SLA |
 | WebSocket | Often unstable | Persistent, reliable |
 | Geographic | US-only | Multi-region |
-| Cost | Free | $49–$500+/mo |
+| Cost | Free | $49-$500+/mo |
 
 | Provider | Strengths | Best For |
 |----------|-----------|----------|
@@ -1979,8 +1978,8 @@ For cashback coins on PumpAMM, `user_volume_accumulator_wsol_ata` is also prepen
 | Level | Latency | Finality | Use Case |
 |-------|---------|----------|----------|
 | `processed` | ~400ms | May revert | Read-after-write within same TX |
-| `confirmed` | ~2–5s | 66%+ validators | **Recommended default** |
-| `finalized` | ~12–15s | 31+ slots | Financial settlements, irreversible |
+| `confirmed` | ~2-5s | 66%+ validators | **Recommended default** |
+| `finalized` | ~12-15s | 31+ slots | Financial settlements, irreversible |
 
 ### Retry with backoff
 
@@ -2014,12 +2013,12 @@ const RPC_ENDPOINTS = [
 
 | Data | Cache? | TTL |
 |------|--------|-----|
-| SOL/USD price | ✅ | 10–60s |
+| SOL/USD price | ✅ | 10-60s |
 | Bonding curve state | ✅ | 5s |
 | Token metadata | ✅ | 1 hour |
 | Creator profile | ✅ | 5 min |
-| Transaction status | ❌ | — |
-| Account balances | ❌ | — |
+| Transaction status | ❌ |: |
+| Account balances | ❌ |: |
 
 ### WebSocket stability
 
@@ -2114,10 +2113,10 @@ npx vercel --prod
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | ✅ | — | BotFather token |
-| `SOLANA_RPC_URL` | ✅ | — | Primary Solana RPC |
-| `SOLANA_RPC_URLS` | ❌ | — | Comma-separated fallback RPCs |
-| `CHANNEL_ID` | ❌ | — | Channel broadcast mode |
+| `TELEGRAM_BOT_TOKEN` | ✅ |: | BotFather token |
+| `SOLANA_RPC_URL` | ✅ |: | Primary Solana RPC |
+| `SOLANA_RPC_URLS` | ❌ |: | Comma-separated fallback RPCs |
+| `CHANNEL_ID` | ❌ |: | Channel broadcast mode |
 | `BROADCAST_ONLY` | ❌ | `false` | Disable DM commands |
 | `FEED_CLAIMS` | ❌ | `true` | Enable claim alerts |
 | `FEED_LAUNCHES` | ❌ | `true` | Enable launch alerts |
@@ -2128,18 +2127,18 @@ npx vercel --prod
 | `WHALE_THRESHOLD_SOL` | ❌ | `100` | Min SOL for whale alert |
 | `API_ENABLED` | ❌ | `false` | Enable REST API |
 | `API_PORT` | ❌ | `3000` | API port |
-| `API_AUTH_TOKEN` | ❌ | — | API Bearer token |
-| `TWITTER_BEARER_TOKEN` | ❌ | — | Twitter/X API |
-| `GITHUB_TOKEN` | ❌ | — | GitHub API |
-| `GROQ_API_KEY` | ❌ | — | Groq LLM |
-| `ADMIN_CHAT_IDS` | ❌ | — | Admin Telegram IDs |
+| `API_AUTH_TOKEN` | ❌ |: | API Bearer token |
+| `TWITTER_BEARER_TOKEN` | ❌ |: | Twitter/X API |
+| `GITHUB_TOKEN` | ❌ |: | GitHub API |
+| `GROQ_API_KEY` | ❌ |: | Groq LLM |
+| `ADMIN_CHAT_IDS` | ❌ |: | Admin Telegram IDs |
 | `LOG_LEVEL` | ❌ | `info` | Log verbosity |
 
 ### Environment variable reference (Tracker Bot)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `TELEGRAM_BOT_TOKEN` | ✅ | — | BotFather token |
+| `TELEGRAM_BOT_TOKEN` | ✅ |: | BotFather token |
 | `DB_PATH` | ❌ | `data/tracker.sqlite` | SQLite path |
 | `ATH_POLL_INTERVAL` | ❌ | `60000` | ATH poll ms |
 | `DEXSCREENER_API_URL` | ❌ | `https://api.dexscreener.com` | Price API |
@@ -2194,9 +2193,9 @@ curl http://localhost:3001/health
 
 | Operation | Calls | Latency |
 |-----------|-------|---------|
-| `getSignaturesForAddress` | 1 | 50–200ms |
-| `getParsedTransaction` | 1 | 100–500ms |
-| `getAccountInfo` | 1 | 50–200ms |
+| `getSignaturesForAddress` | 1 | 50-200ms |
+| `getParsedTransaction` | 1 | 100-500ms |
+| `getAccountInfo` | 1 | 50-200ms |
 | `logsSubscribe` | stream | real-time |
 
 ### Monitor bot capacity
@@ -2232,10 +2231,10 @@ curl http://localhost:3001/health
 
 | Feed | Events/Hour |
 |------|-------------|
-| Token Launches | 200–500 |
-| Graduations | 10–50 |
-| Whale Trades | 50–200 |
-| Fee Claims | 20–100 |
+| Token Launches | 200-500 |
+| Graduations | 10-50 |
+| Whale Trades | 50-200 |
+| Fee Claims | 20-100 |
 
 ### Cold start
 
@@ -2250,7 +2249,7 @@ curl http://localhost:3001/health
 - [ ] WebSocket primary + HTTP polling fallback
 - [ ] Multiple RPC endpoints with failover
 - [ ] Poll intervals: 60s tracking, 5s launches
-- [ ] SQLite WAL mode (tracker — on by default)
+- [ ] SQLite WAL mode (tracker: on by default)
 - [ ] LRU caches for API responses
 - [ ] Telegram queue respects rate limits
 - [ ] Health endpoint for degraded-state detection
@@ -2262,16 +2261,16 @@ curl http://localhost:3001/health
 
 ### Core principles
 
-1. **Official crypto only** — `solana-sdk` (Rust), `@solana/web3.js` (TS), `solana-keygen` (shell). No third-party crypto.
+1. **Official crypto only**: `solana-sdk` (Rust), `@solana/web3.js` (TS), `solana-keygen` (shell). No third-party crypto.
 2. **Key material lifecycle:** Generate → Use → Zeroize. Files written with `0600`. Never log, print, or return private keys.
 3. **Offline key generation:** no network calls during keypair creation, vanity search, file writing, or signing.
 
 ### SDK-level rules
 
-- All financial amounts use `BN` (bn.js) — never JS `number` (precision loss above `2^53`).
-- Input validation: Base58 public keys, BN bounds, slippage 0–100%, fee shares summing to 10,000 bps.
+- All financial amounts use `BN` (bn.js): never JS `number` (precision loss above `2^53`).
+- Input validation: Base58 public keys, BN bounds, slippage 0-100%, fee shares summing to 10,000 bps.
 - Instruction builders return `TransactionInstruction[]`. Signing is always the caller's responsibility.
-- No private keys ever enter the SDK — only `PublicKey` references.
+- No private keys ever enter the SDK: only `PublicKey` references.
 
 ### Vanity generator hardening
 
@@ -2296,7 +2295,7 @@ chmod 600 keypair.json
 
 ### Bot security boundaries
 
-- No private keys handled by bots — read-only monitoring
+- No private keys handled by bots: read-only monitoring
 - Telegram bot tokens stored in `.env`, never committed
 - RPC URLs treated as secrets (rate-limited endpoints)
 - API auth via Bearer token (optional)
@@ -2323,7 +2322,7 @@ See [SECURITY.md](SECURITY.md).
 
 ---
 
-## CLI Guide — Vanity Addresses
+## CLI Guide: Vanity Addresses
 
 ### Quick start
 
@@ -2420,7 +2419,7 @@ try {
 |-------|---------|-------|
 | `InsufficientFunds` | Pump | Not enough SOL for buy |
 | `SlippageExceeded` | Pump/PumpAMM | Price moved beyond tolerance |
-| `BondingCurveComplete` | Pump | Token already graduated — use AMM |
+| `BondingCurveComplete` | Pump | Token already graduated: use AMM |
 | `Unauthorized` | All | Wrong authority/signer |
 | `AccountNotFound` | All | PDA doesn't exist yet |
 
@@ -2457,7 +2456,7 @@ try {
 - Verify all 3 program IDs are monitored
 - Log raw transactions to confirm decoder behavior
 - Use `confirmed`/`finalized` commitment, not `processed`
-- One social fee PDA can be a shareholder in multiple `SharingConfig` accounts — the `SocialFeeIndex` maps PDA → set of mints, highest market cap token displays as primary
+- One social fee PDA can be a shareholder in multiple `SharingConfig` accounts: the `SocialFeeIndex` maps PDA → set of mints, highest market cap token displays as primary
 - After redeploy, persist claim state to disk or cross-check via `getCreatorVaultBalanceBothPrograms`
 
 ---
@@ -2473,11 +2472,11 @@ try {
 | **Migration** | Process of moving a graduated token from the curve to the AMM. Liquidity is seeded automatically. |
 | **PumpAMM** | Pump's AMM. Handles post-graduation trading. `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA`. |
 | **PumpFees** | Fee program managing dynamic fee tiers and creator fee distribution. `pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ`. |
-| **CTO** | Creator Takeover — when a token's fee recipient is changed. |
+| **CTO** | Creator Takeover: when a token's fee recipient is changed. |
 | **Mayhem Mode** | Alternate fee routing mode set at creation. Token-2022 + reserved fee recipients. |
 | **Fee Sharing** | Splitting creator fees among up to 10 shareholders (basis points). |
 | **Social Fees** | Fee collection via social identity (e.g., GitHub) instead of a wallet. |
-| **Cashback** | Volume-based PUMP rewards — opt-in per trade. |
+| **Cashback** | Volume-based PUMP rewards: opt-in per trade. |
 | **Fee Tier** | Dynamic fee rates based on a pool's market cap. |
 
 ### Solana
@@ -2486,11 +2485,11 @@ try {
 |------|-----------|
 | **SOL** | Solana native token. 1 SOL = 1,000,000,000 lamports. |
 | **Lamports** | Smallest unit of SOL. |
-| **PDA** | Program Derived Address — deterministic, not a keypair. |
+| **PDA** | Program Derived Address: deterministic, not a keypair. |
 | **RPC** | Remote Procedure Call API for Solana state. |
 | **WebSocket (WSS)** | Persistent connection for real-time events. |
 | **Transaction Instruction** | Single operation in a Solana transaction. |
-| **SPL Token** | Solana Program Library Token — standard token program. |
+| **SPL Token** | Solana Program Library Token: standard token program. |
 | **Token-2022** | Newer token program with extended features. Used by mayhem mode. |
 
 ### Telegram bot
@@ -2499,10 +2498,10 @@ try {
 |------|-----------|
 | **grammy** | TypeScript Telegram framework used by PumpKit. |
 | **BotFather** | Telegram's official bot for creating bot tokens. |
-| **Polling** | Long-polling mode — bot asks Telegram for updates. |
+| **Polling** | Long-polling mode: bot asks Telegram for updates. |
 | **Webhook** | Telegram pushes updates to your server via HTTP POST. |
 | **Chat ID** | Unique identifier for a DM, group, or channel. |
-| **Parse Mode** | `HTML` — PumpKit uses HTML formatting. |
+| **Parse Mode** | `HTML`: PumpKit uses HTML formatting. |
 | **Channel** | Broadcast-only Telegram chat. |
 
 ### Tracker bot
@@ -2524,8 +2523,8 @@ try {
 
 | Term | Definition |
 |------|-----------|
-| **BN** | bn.js — arbitrary-precision integers. |
-| **BPS** | Basis Points — 1 BPS = 0.01%. Shares sum to 10,000 BPS. |
+| **BN** | bn.js: arbitrary-precision integers. |
+| **BPS** | Basis Points: 1 BPS = 0.01%. Shares sum to 10,000 BPS. |
 | **Slippage** | Maximum acceptable price movement. |
 | **Price Impact** | How much a trade moves the price (bps). |
 | **Virtual Reserves** | Virtual SOL/token amounts in the curve. |
@@ -2538,7 +2537,7 @@ try {
 |------|-----------|
 | **Turborepo** | Monorepo build orchestrator with caching. |
 | **Railway** | Cloud hosting platform (~$5/mo Hobby). |
-| **SSE** | Server-Sent Events — one-way HTTP streaming. |
+| **SSE** | Server-Sent Events: one-way HTTP streaming. |
 | **Webhook** | Outbound HTTP POST on event. |
 | **Health Check** | `GET /health` endpoint. |
 | **DexScreener** | Price data API used by the tracker bot. |
@@ -2577,11 +2576,11 @@ Works with yarn / pnpm / bun. Node 18+, latest LTS recommended.
 | Fetches on-chain state? | No | Yes |
 | Singleton? | `PUMP_SDK` | `new OnlinePumpSdk(connection)` |
 
-**Slippage** — Max % price movement; `1` = 1%. Transaction reverts if exceeded.
+**Slippage**: Max % price movement; `1` = 1%. Transaction reverts if exceeded.
 
 **What happens when a token graduates?** `bondingCurve.complete === true`, trading uses the AMM, creator fees still collected (from AMM), use `transferCreatorFeesToPump` before claiming. SDK methods with `BothPrograms` handle this automatically.
 
-**Devnet?** Yes — pass a devnet connection to `OnlinePumpSdk`.
+**Devnet?** Yes: pass a devnet connection to `OnlinePumpSdk`.
 
 ### Fee sharing
 
@@ -2591,11 +2590,11 @@ Works with yarn / pnpm / bun. Node 18+, latest LTS recommended.
 
 ### Vanity addresses
 
-See [CLI Guide](#cli-guide--vanity-addresses). Safe — official Solana keygen, zeroized memory.
+See [CLI Guide](#cli-guide--vanity-addresses). Safe: official Solana keygen, zeroized memory.
 
 ### MCP server
 
-**What is MCP?** Model Context Protocol — Anthropic's open standard for connecting AI assistants to tools.
+**What is MCP?** Model Context Protocol: Anthropic's open standard for connecting AI assistants to tools.
 
 **Tools available:** 53, covering quoting, transaction building, fees, analytics, AMM, social fees, wallet ops.
 
@@ -2610,7 +2609,7 @@ See [CLI Guide](#cli-guide--vanity-addresses). Safe — official Solana keygen, 
 }
 ```
 
-**Hosted deploy?** Yes — Railway, Cloudflare Workers, or Vercel.
+**Hosted deploy?** Yes: Railway, Cloudflare Workers, or Vercel.
 
 **Private keys safe?** Never logged, zeroized on shutdown, never exposed through MCP resources.
 
@@ -2628,7 +2627,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). AI agents welcome.
 
 ## Migration Guide (SDK Versions)
 
-### v1.29.0 (Latest — 2026-03-06)
+### v1.29.0 (Latest: 2026-03-06)
 
 **Breaking:** all buy/sell instructions require `bonding_curve_v2` and `pool_v2` accounts. SDK handles automatically; manual builders must add them. See [USDC Quote Pair (V2)](#usdc-quote-pair-v2).
 
@@ -2638,11 +2637,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). AI agents welcome.
 npm install @nirholas/pump-sdk@latest
 ```
 
-### v1.28.0 (2026-02-26) — feature release
+### v1.28.0 (2026-02-26): feature release
 
 No breaking changes. Added: analytics functions, social fee instructions, AMM/Deposit/Withdraw/CreatePool events, fee sharing events, 19 tutorials, WebSocket relay, live dashboards, x402, channel bot, DeFi agents.
 
-### v1.27.x — breaking changes
+### v1.27.x: breaking changes
 
 - `createInstruction` → `createV2Instruction` (deprecated removed in 2.0)
 - Fee math signature: `getBuyTokenAmountFromSolAmount`/`getSellSolAmountFromTokenAmount`/`getBuySolAmountFromTokenAmount` now take `{ global, feeConfig, mintSupply, bondingCurve, amount }`.
@@ -2662,7 +2661,7 @@ const tokens = getBuyTokenAmountFromSolAmount({
 |---------|------|------|-------------|
 | v1.29.0 | 2026-03-06 | Breaking | V2 PDAs required on buy/sell |
 | v1.28.0 | 2026-02-26 | Feature | Analytics, tutorials, bots, dashboards, x402, social fees |
-| v1.27.x | — | Breaking | `createV2Instruction`, fee config parameter |
+| v1.27.x |: | Breaking | `createV2Instruction`, fee config parameter |
 | v1.0.0 | 2026-02-11 | Initial | Core SDK, vanity, MCP server |
 
 ---
@@ -2728,7 +2727,7 @@ Apps are self-contained HTML in `site/Pump-Store/apps/` or `site/screens/`. They
 
 Security rules:
 
-- Keys never leave the browser — all crypto operations client-side
+- Keys never leave the browser: all crypto operations client-side
 - No external requests without user consent
 - Sanitize all user input
 - Use `@solana/web3.js` only
@@ -2739,7 +2738,7 @@ Deploy via Vercel (`cd site && vercel --prod`) or GitHub Pages. PumpOS installs 
 
 ## DeFi Agents (optional)
 
-43 AI agent definitions in `packages/defi-agents/` — compatible with SperaxOS and any function-calling LLM platform.
+43 AI agent definitions in `packages/defi-agents/`: compatible with SperaxOS and any function-calling LLM platform.
 
 | Category | Count | Focus |
 |----------|-------|-------|
@@ -2789,19 +2788,19 @@ Plugin reference:
 
 For that to happen, agents need:
 
-1. **SDKs that work programmatically** — libraries that build and submit transactions, not UIs
-2. **Natural language interfaces** — MCP servers that turn "buy 0.1 SOL of this token" into the exact instruction set
-3. **Security by default** — official cryptographic libraries, memory-safe key management, zero-knowledge of private keys
-4. **Open-source transparency** — every line of code that touches money should be auditable
+1. **SDKs that work programmatically**: libraries that build and submit transactions, not UIs
+2. **Natural language interfaces**: MCP servers that turn "buy 0.1 SOL of this token" into the exact instruction set
+3. **Security by default**: official cryptographic libraries, memory-safe key management, zero-knowledge of private keys
+4. **Open-source transparency**: every line of code that touches money should be auditable
 
 ### Principles
 
 1. **Developed in the open, always.** See [LICENSE](LICENSE) for the terms that apply.
-2. **Official libraries only** — no third-party crypto, ever
-3. **Agent-first design** — if an agent can't use it, redesign it
-4. **Security is non-negotiable** — audit everything, zero trust by default
-5. **Community over competition** — we win by making the ecosystem better, not by gatekeeping
-6. **Ship fast, iterate faster** — rough consensus, running code
+2. **Official libraries only**: no third-party crypto, ever
+3. **Agent-first design**: if an agent can't use it, redesign it
+4. **Security is non-negotiable**: audit everything, zero trust by default
+5. **Community over competition**: we win by making the ecosystem better, not by gatekeeping
+6. **Ship fast, iterate faster**: rough consensus, running code
 
 ---
 
@@ -2814,7 +2813,7 @@ For that to happen, agents need:
 | 📋 Planned | Scoped and scheduled |
 | 💡 Exploring | Under research |
 
-### Phase 1 — Foundation ✅
+### Phase 1: Foundation ✅
 
 | Feature | Status | Details |
 |---------|--------|---------|
@@ -2827,7 +2826,7 @@ For that to happen, agents need:
 | Documentation | ✅ Done | 20+ docs, 30 tutorials |
 | Railway deployment | ✅ Done | Dockerfiles and configs for all bots |
 
-### Phase 2 — npm Publishing 🚧
+### Phase 2: npm Publishing 🚧
 
 | Feature | Status |
 |---------|--------|
@@ -2837,7 +2836,7 @@ For that to happen, agents need:
 | README badges | 📋 Planned |
 | Peer dependency alignment | 📋 Planned |
 
-### Phase 3 — Frontend UI 📋
+### Phase 3: Frontend UI 📋
 
 | Feature | Status |
 |---------|--------|
@@ -2847,7 +2846,7 @@ For that to happen, agents need:
 | Token analytics | 📋 Planned |
 | Configuration UI | 💡 Exploring |
 
-### Phase 4 — Ecosystem Growth 💡
+### Phase 4: Ecosystem Growth 💡
 
 | Feature | Status |
 |---------|--------|
@@ -2861,7 +2860,7 @@ For that to happen, agents need:
 
 ## Origins
 
-PumpKit was extracted from the [pump-fun-sdk](https://github.com/nirholas/pump-fun-sdk) Telegram bot ecosystem — 4 production bots with 50+ source files consolidated into a clean, reusable framework.
+PumpKit was extracted from the [pump-fun-sdk](https://github.com/nirholas/pump-fun-sdk) Telegram bot ecosystem: 4 production bots with 50+ source files consolidated into a clean, reusable framework.
 
 ## License
 
@@ -2877,26 +2876,3 @@ Developed by **nirholas** / **nichxbt**
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=nirholas/pumpkit&type=Date)](https://www.star-history.com/#nirholas/pumpkit&Date)
-
-<!-- three.ws:growth -->
-## Support the project
-
-If pumpkit saves you time, **[star it on GitHub](https://github.com/nirholas/pumpkit)**. Stars are how other developers and AI agents find the repositories worth trusting, and they cost you one click.
-
-Know someone who would use it? [Post on X](https://twitter.com/intent/tweet?text=pumpkit%3A%20Open-source%20framework%20for%20building%20PumpFun%20Telegram%20bots%20on%20Solana&url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpumpkit) · [Share on Bluesky](https://bsky.app/intent/compose?text=pumpkit%3A%20Open-source%20framework%20for%20building%20PumpFun%20Telegram%20bots%20on%20Solana%20https%3A%2F%2Fgithub.com%2Fnirholas%2Fpumpkit) · [Share on LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpumpkit) · [Submit to Hacker News](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpumpkit&t=pumpkit%3A%20Open-source%20framework%20for%20building%20PumpFun%20Telegram%20bots%20on%20Solana) · [Share on Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fpumpkit&title=pumpkit%3A%20Open-source%20framework%20for%20building%20PumpFun%20Telegram%20bots%20on%20Solana)
-
-## Built for AI agents too
-
-Coding agents and LLM tooling can read this repo directly: [AGENTS.md](./AGENTS.md), [llms.txt](./llms.txt), [llms-full.txt](./llms-full.txt). Point an agent at `https://github.com/nirholas/pumpkit` and it has the context it needs.
-
-## More from the same author
-
-- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme): the full catalog, grouped by topic
-- [three.ws](https://three.ws): the platform for 3D AI agents with Solana wallets, a skill marketplace and x402 payments
-- Questions or ideas: [open an issue](https://github.com/nirholas/pumpkit/issues) or [start a discussion](https://github.com/nirholas/pumpkit/discussions)
-
-## Contributors
-
-[![Contributors](https://contrib.rocks/image?repo=nirholas/pumpkit)](https://github.com/nirholas/pumpkit/graphs/contributors)
-
-<!-- /three.ws:growth -->
