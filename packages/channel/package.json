@@ -27,10 +27,10 @@
   "dependencies": {
     "@nirholas/pump-sdk": "^2.0.0",
     "@pump-fun/pump-sdk": "^4.0.0",
-    "@solana/web3.js": "^1.98.0",
+    "@solana/web3.js": "^1.99.0",
     "bs58": "^6.0.0",
     "dotenv": "^17.4.2",
-    "grammy": "^1.45.1"
+    "grammy": "^1.46.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
