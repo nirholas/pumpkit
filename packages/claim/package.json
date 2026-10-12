@@ -27,11 +27,11 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "grammy": "^1.46.0",
-    "ws": "^8.18.0"
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
-    "@types/ws": "^8.5.12",
+    "@types/ws": "^8.18.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }
