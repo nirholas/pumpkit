@@ -74,9 +74,9 @@ function SkeletonCard() {
     <div className="flex gap-2 items-start animate-pulse">
       <div className="w-10 h-10 rounded-full bg-tg-input shrink-0" />
       <div className="bg-tg-bubble-in rounded-2xl rounded-tl-sm px-4 py-3 w-2/3">
-        <div className="h-3 bg-tg-input rounded w-40" />
-        <div className="h-3 bg-tg-input rounded w-24 mt-2" />
-        <div className="h-3 bg-tg-input rounded w-32 mt-2" />
+        <div className="h-3 bg-tg-input rounded-sm w-40" />
+        <div className="h-3 bg-tg-input rounded-sm w-24 mt-2" />
+        <div className="h-3 bg-tg-input rounded-sm w-32 mt-2" />
       </div>
     </div>
   );
@@ -141,7 +141,7 @@ export function Dashboard() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               aria-pressed={filter === f.key}
-              className={`px-3 py-1.5 rounded-full text-sm transition whitespace-nowrap active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-blue ${
+              className={`px-3 py-1.5 rounded-full text-sm transition whitespace-nowrap active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-tg-blue ${
                 filter === f.key
                   ? 'bg-tg-blue text-white shadow-tg'
                   : 'bg-tg-input text-zinc-400 hover:text-white hover:bg-tg-hover'
@@ -161,7 +161,7 @@ export function Dashboard() {
                 key={t}
                 onClick={() => setWhaleThreshold(t)}
                 aria-pressed={whaleThreshold === t}
-                className={`px-2 py-0.5 rounded-full transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-blue ${
+                className={`px-2 py-0.5 rounded-full transition active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-tg-blue ${
                   whaleThreshold === t
                     ? 'bg-pump-orange/20 text-pump-orange'
                     : 'bg-tg-input text-zinc-500 hover:text-zinc-300'
@@ -199,7 +199,7 @@ export function Dashboard() {
               </p>
               <button
                 onClick={firehose.reconnect}
-                className="mt-2 bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 hover:brightness-125 transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-tg-blue"
+                className="mt-2 bg-tg-input text-tg-blue text-xs rounded-lg px-3 py-1.5 hover:brightness-125 transition active:scale-95 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-tg-blue"
               >
                 Retry now
               </button>

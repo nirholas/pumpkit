@@ -35,7 +35,7 @@ export function WatchForm({ onAdd }: WatchFormProps) {
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         placeholder="Wallet address..."
-        className="w-full bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-tg-blue/40"
+        className="w-full bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-lg px-3 py-1.5 outline-hidden focus:ring-1 focus:ring-tg-blue/40"
       />
       <div className="flex gap-2">
         <input
@@ -43,7 +43,7 @@ export function WatchForm({ onAdd }: WatchFormProps) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Label (optional)"
-          className="flex-1 bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-tg-blue/40"
+          className="flex-1 bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-lg px-3 py-1.5 outline-hidden focus:ring-1 focus:ring-tg-blue/40"
         />
         <button
           type="submit"

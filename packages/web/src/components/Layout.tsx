@@ -119,7 +119,7 @@ export function Layout() {
               placeholder="Search channels..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-full px-4 py-1.5 outline-none focus:ring-1 focus:ring-tg-blue/40 transition"
+              className="w-full bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-full px-4 py-1.5 outline-hidden focus:ring-1 focus:ring-tg-blue/40 transition"
             />
             {search && (
               <button
@@ -194,7 +194,7 @@ export function Layout() {
             <span>⭐</span>
             <span>Star on GitHub</span>
           </a>
-          <p className="text-[10px] text-zinc-600">Press <kbd className="bg-tg-input px-1 rounded text-zinc-400">Esc</kbd> to toggle sidebar</p>
+          <p className="text-[10px] text-zinc-600">Press <kbd className="bg-tg-input px-1 rounded-sm text-zinc-400">Esc</kbd> to toggle sidebar</p>
         </div>
       </aside>
 
@@ -251,7 +251,7 @@ export function Layout() {
               onFeed ? 'Filter the live feed by name, symbol, mint or wallet…' : 'Open the Live Feed to search events'
             }
             aria-label="Filter the live feed"
-            className="flex-1 bg-tg-input rounded-full px-4 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-none focus:ring-1 focus:ring-tg-blue/40 transition disabled:cursor-not-allowed disabled:text-zinc-500"
+            className="flex-1 bg-tg-input rounded-full px-4 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-hidden focus:ring-1 focus:ring-tg-blue/40 transition disabled:cursor-not-allowed disabled:text-zinc-500"
           />
           {feedQuery && (
             <button

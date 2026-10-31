@@ -25,7 +25,7 @@ export function TutorialsList() {
             placeholder="Search tutorials…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-full px-4 py-1.5 outline-none focus:ring-1 focus:ring-tg-blue/40 transition"
+            className="flex-1 bg-tg-input text-sm text-zinc-300 placeholder-zinc-500 rounded-full px-4 py-1.5 outline-hidden focus:ring-1 focus:ring-tg-blue/40 transition"
           />
         </div>
       </div>

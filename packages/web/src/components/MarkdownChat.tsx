@@ -20,7 +20,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
-      className="absolute top-2 right-2 text-xs bg-tg-input/80 hover:bg-tg-input text-zinc-400 hover:text-tg-blue px-2 py-1 rounded transition"
+      className="absolute top-2 right-2 text-xs bg-tg-input/80 hover:bg-tg-input text-zinc-400 hover:text-tg-blue px-2 py-1 rounded-sm transition"
     >
       {copied ? '✓ Copied' : 'Copy'}
     </button>
@@ -60,7 +60,7 @@ function parseInline(text: string): React.ReactNode[] {
       nodes.push(<em key={match.index} className="italic text-zinc-300">{match[3]}</em>);
     } else if (match[4]) {
       nodes.push(
-        <code key={match.index} className="bg-tg-input rounded px-1.5 py-0.5 text-xs font-mono text-tg-blue">
+        <code key={match.index} className="bg-tg-input rounded-sm px-1.5 py-0.5 text-xs font-mono text-tg-blue">
           {match[4]}
         </code>,
       );
