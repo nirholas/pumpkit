@@ -13,7 +13,7 @@ Use the project's funding-source helper to determine if an address was funded by
    npx tsx tools/check-pump-funding.ts <pubkey>
    ```
 3. Report the verdict (seeded-by-pump: yes/no), the funding tx signature, and the funding amount when available.
-4. If the user is investigating a leaked launch, also point them at [tmp/leaked-launch/](../../tmp/leaked-launch/) (gitignored) for the local scratch workflow.
+4. If the user is investigating a leaked launch, also point them at `tmp/leaked-launch/` (gitignored, local only) for the local scratch workflow.
 
 ## Avoid
 

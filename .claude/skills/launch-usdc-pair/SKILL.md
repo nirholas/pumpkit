@@ -82,7 +82,7 @@ Confirm the on-chain `create_v2` instruction's mint-suffix constraint against th
 npx tsx tools/check-pump-funding.ts <deployer-pubkey>
 ```
 
-If the deployer was seeded by pump.fun's wallet, the deployment is a leaked-launch (see [tmp/leaked-launch/](../../../tmp/leaked-launch/) scratch workflow). For a fresh organic launch, the deployer should not be pump-seeded.
+If the deployer was seeded by pump.fun's wallet, the deployment is a leaked-launch (see the local, gitignored `tmp/leaked-launch/` scratch workflow). For a fresh organic launch, the deployer should not be pump-seeded.
 
 ### 6. Test on devnet first
 
