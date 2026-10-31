@@ -25,9 +25,9 @@
     "lint": "node ../../tools/lint-check.mjs ."
   },
   "dependencies": {
-    "@nirholas/pump-sdk": "^2.0.0",
+    "@nirholas/pump-sdk": "^3.0.0",
     "@pump-fun/pump-sdk": "^4.0.0",
-    "@solana/web3.js": "^1.99.0",
+    "@solana/web3.js": "^3.1.1",
     "bs58": "^6.0.0",
     "dotenv": "^18.0.8",
     "grammy": "^1.46.0"
