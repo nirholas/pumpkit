@@ -64,7 +64,7 @@
   "devDependencies": {
     "@pump-fun/pump-sdk": "^4.0.0",
     "@solana/web3.js": "^1.99.0",
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/bn.js": "^5.2.0",
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
