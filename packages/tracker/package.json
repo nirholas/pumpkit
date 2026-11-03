@@ -25,7 +25,7 @@
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "canvas": "^3.1.0",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "grammy": "^1.46.0"
   },
   "devDependencies": {
