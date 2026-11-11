@@ -1,0 +1,22 @@
+{
+  "name": "pumpkit",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Framework for building PumpFun Telegram bots on Solana: event monitors, RPC fallback, formatters and storage.",
+  "plugins": [
+    {
+      "name": "pumpkit",
+      "source": "./plugins/pumpkit",
+      "description": "Framework for building PumpFun Telegram bots on Solana: event monitors, RPC fallback, formatters and storage.",
+      "category": "development",
+      "tags": [
+        "pumpfun",
+        "solana",
+        "telegram-bot",
+        "framework",
+        "typescript"
+      ]
+    }
+  ]
+}
