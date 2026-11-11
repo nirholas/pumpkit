@@ -1,0 +1,17 @@
+{
+  "name": "pumpkit",
+  "version": "0.1.0",
+  "description": "Framework for building PumpFun Telegram bots on Solana: event monitors, RPC fallback, formatters and storage.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/pumpkit",
+  "homepage": "https://github.com/nirholas/pumpkit",
+  "keywords": [
+    "pumpfun",
+    "solana",
+    "telegram-bot",
+    "framework",
+    "typescript"
+  ]
+}
