@@ -23,7 +23,7 @@
     "lint": "node ../../tools/lint-check.mjs ."
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^13.1.1",
     "canvas": "^3.1.0",
     "dotenv": "^18.0.9",
     "grammy": "^1.46.0"
