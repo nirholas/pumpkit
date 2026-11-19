@@ -11,7 +11,7 @@
  */
 
 import { Connection, type ConnectionConfig } from '@solana/web3.js';
-import { log } from '@pumpkit/core/logger';
+import { log, redactUrl as maskUrl } from '@pumpkit/core/logger';
 
 const MAX_CONSECUTIVE_FAILS = 3;
 const COOLDOWN_MS = 60_000;
@@ -152,12 +152,4 @@ export class RpcFallback {
     }
 }
 
-export function maskUrl(url: string): string {
-    try {
-        const u = new URL(url);
-        const path = u.pathname.length > 1 ? u.pathname.slice(0, 12) + '…' : '';
-        return `${u.hostname}${path}`;
-    } catch {
-        return url.slice(0, 30) + '…';
-    }
-}
+export { maskUrl };

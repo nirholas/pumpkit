@@ -29,7 +29,7 @@ import {
     QUOTE_MINT_INFO,
     WSOL_MINT,
 } from './types.js';
-import { log } from '@pumpkit/core/logger';
+import { log, redactUrl } from '@pumpkit/core/logger';
 
 // Known system accounts to skip when looking for token mint
 const SYSTEM_ACCOUNTS = new Set([
@@ -116,7 +116,7 @@ export class RpcClaimMonitor {
         this.startedAt = Date.now();
 
         log.info('Starting RPC claim monitor (%d programs)', MONITORED_PROGRAM_IDS.length);
-        log.info('  RPC: %s', this.config.solanaRpcUrl!.replace(/api-key=[\w-]+/, 'api-key=***'));
+        log.info('  RPC: %s', redactUrl(this.config.solanaRpcUrl!));
 
         if (this.config.solanaWsUrl) {
             try {

@@ -48,3 +48,20 @@ export const log = {
         if (shouldLog('error')) console.error(`[${stamp()}] [ERROR] ${format(msg, ...args)}`);
     },
 };
+
+/**
+ * A URL that is safe to log: scheme and host only. RPC and webhook providers
+ * put credentials in the path (QuickNode, Alchemy, Discord), the query
+ * (Helius `?api-key=`) or userinfo, so none of those are ever printed;
+ * `/…` marks that something was dropped.
+ */
+export function redactUrl(url: string): string {
+    try {
+        const u = new URL(url);
+        const dropped = u.pathname.length > 1 || u.search !== '' || u.username !== '' || u.password !== '';
+        return `${u.protocol}//${u.host}${dropped ? '/…' : ''}`;
+    } catch {
+        return '[invalid URL]';
+    }
+}
+

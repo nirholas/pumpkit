@@ -16,7 +16,7 @@
 import WebSocket from 'ws';
 
 import type { BotConfig, FeeClaimEvent } from './types.js';
-import { log } from '@pumpkit/core/logger';
+import { log, redactUrl } from '@pumpkit/core/logger';
 
 // ============================================================================
 // Relay message types (subset — we only care about fee-claim and status)
@@ -76,7 +76,7 @@ export class ClaimMonitor {
         this.alive = true;
         this.startedAt = Date.now();
 
-        log.info('Connecting to relay: %s', this.config.relayWsUrl);
+        log.info('Connecting to relay: %s', redactUrl(this.config.relayWsUrl));
         this.connect();
     }
 

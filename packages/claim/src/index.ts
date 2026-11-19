@@ -23,7 +23,7 @@ import { createBot, createClaimHandler, registerStatusCommand } from './bot.js';
 import { ClaimMonitor } from './monitor.js';
 import { RpcClaimMonitor } from './rpc-monitor.js';
 import { loadTracked } from './store.js';
-import { log, setLogLevel } from '@pumpkit/core/logger';
+import { log, redactUrl, setLogLevel } from '@pumpkit/core/logger';
 
 async function main(): Promise<void> {
     const config = loadConfig();
@@ -37,11 +37,11 @@ async function main(): Promise<void> {
 
     log.info('PumpFun Claim Bot starting...');
     log.info('  Mode: %s', useDirectRpc ? 'direct-RPC' : 'relay');
-    if (useDirectRpc) {
-        log.info('  RPC:  %s', config.solanaRpcUrl);
-        log.info('  WS:   %s', config.solanaWsUrl || '(HTTP polling)');
+    if (config.solanaRpcUrl) {
+        log.info('  RPC:  %s', redactUrl(config.solanaRpcUrl));
+        log.info('  WS:   %s', config.solanaWsUrl ? redactUrl(config.solanaWsUrl) : '(HTTP polling)');
     } else {
-        log.info('  Relay: %s', config.relayWsUrl);
+        log.info('  Relay: %s', redactUrl(config.relayWsUrl));
     }
 
     // Load persisted tracking data

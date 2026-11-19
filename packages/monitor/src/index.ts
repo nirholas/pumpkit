@@ -25,7 +25,7 @@ import {
 } from './formatters.js';
 import type { TokenLaunchEvent, GraduationEvent, TradeAlertEvent, FeeDistributionEvent } from './types.js';
 import { getActiveMonitors } from './launch-store.js';
-import { log, setLogLevel } from '@pumpkit/core/logger';
+import { log, redactUrl, setLogLevel } from '@pumpkit/core/logger';
 import { PumpFunMonitor } from './monitor.js';
 import { PumpEventMonitor } from './pump-event-monitor.js';
 import { TokenLaunchMonitor } from './token-launch-monitor.js';
@@ -43,8 +43,8 @@ async function main(): Promise<void> {
     const apiOnly = process.env.API_ONLY === 'true';
 
     log.info('PumpFun %s starting...', apiOnly ? 'API' : enableApi ? 'Bot + API' : 'Bot');
-    log.info('  RPC: %s', config.solanaRpcUrl);
-    log.info('  WS:  %s', config.solanaWsUrl || '(derived from RPC)');
+    log.info('  RPC: %s', redactUrl(config.solanaRpcUrl));
+    log.info('  WS:  %s', config.solanaWsUrl ? redactUrl(config.solanaWsUrl) : '(derived from RPC)');
     if (!apiOnly) {
         log.info('  Allowed users: %s', config.allowedUserIds.length || 'all');
     }

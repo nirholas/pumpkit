@@ -4,7 +4,7 @@
 //  
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { log, setLogLevel, getLogLevel } from '../logger.js';
+import { log, setLogLevel, getLogLevel, redactUrl } from '../logger.js';
 
 describe('logger', () => {
   beforeEach(() => {
@@ -81,4 +81,20 @@ describe('logger', () => {
     expect(spy.mock.calls[0]![0]).toMatch(/\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     spy.mockRestore();
   });
+});
+
+describe('redactUrl', () => {
+    it('keeps only scheme and host', () => {
+        expect(redactUrl('https://api.mainnet-beta.solana.com')).toBe('https://api.mainnet-beta.solana.com');
+    });
+
+    it('drops path, query and userinfo credentials', () => {
+        expect(redactUrl('https://mainnet.helius-rpc.com/?api-key=SECRET')).toBe('https://mainnet.helius-rpc.com/…');
+        expect(redactUrl('https://x.solana-mainnet.quiknode.pro/SECRETTOKEN/')).toBe('https://x.solana-mainnet.quiknode.pro/…');
+        expect(redactUrl('wss://user:pass@rpc.example.com:8900')).toBe('wss://rpc.example.com:8900/…');
+    });
+
+    it('never echoes an unparseable string', () => {
+        expect(redactUrl('not a url SECRET')).toBe('[invalid URL]');
+    });
 });
