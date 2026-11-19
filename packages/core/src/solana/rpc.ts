@@ -11,7 +11,8 @@
  */
 
 import { Connection, type Commitment } from '@solana/web3.js';
-import { log } from '../logger.js';
+import { log, redactUrl as maskUrl } from '../logger.js';
+import { isTransientError } from '../util/retry.js';
 
 export interface RpcOptions {
   /** Primary RPC URL */
@@ -30,20 +31,6 @@ export function deriveWsUrl(httpUrl: string): string {
   return httpUrl.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
 }
 
-/**
- * Mask an RPC URL for safe logging (hide API keys).
- */
-function maskUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    if (u.pathname.length > 10) {
-      return `${u.protocol}//${u.host}/${u.pathname.slice(1, 8)}…`;
-    }
-    return `${u.protocol}//${u.host}`;
-  } catch {
-    return url.slice(0, 20) + '…';
-  }
-}
 
 const MAX_CONSECUTIVE_FAILS = 3;
 const COOLDOWN_MS = 60_000;
@@ -92,43 +79,41 @@ export class RpcFallback {
     }
   }
 
-  /** Execute a function with automatic fallback rotation on failure. */
+  /**
+   * Run `fn` against the current endpoint, moving to the next one on a
+   * transient error (429, 5xx, timeouts, resets). Each endpoint is tried at
+   * most once per call. Endpoints cooling down after repeated failures are
+   * skipped; if every endpoint is cooling down, the one whose cooldown ends
+   * first is tried anyway, so a single-endpoint setup keeps working.
+   * Non-transient errors are rethrown at once.
+   */
   async withFallback<T>(fn: (connection: Connection) => Promise<T>): Promise<T> {
-    const tried = new Set<number>();
-    while (tried.size < this.urls.length) {
-      // Skip endpoints in cooldown
-      if (this.cooldownUntil[this.currentIndex]! > Date.now()) {
-        this.rotate();
-        if (tried.has(this.currentIndex)) break;
-        continue;
-      }
-      tried.add(this.currentIndex);
-
+    let lastError: unknown;
+    for (const index of this.attemptOrder()) {
+      this.currentIndex = index;
       try {
         const result = await fn(this.getConnection());
         this.reportSuccess();
         return result;
       } catch (err) {
-        const msg = String(err);
-        const retryable =
-          msg.includes('429') ||
-          msg.includes('502') ||
-          msg.includes('503') ||
-          msg.includes('504') ||
-          msg.includes('ETIMEDOUT') ||
-          msg.includes('ECONNREFUSED') ||
-          msg.includes('ECONNRESET') ||
-          msg.includes('fetch failed');
-
-        if (retryable && !msg.includes('403')) {
-          log.warn('RPC error on %s, rotating: %s', maskUrl(this.urls[this.currentIndex]!), msg.slice(0, 100));
-          this.reportFailure();
-        } else {
-          throw err;
-        }
+        if (!isTransientError(err)) throw err;
+        lastError = err;
+        log.warn('RPC error on %s: %s', maskUrl(this.urls[index]!), String(err).slice(0, 100));
+        this.reportFailure();
       }
     }
-    throw new Error('All RPC endpoints exhausted');
+    throw new Error('All RPC endpoints failed', { cause: lastError });
+  }
+
+  /** Endpoints to try, starting at the current one, cooled-down ones last. */
+  private attemptOrder(): number[] {
+    const now = Date.now();
+    const order = this.urls.map((_, i) => (this.currentIndex + i) % this.urls.length);
+    const ready = order.filter((i) => this.cooldownUntil[i]! <= now);
+    const cooling = order
+      .filter((i) => this.cooldownUntil[i]! > now)
+      .sort((x, y) => this.cooldownUntil[x]! - this.cooldownUntil[y]!);
+    return ready.length > 0 ? ready : cooling.slice(0, 1);
   }
 
   private rotate(): void {
