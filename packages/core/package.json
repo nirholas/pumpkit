@@ -45,6 +45,10 @@
       "types": "./dist/net/http.d.ts",
       "import": "./dist/net/http.js"
     },
+    "./file-store": {
+      "types": "./dist/storage/FileStore.d.ts",
+      "import": "./dist/storage/FileStore.js"
+    },
     "./events": {
       "types": "./dist/solana/events.d.ts",
       "import": "./dist/solana/events.js"

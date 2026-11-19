@@ -57,15 +57,15 @@ import {
 import type { BotConfig, CreatorChangeEvent, FeeClaimEvent } from './types.js';
 
 // ============================================================================
-// Token Launch Monitor type (optional — may not exist yet)
+// Monitor views the bot needs
 // ============================================================================
 
-/** Minimal interface for the TokenLaunchMonitor (built by Agent 1). */
+/** The part of TokenLaunchMonitor the bot reads. */
 export interface TokenLaunchMonitorLike {
     getState(): TokenLaunchMonitorState;
 }
 
-/** Minimal interface for the PumpEventMonitor. */
+/** The part of PumpEventMonitor the bot reads. */
 export interface PumpEventMonitorLike {
     getState(): PumpEventMonitorState;
 }

@@ -17,7 +17,6 @@
 
 import { loadConfig } from './config.js';
 import { createBot, createClaimHandler, createCreatorChangeHandler } from './bot.js';
-import type { TokenLaunchMonitorLike, PumpEventMonitorLike } from './bot.js';
 import {
     formatTokenLaunchNotification,
     formatGraduationNotificationWithToken,
@@ -28,8 +27,12 @@ import type { TokenLaunchEvent, GraduationEvent, TradeAlertEvent, FeeDistributio
 import { getActiveMonitors } from './launch-store.js';
 import { log, setLogLevel } from '@pumpkit/core/logger';
 import { PumpFunMonitor } from './monitor.js';
+import { PumpEventMonitor } from './pump-event-monitor.js';
+import { TokenLaunchMonitor } from './token-launch-monitor.js';
 import { loadWatches } from './store.js';
 import { loadApiConfig, PumpFunApi } from './api/index.js';
+
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 async function main(): Promise<void> {
     // ── Load config ──────────────────────────────────────────────────────
@@ -69,96 +72,81 @@ async function main(): Promise<void> {
     }
 
     // ── Create Telegram bot ──────────────────────────────────────────────
-    // Try to load the token launch monitor (Agent 1's module, may not exist yet)
-    let launchMonitor: TokenLaunchMonitorLike | undefined;
-    try {
-        const { TokenLaunchMonitor } = await import('./token-launch-monitor.js');
-        launchMonitor = new TokenLaunchMonitor(config, async (event: TokenLaunchEvent) => {
-            if (!bot) return;
-            const monitors = getActiveMonitors();
-            for (const entry of monitors) {
-                // Skip chats that disabled launch alerts
-                if (!entry.alerts.launches) continue;
-                // Apply github filter
-                if (entry.githubOnly && !event.hasGithub) continue;
+    const launchMonitor = new TokenLaunchMonitor(config, async (event: TokenLaunchEvent) => {
+        if (!bot) return;
+        const monitors = getActiveMonitors();
+        for (const entry of monitors) {
+            // Skip chats that disabled launch alerts
+            if (!entry.alerts.launches) continue;
+            // Apply github filter
+            if (entry.githubOnly && !event.hasGithub) continue;
 
-                try {
-                    const message = formatTokenLaunchNotification(event);
-                    await bot.api.sendMessage(entry.chatId, message, {
-                        parse_mode: 'HTML',
-                        link_preview_options: { is_disabled: true },
-                    });
-                } catch (err) {
-                    log.error('Failed to send launch notification to chat %d:', entry.chatId, err);
-                }
+            try {
+                const message = formatTokenLaunchNotification(event);
+                await bot.api.sendMessage(entry.chatId, message, {
+                    parse_mode: 'HTML',
+                    link_preview_options: { is_disabled: true },
+                });
+            } catch (err) {
+                log.error('Failed to send launch notification to chat %d:', entry.chatId, err);
             }
-        });
-        log.info('Token launch monitor loaded');
-    } catch {
-        log.info('Token launch monitor not available (token-launch-monitor.ts not built yet)');
-    }
+        }
+    });
 
     // ── Create Pump Event Monitor (graduation, whale trades, fee distributions)
-    let eventMonitor: PumpEventMonitorLike | undefined;
+    let eventMonitor: PumpEventMonitor | undefined;
     const hasEventFeatures =
         config.enableGraduationAlerts ||
         config.enableTradeAlerts ||
         config.enableFeeDistributionAlerts;
 
     if (hasEventFeatures) {
-        try {
-            const { PumpEventMonitor } = await import('./pump-event-monitor.js');
-
-            const broadcastToMonitors = async (
-                alertKey: 'graduations' | 'whales' | 'feeDistributions',
-                formatFn: (event: never) => string,
-                event: GraduationEvent | TradeAlertEvent | FeeDistributionEvent,
-            ) => {
-                if (!bot) return;
-                const monitors = getActiveMonitors();
-                for (const entry of monitors) {
-                    // Respect per-chat alert preferences
-                    if (!entry.alerts[alertKey]) continue;
-                    try {
-                        const message = formatFn(event as never);
-                        await bot.api.sendMessage(entry.chatId, message, {
-                            parse_mode: 'HTML',
-                            link_preview_options: { is_disabled: true },
-                        });
-                    } catch (err) {
-                        log.error('Failed to send event notification to chat %d:', entry.chatId, err);
-                    }
+        const broadcastToMonitors = async (
+            alertKey: 'graduations' | 'whales' | 'feeDistributions',
+            formatFn: (event: never) => string,
+            event: GraduationEvent | TradeAlertEvent | FeeDistributionEvent,
+        ) => {
+            if (!bot) return;
+            const monitors = getActiveMonitors();
+            for (const entry of monitors) {
+                // Respect per-chat alert preferences
+                if (!entry.alerts[alertKey]) continue;
+                try {
+                    const message = formatFn(event as never);
+                    await bot.api.sendMessage(entry.chatId, message, {
+                        parse_mode: 'HTML',
+                        link_preview_options: { is_disabled: true },
+                    });
+                } catch (err) {
+                    log.error('Failed to send event notification to chat %d:', entry.chatId, err);
                 }
-            };
+            }
+        };
 
-            /** Broadcast graduation with enriched token data. */
-            const broadcastGraduation = async (event: GraduationEvent) => {
-                if (!bot) return;
-                const monitors = getActiveMonitors();
-                const message = await formatGraduationNotificationWithToken(event);
-                for (const entry of monitors) {
-                    if (!entry.alerts.graduations) continue;
-                    try {
-                        await bot.api.sendMessage(entry.chatId, message, {
-                            parse_mode: 'HTML',
-                            link_preview_options: { is_disabled: true },
-                        });
-                    } catch (err) {
-                        log.error('Failed to send graduation notification to chat %d:', entry.chatId, err);
-                    }
+        /** Broadcast graduation with enriched token data. */
+        const broadcastGraduation = async (event: GraduationEvent) => {
+            if (!bot) return;
+            const monitors = getActiveMonitors();
+            const message = await formatGraduationNotificationWithToken(event);
+            for (const entry of monitors) {
+                if (!entry.alerts.graduations) continue;
+                try {
+                    await bot.api.sendMessage(entry.chatId, message, {
+                        parse_mode: 'HTML',
+                        link_preview_options: { is_disabled: true },
+                    });
+                } catch (err) {
+                    log.error('Failed to send graduation notification to chat %d:', entry.chatId, err);
                 }
-            };
+            }
+        };
 
-            eventMonitor = new PumpEventMonitor(
-                config,
-                (event: GraduationEvent) => broadcastGraduation(event),
-                (event: TradeAlertEvent) => broadcastToMonitors('whales', formatTradeAlertNotification, event),
-                (event: FeeDistributionEvent) => broadcastToMonitors('feeDistributions', formatFeeDistributionNotification, event),
-            );
-            log.info('Pump event monitor loaded');
-        } catch {
-            log.info('Pump event monitor not available (pump-event-monitor.ts not built yet)');
-        }
+        eventMonitor = new PumpEventMonitor(
+            config,
+            (event: GraduationEvent) => broadcastGraduation(event),
+            (event: TradeAlertEvent) => broadcastToMonitors('whales', formatTradeAlertNotification, event),
+            (event: FeeDistributionEvent) => broadcastToMonitors('feeDistributions', formatFeeDistributionNotification, event),
+        );
     }
 
     let bot: import('grammy').Bot | null = null;
@@ -199,9 +187,9 @@ async function main(): Promise<void> {
     await monitor.start();
 
     // ── Start token launch monitor (if available and enabled) ────────────
-    if (launchMonitor && config.enableLaunchMonitor) {
+    if (config.enableLaunchMonitor) {
         try {
-            await (launchMonitor as unknown as { start(): Promise<void> }).start();
+            await launchMonitor.start();
             log.info('Token launch monitor started');
         } catch (err) {
             log.error('Failed to start token launch monitor:', err);
@@ -209,9 +197,9 @@ async function main(): Promise<void> {
     }
 
     // ── Start pump event monitor (if available and features enabled) ─────
-    if (eventMonitor && hasEventFeatures) {
+    if (eventMonitor) {
         try {
-            await (eventMonitor as unknown as { start(): Promise<void> }).start();
+            await eventMonitor.start();
             log.info('Pump event monitor started');
         } catch (err) {
             log.error('Failed to start pump event monitor:', err);
@@ -249,26 +237,31 @@ async function main(): Promise<void> {
     }
 
     // ── Graceful shutdown ────────────────────────────────────────────────
-    const shutdown = () => {
-        log.info('Shutting down...');
+    let shuttingDown = false;
+    const shutdown = async (signal: string) => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        log.info('Received %s, shutting down...', signal);
+        // Exit even if a step hangs; the platform will SIGKILL us soon anyway.
+        setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS).unref();
         monitor.stop();
-        if (api) api.stop();
-        if (launchMonitor && typeof (launchMonitor as unknown as { stop(): void }).stop === 'function') {
-            (launchMonitor as unknown as { stop(): void }).stop();
+        api?.stop();
+        launchMonitor.stop();
+        eventMonitor?.stop();
+        try {
+            await bot?.stop();
+        } catch (err) {
+            log.warn('Bot stop failed: %s', err);
         }
-        if (eventMonitor && typeof (eventMonitor as unknown as { stop(): void }).stop === 'function') {
-            (eventMonitor as unknown as { stop(): void }).stop();
-        }
-        if (bot) bot.stop();
         process.exit(0);
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', () => void shutdown('SIGINT'));
+    process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
 main().catch((err) => {
-    console.error('Fatal error:', err);
+    log.error('Fatal error: %s', err instanceof Error ? (err.stack ?? err.message) : err);
     process.exit(1);
 });
 

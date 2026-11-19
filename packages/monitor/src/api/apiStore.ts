@@ -12,9 +12,9 @@
  * Each API key gets its own namespace so clients can only manage their own watches.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { FileStore } from '@pumpkit/core/file-store';
 import { log } from '@pumpkit/core/logger';
 import type { WatchEntry } from '../types.js';
 import type { ApiWatchEntry } from './types.js';
@@ -31,25 +31,27 @@ const apiWatches = new Map<string, ApiWatchEntry>();
 // Persistence
 // ============================================================================
 
-function ensureDataDir(): void {
-    const dir = resolve(process.cwd(), 'data');
-    try {
-        mkdirSync(dir, { recursive: true });
-    } catch {
-        // already exists
-    }
+let file: FileStore<ApiWatchEntry[]> | null = null;
+
+/** Created on first use so importing this module does not touch the disk. */
+function store(): FileStore<ApiWatchEntry[]> {
+    file ??= new FileStore<ApiWatchEntry[]>({ path: DATA_FILE, defaultValue: [] });
+    return file;
 }
 
 export function loadApiWatches(): void {
     try {
-        const raw = readFileSync(DATA_FILE, 'utf-8');
-        const entries: ApiWatchEntry[] = JSON.parse(raw);
+        const entries = store().read();
+        if (!Array.isArray(entries)) {
+            log.warn('Ignoring %s: expected an array of API watches', DATA_FILE);
+            return;
+        }
         for (const entry of entries) {
             apiWatches.set(entry.id, entry);
         }
-        log.info(`Loaded ${entries.length} API watches from disk`);
-    } catch {
-        log.info('No existing API watch data found — starting fresh');
+        log.info('Loaded %d API watches from disk', entries.length);
+    } catch (err) {
+        log.warn('Failed to load API watches: %s', err);
     }
 }
 
@@ -75,11 +77,9 @@ export function migrateApiWatchClientIds(idMap: ReadonlyMap<string, string>): nu
 
 export function saveApiWatches(): void {
     try {
-        ensureDataDir();
-        const entries = Array.from(apiWatches.values());
-        writeFileSync(DATA_FILE, JSON.stringify(entries, null, 2), 'utf-8');
+        store().write(Array.from(apiWatches.values()));
     } catch (err) {
-        log.error('Failed to save API watches:', err);
+        log.error('Failed to save API watches: %s', err);
     }
 }
 

@@ -6,12 +6,14 @@
 /**
  * @pumpkit/core — File-Based JSON Store
  *
- * Generic JSON file persistence with atomic writes.
- * Extracted from telegram-bot/src/store.ts and claim-bot/src/store.ts.
+ * Generic JSON file persistence with atomic writes. A file that exists but
+ * cannot be parsed is moved aside (`<path>.corrupt-<ms>`) rather than read
+ * as empty, so the next write cannot silently replace the user's data.
  */
 
 import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { log } from '../logger.js';
 import type { Store } from './types.js';
 
 export interface FileStoreOptions<T> {
@@ -32,12 +34,25 @@ export class FileStore<T> implements Store<T> {
     mkdirSync(dirname(this.filePath), { recursive: true });
   }
 
-  /** Read the stored value, returning defaultValue if file doesn't exist. */
+  /**
+   * Read the stored value. Returns `defaultValue` when the file does not
+   * exist, or when it is corrupt (after moving it aside). Other I/O errors
+   * (permissions, a directory in the way) are thrown.
+   */
   read(): T {
+    let raw: string;
     try {
-      const raw = readFileSync(this.filePath, 'utf-8');
+      raw = readFileSync(this.filePath, 'utf-8');
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return this.defaultValue;
+      throw err;
+    }
+    try {
       return JSON.parse(raw) as T;
-    } catch {
+    } catch (err) {
+      const aside = `${this.filePath}.corrupt-${Date.now()}`;
+      renameSync(this.filePath, aside);
+      log.warn('FileStore: %s is not valid JSON (%s); moved it to %s', this.filePath, err, aside);
       return this.defaultValue;
     }
   }

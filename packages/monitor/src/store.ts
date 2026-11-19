@@ -10,9 +10,9 @@
  * watches survive restarts.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { FileStore } from '@pumpkit/core/file-store';
 import { log } from '@pumpkit/core/logger';
 import type { WatchEntry } from './types.js';
 
@@ -28,35 +28,35 @@ const watches = new Map<string, WatchEntry>();
 // Persistence
 // ============================================================================
 
-function ensureDataDir(): void {
-    const dir = resolve(process.cwd(), 'data');
-    try {
-        mkdirSync(dir, { recursive: true });
-    } catch {
-        // already exists
-    }
+let file: FileStore<WatchEntry[]> | null = null;
+
+/** Created on first use so importing this module does not touch the disk. */
+function store(): FileStore<WatchEntry[]> {
+    file ??= new FileStore<WatchEntry[]>({ path: DATA_FILE, defaultValue: [] });
+    return file;
 }
 
 export function loadWatches(): void {
     try {
-        const raw = readFileSync(DATA_FILE, 'utf-8');
-        const entries: WatchEntry[] = JSON.parse(raw);
+        const entries = store().read();
+        if (!Array.isArray(entries)) {
+            log.warn('Ignoring %s: expected an array of watches', DATA_FILE);
+            return;
+        }
         for (const entry of entries) {
             watches.set(entry.id, entry);
         }
-        log.info(`Loaded ${entries.length} watches from disk`);
-    } catch {
-        log.info('No existing watch data found — starting fresh');
+        log.info('Loaded %d watches from disk', entries.length);
+    } catch (err) {
+        log.warn('Failed to load watches: %s', err);
     }
 }
 
 export function saveWatches(): void {
     try {
-        ensureDataDir();
-        const entries = Array.from(watches.values());
-        writeFileSync(DATA_FILE, JSON.stringify(entries, null, 2), 'utf-8');
+        store().write(Array.from(watches.values()));
     } catch (err) {
-        log.error('Failed to save watches:', err);
+        log.error('Failed to save watches: %s', err);
     }
 }
 

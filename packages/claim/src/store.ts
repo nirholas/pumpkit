@@ -10,9 +10,9 @@
  * Persisted to a local JSON file so tracking survives restarts.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { FileStore } from '@pumpkit/core/file-store';
 import { log } from '@pumpkit/core/logger';
 import type { TrackedItem, TrackType } from './types.js';
 
@@ -29,21 +29,21 @@ const tracked = new Map<string, TrackedItem>();
 // Persistence
 // ============================================================================
 
-function ensureDataDir(): void {
-    if (!existsSync(DATA_DIR)) {
-        mkdirSync(DATA_DIR, { recursive: true });
-    }
+let file: FileStore<TrackedItem[]> | null = null;
+
+/** Created on first use so importing this module does not touch the disk. */
+function store(): FileStore<TrackedItem[]> {
+    file ??= new FileStore<TrackedItem[]>({ path: DATA_FILE, defaultValue: [] });
+    return file;
 }
 
 export function loadTracked(): void {
     try {
-        ensureDataDir();
-        if (!existsSync(DATA_FILE)) {
-            log.info('No existing tracking data found — starting fresh');
+        const entries = store().read();
+        if (!Array.isArray(entries)) {
+            log.warn('Ignoring %s: expected an array of tracked items', DATA_FILE);
             return;
         }
-        const raw = readFileSync(DATA_FILE, 'utf-8');
-        const entries: TrackedItem[] = JSON.parse(raw);
         for (const entry of entries) {
             tracked.set(entry.id, entry);
         }
@@ -55,17 +55,12 @@ export function loadTracked(): void {
 
 function saveTracked(): void {
     try {
-        ensureDataDir();
-        const entries = Array.from(tracked.values());
-        writeFileSync(DATA_FILE, JSON.stringify(entries, null, 2), 'utf-8');
+        store().write(Array.from(tracked.values()));
     } catch (err) {
         log.error('Failed to save tracked items: %s', err);
     }
 }
 
-// ============================================================================
-// CRUD
-// ============================================================================
 
 let idCounter = Date.now();
 
