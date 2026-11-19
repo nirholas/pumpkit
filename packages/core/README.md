@@ -73,12 +73,14 @@ log.info('Bot running');
 
 ### `bot/` — Telegram Bot Scaffolding
 
-Create a grammy bot with defaults, broadcast messages to chats, and register graceful shutdown.
+Create a grammy bot with an error handler and commands, and broadcast to
+several chats within Telegram's rate limit.
 
 ```typescript
-import { createBot, broadcast, setupShutdown } from '@pumpkit/core';
+import { createBot, broadcast, onShutdown } from '@pumpkit/core';
 
-const bot = createBot({ token: '...', commands: [] });
+const bot = createBot({ token: '...', commands: { start: (ctx) => ctx.reply('gm') } });
+onShutdown(() => bot.stop());
 await broadcast(bot, [chatId], '<b>Hello!</b>');
 ```
 

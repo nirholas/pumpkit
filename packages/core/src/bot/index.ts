@@ -6,8 +6,9 @@
 /**
  * @pumpkit/core — Bot Scaffolding
  *
- * Grammy-based Telegram bot factory with shared patterns
- * extracted from all PumpKit bot implementations.
+ * grammy bot factory with an error handler and command registration, and
+ * a rate-limited broadcast helper. Use `onShutdown` from the shutdown module
+ * to stop the bot on SIGINT/SIGTERM.
  */
 
 import { Bot } from 'grammy';
@@ -23,10 +24,6 @@ export interface BotOptions {
   commands?: Record<string, CommandHandler>;
   /** Custom error handler */
   onError?: (err: unknown) => void;
-  /** Default parse mode for messages (default: 'HTML') */
-  parseMode?: 'HTML' | 'MarkdownV2';
-  /** Admin chat IDs to notify on critical events */
-  adminChatIds?: number[];
 }
 
 /**
@@ -82,36 +79,4 @@ export async function broadcast(
   }
 
   return { sent, failed };
-}
-
-/**
- * Setup graceful shutdown for a Grammy bot with optional cleanup functions.
- */
-export function setupShutdown(bot: Bot, ...cleanups: Array<() => Promise<void> | void>): void {
-  let shuttingDown = false;
-
-  async function shutdown(signal: string): Promise<void> {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    log.info('Received %s — shutting down bot…', signal);
-
-    try {
-      bot.stop();
-    } catch {
-      // bot may not be running
-    }
-
-    for (const cleanup of cleanups) {
-      try {
-        await cleanup();
-      } catch (err) {
-        log.error('Shutdown cleanup error: %s', err);
-      }
-    }
-
-    process.exit(0);
-  }
-
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
 }

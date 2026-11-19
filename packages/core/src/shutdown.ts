@@ -12,7 +12,10 @@
 import { log } from './logger.js';
 import type { ShutdownHandler } from './types.js';
 
+const DEFAULT_HANDLER_TIMEOUT_MS = 10_000;
+
 const handlers: ShutdownHandler[] = [];
+let installed = false;
 let shuttingDown = false;
 
 /**
@@ -23,27 +26,48 @@ export function onShutdown(handler: ShutdownHandler): void {
     handlers.push(handler);
 }
 
-async function runShutdown(signal: string): Promise<void> {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    log.info('Received %s — shutting down gracefully…', signal);
-
+/**
+ * Run every registered handler in order. A handler that throws, rejects or
+ * takes longer than `timeoutMs` is logged and skipped, so one stuck
+ * connection cannot keep the process alive.
+ */
+export async function runShutdownHandlers(timeoutMs = DEFAULT_HANDLER_TIMEOUT_MS): Promise<void> {
     for (const handler of handlers) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`shutdown handler timed out after ${timeoutMs}ms`)), timeoutMs);
+        });
         try {
-            await handler();
+            await Promise.race([Promise.resolve().then(handler), timeout]);
         } catch (err) {
             log.error('Shutdown handler error: %s', err);
+        } finally {
+            clearTimeout(timer);
         }
     }
+}
 
-    process.exit(0);
+export interface ShutdownOptions {
+    /** Longest any one handler may take (default 10 000 ms). */
+    handlerTimeoutMs?: number;
 }
 
 /**
- * Install SIGINT and SIGTERM handlers.
- * Call this once at bot startup.
+ * Install SIGINT and SIGTERM handlers. Call this once at bot startup; later
+ * calls do nothing. A second signal during shutdown exits immediately.
  */
-export function installShutdownHandlers(): void {
-    process.on('SIGINT', () => runShutdown('SIGINT'));
-    process.on('SIGTERM', () => runShutdown('SIGTERM'));
+export function installShutdownHandlers(options: ShutdownOptions = {}): void {
+    if (installed) return;
+    installed = true;
+    const onSignal = (signal: NodeJS.Signals): void => {
+        if (shuttingDown) {
+            log.warn('Received %s again, exiting without waiting for cleanup', signal);
+            process.exit(1);
+        }
+        shuttingDown = true;
+        log.info('Received %s — shutting down gracefully…', signal);
+        void runShutdownHandlers(options.handlerTimeoutMs).then(() => process.exit(0));
+    };
+    process.on('SIGINT', onSignal);
+    process.on('SIGTERM', onSignal);
 }
