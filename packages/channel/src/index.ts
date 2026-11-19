@@ -20,7 +20,7 @@ import { Bot, type BotError } from 'grammy';
 import { loadConfig } from './config.js';
 import { ClaimMonitor } from './claim-monitor.js';
 import { EventMonitor } from './event-monitor.js';
-import { hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, getGithubUserClaimedMints, loadPersistedClaims } from './claim-tracker.js';
+import { hasGithubUserClaimed, markGithubUserClaimed, incrementGithubClaimCount, getGithubUserClaimedMints, loadPersistedClaims, persistClaimsNow } from './claim-tracker.js';
 import { fetchTokenInfo, fetchTopHolders, fetchTokenTrades, fetchDevWalletInfo, fetchSolUsdPrice, fetchPoolLiquidity, fetchBundleInfo, fetchCreatorProfile, fetchSameNameTokens } from './pump-client.js';
 import { fetchGitHubUserById, fetchRepoFromUrls } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
@@ -413,6 +413,7 @@ async function main(): Promise<void> {
         claimMonitor?.stop();
         eventMonitor?.stop();
         stopHealthServer();
+        persistClaimsNow();
         process.exit(0);
     };
 
@@ -421,6 +422,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-    console.error('Fatal error:', err);
+    log.error('Fatal error: %s', err instanceof Error ? (err.stack ?? err.message) : err);
     process.exit(1);
 });
