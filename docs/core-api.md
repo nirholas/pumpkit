@@ -1,6 +1,8 @@
 # @pumpkit/core — API Reference
 
-> Shared framework modules for building PumpFun Telegram bots.
+> Shared framework modules for building PumpFun Telegram bots. Everything on
+> this page is exported from `@pumpkit/core`; the subpaths listed under
+> [Subpath imports](#subpath-imports) load a module without the rest.
 
 ## Installation
 
@@ -15,15 +17,32 @@ cd my-project
 npm install ../pumpkit/packages/core
 ```
 
-## Modules
+Optional peers, by feature: `grammy` (bot), `@solana/web3.js` (monitors,
+RPC, decoders), `better-sqlite3` (`SqliteStore`), `@nirholas/pump-sdk` and
+`@pump-fun/pump-sdk` (SDK bridge).
+
+### Subpath imports
+
+| Import | Contents | Peers loaded |
+|--------|----------|--------------|
+| `@pumpkit/core/logger` | `log`, `setLogLevel`, `getLogLevel` | none |
+| `@pumpkit/core/config` | `requireEnv`, `optionalEnv`, `parseListEnv`, `parseIntEnv` (loads `.env`) | none |
+| `@pumpkit/core/health` | `startHealthServer`, `stopHealthServer` | none |
+| `@pumpkit/core/shutdown` | `onShutdown`, `installShutdownHandlers` | none |
+| `@pumpkit/core/formatter` | templates and link helpers | none |
+| `@pumpkit/core/http` | `fetchPublic`, `fetchPublicJson`, `isPublicAddress` | none |
+| `@pumpkit/core/util` | `retry`, `isTransientError`, `computeBackoffDelay`, `BoundedSet` | none |
+| `@pumpkit/core/programs` | program IDs, discriminators, error codes | none |
+| `@pumpkit/core/events` | event decoders, `parsePumpLogEvents`, `aggregateTrades` | `@solana/web3.js` |
 
 ---
 
-## `bot/` — Telegram Bot Scaffolding
+## Bot scaffolding
 
 ### `createBot(options): Bot`
 
-Factory function that creates a configured grammy Bot instance with error handling, graceful shutdown, and standard middleware.
+Creates a grammy `Bot`, installs an error handler and registers commands.
+It does not start polling; call `bot.start()`.
 
 ```typescript
 import { createBot } from '@pumpkit/core';
@@ -34,150 +53,137 @@ const bot = createBot({
     start: (ctx) => ctx.reply('Welcome!'),
     help: (ctx) => ctx.reply('Available commands: /start, /help'),
   },
-  // Optional
   onError: (err) => console.error('Bot error:', err),
-  parseMode: 'HTML',                // Default: 'HTML'
-  adminChatIds: [123456789],        // Chat IDs for admin notifications
 });
 
-await bot.launch();
+void bot.start();
 ```
 
-**Options:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | `string` | yes | Telegram bot token from BotFather |
+| `commands` | `Record<string, CommandHandler>` | no | Command name to handler |
+| `onError` | `(err: unknown) => void` | no | Replaces the default handler, which logs the error |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `token` | `string` | ✅ | — | Telegram bot token from BotFather |
-| `commands` | `Record<string, CommandHandler>` | ❌ | `{}` | Command handlers |
-| `onError` | `(err: Error) => void` | ❌ | `console.error` | Global error handler |
-| `parseMode` | `'HTML' \| 'MarkdownV2'` | ❌ | `'HTML'` | Default parse mode |
-| `adminChatIds` | `number[]` | ❌ | `[]` | Chat IDs for error notifications |
+### `broadcast(bot, chatIds, message, options?)`
 
-### `bot.broadcast(chatIds, message, options?)`
-
-Send a message to multiple chat IDs with automatic rate limiting (30 msg/sec Telegram limit).
+Sends one message to several chats, about 28 per second to stay under
+Telegram's limit. Resolves with `{ sent, failed }`; a failed chat is logged
+and skipped.
 
 ```typescript
-await bot.broadcast([chatId1, chatId2], formatClaim(event));
+import { broadcast, formatLaunch } from '@pumpkit/core';
+
+const { sent, failed } = await broadcast(bot, [chatId1, chatId2], html);
 ```
-
-### `bot.notifyAdmins(message)`
-
-Send a message to all admin chat IDs.
 
 ---
 
-## `monitor/` — Event Monitors
+## Monitors
 
-All monitors extend `BaseMonitor` and share the same lifecycle:
+Each monitor subscribes to program logs over the RPC websocket and decodes
+the events it reports from their `Program data:` payloads. Callbacks receive
+decoded fields only. Amounts are `bigint` base units of `quoteMint`
+(lamports when it is SOL or `null`); `timestamp` is unix ms from the event.
+web3.js reconnects the websocket and re-subscribes on its own.
 
 ```typescript
-const monitor = new ClaimMonitor({ rpcUrl, onEvent });
-monitor.start();   // Begin monitoring
-monitor.stop();    // Graceful stop
+const monitor = new LaunchMonitor({ connection, onLaunch });
+monitor.start();   // subscribe
+monitor.stop();    // unsubscribe
 monitor.status();  // { running, lastEvent, eventsProcessed }
 ```
 
-### `ClaimMonitor`
+Options common to all monitors: `connection` (a web3.js `Connection`,
+required) and `commitment` (default `'confirmed'`). A callback that throws
+or rejects is logged and does not affect the monitor.
 
-Detects fee claim events on the PumpFees program.
+### `ClaimMonitor` — `onClaim(event: ClaimEvent)`
 
-```typescript
-import { ClaimMonitor } from '@pumpkit/core';
-
-const monitor = new ClaimMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  rpcFallbackUrls: ['https://backup-rpc.example.com'],
-  pollIntervalMs: 5000,              // Default: 5000
-  onClaim: async (event) => {
-    console.log(`${event.wallet} claimed ${event.amount} SOL from ${event.mint}`);
-  },
-});
-```
-
-**ClaimEvent:**
+Pump `collect_creator_fee`, PumpSwap `collect_coin_creator_fee`, Pump and
+PumpSwap `claim_cashback`, and PumpFees `claim_social_fee_pda`. Creator
+vaults are per creator, so claims name the receiving `wallet` but no mint.
 
 ```typescript
 interface ClaimEvent {
   signature: string;
-  wallet: PublicKey;
-  mint: PublicKey;
-  amount: BN;           // lamports
-  tokenName?: string;
-  tokenSymbol?: string;
+  slot: number;
   timestamp: number;
+  kind: 'creator_fee' | 'amm_creator_fee' | 'cashback' | 'social_fee';
+  program: 'pump' | 'pump-amm' | 'pump-fees';
+  wallet: string;
+  amount: bigint;
+  quoteMint: string | null;
 }
 ```
 
-### `LaunchMonitor`
+### `LaunchMonitor` — `onLaunch(event: LaunchEvent)`
 
-Detects new token creations on the Pump program.
-
-```typescript
-import { LaunchMonitor } from '@pumpkit/core';
-
-const monitor = new LaunchMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onLaunch: async (event) => {
-    console.log(`New token: ${event.name} (${event.symbol}) — ${event.mint}`);
-  },
-});
-```
-
-**LaunchEvent:**
+Pump `CreateEvent`, from both `create` and `create_v2`.
 
 ```typescript
 interface LaunchEvent {
   signature: string;
-  mint: PublicKey;
-  creator: PublicKey;
-  name: string;
+  slot: number;
+  timestamp: number;
+  mint: string;
+  bondingCurve: string;
+  creator: string;   // earns creator fees
+  user: string;      // paid for the create
+  name: string;      // raw on-chain strings: escape before display
   symbol: string;
   uri: string;
   isMayhemMode: boolean;
   hasCashback: boolean;
-  timestamp: number;
+  quoteMint: string | null;
 }
 ```
 
-### `GraduationMonitor`
+### `GraduationMonitor` — `onGraduation(event: GraduationEvent)`
 
-Detects bonding curve completions (token graduates to AMM).
-
-```typescript
-import { GraduationMonitor } from '@pumpkit/core';
-
-const monitor = new GraduationMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onGraduation: async (event) => {
-    console.log(`${event.tokenName} graduated! Pool: ${event.poolAddress}`);
-  },
-});
-```
-
-### `WhaleMonitor`
-
-Detects large trades above a configurable SOL threshold.
+`CompleteEvent` and `CompletePumpAmmMigrationEvent`, merged per mint when
+both occur in one transaction. Older coins complete in one transaction and
+migrate in a later one, so a mint can produce an event with
+`curveCompleted: true` and later one with only `poolAddress`.
 
 ```typescript
-import { WhaleMonitor } from '@pumpkit/core';
-
-const monitor = new WhaleMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  thresholdSol: 100,    // Minimum SOL value for alert
-  onWhaleTrade: async (event) => {
-    console.log(`🐋 ${event.side} ${event.solAmount} SOL of ${event.tokenSymbol}`);
-  },
-});
+interface GraduationEvent {
+  signature: string;
+  slot: number;
+  timestamp: number;
+  mint: string;
+  bondingCurve: string;
+  user: string;
+  curveCompleted: boolean;
+  poolAddress: string | null;
+  quoteMint: string | null;
+}
 ```
 
-### `CTOMonitor`
+### `WhaleMonitor` — `onWhaleTrade(event: WhaleTradeEvent)`
 
-Detects Creator Takeover events (fee redirection).
+SOL-quoted bonding curve trades of at least `minSol` (default 10), with the
+pool part of a curve-completing buy folded in.
 
-### `FeeDistMonitor`
+```typescript
+new WhaleMonitor({ connection, minSol: 100, onWhaleTrade: (e) => console.log(e.side, e.solAmount, e.mint) });
+```
 
-Detects fee distribution events to shareholders.
+### `CTOMonitor` — `onCTO(event: CTOEvent)`
+
+Creator changes: `set_creator` (no previous creator in the event),
+`admin_cto` and `migrate_to_sharing_config`.
+
+### `FeeDistMonitor` — `onFeeDist(event: FeeDistEvent)`
+
+Creator fee payouts to fee sharing shareholders (`DistributeCreatorFeesEvent`),
+with `totalAmount` and each shareholder's `shareBps`.
+
+### Writing your own
+
+Extend `LogsMonitor`, pass the program IDs to subscribe to, and implement
+`handleEvents(signature, slot, events)`. Use `this.emit(callback, event)` to
+deliver events with error isolation.
 
 ---
 
@@ -210,7 +216,7 @@ import { PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID } from '@pump
 
 ### `parsePumpLogEvents(logs): PumpLogEvent[]`
 
-Decodes the trade, completion and fee sweep events out of a transaction's log lines, in emission order. It tracks the invoke stack, so each `Program data:` line is matched against the program that emitted it (Pump and PumpSwap share the sweep instruction names). Dependency-free: no SDK needed.
+Decodes the Pump, PumpSwap and PumpFees events PumpKit understands out of a transaction's log lines, in emission order. It tracks the invoke stack, so each `Program data:` line is matched against the program that emitted it (Pump and PumpSwap share the sweep instruction names). Dependency-free: no SDK needed.
 
 ```typescript
 import { parsePumpLogEvents, aggregateTrades, PUMP_PROGRAM_ID } from '@pumpkit/core';
@@ -225,6 +231,11 @@ connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), ({ logs, err }) => {
       case 'postCompleteBuy': // pool part of a buy that completed the curve (synthetic migration)
       case 'complete':        // CompleteEvent: the curve graduated
       case 'sweep':           // SweepBondingCurveFeeEvent or SweepPoolFeeEvent
+      case 'create':          // CreateEvent
+      case 'ammMigration':    // CompletePumpAmmMigrationEvent: the curve moved to its pool
+      case 'creatorChange':   // SetCreatorEvent / AdminCtoEvent / MigrateBondingCurveCreatorEvent
+      case 'feeClaim':        // creator fee, PumpSwap creator fee, cashback or social fee claim
+      case 'creatorFeeDistribution': // DistributeCreatorFeesEvent
     }
   }
   // One entry per trade, with a synthetic-migration buy's pool part folded in.
@@ -242,6 +253,11 @@ connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), ({ logs, err }) => {
 | `decodeTradeEvent(bytes)` | `PumpTradeEvent \| null`. Adds `ixName`, `quoteMint`, `buybackFee`, `creatorFeeUnclaimed`, and `feeKeptOnCurve` (true when a v3 trade left the fee on the curve; `feeRecipient` is then `FEE_KEPT_ON_CURVE_RECIPIENT`) |
 | `decodePostCompleteBuyEvent(bytes)` | `PostCompleteBuyEvent \| null` |
 | `decodeCompleteEvent(bytes)` | `PumpCompleteEvent \| null` |
+| `decodeCreateEvent(bytes)` | `PumpCreateEvent \| null`: name, symbol, uri, mint, creator, mayhem/cashback flags, quote mint |
+| `decodeAmmMigrationEvent(bytes)` | `PumpAmmMigrationEvent \| null`, including the new `pool` |
+| `decodeCreatorChangeEvent(bytes)` | `CreatorChangeEvent \| null` with `kind` `'set_creator'`, `'admin_cto'` or `'migrate_to_sharing_config'` |
+| `decodeFeeClaimEvent(bytes, program)` | `FeeClaimEvent \| null` with `kind` `'creator_fee'`, `'amm_creator_fee'`, `'cashback'` or `'social_fee'` |
+| `decodeCreatorFeeDistributionEvent(bytes)` | `CreatorFeeDistributionEvent \| null`: shareholders with `shareBps`, `distributed` |
 | `decodeSweepBondingCurveFeeEvent(bytes)` / `decodeSweepPoolFeeEvent(bytes)` | `SweepFeeEvent \| null`, with `program` (`'pump'` or `'pump-amm'`) and `bucket` (`'protocol'` or `'creator'`) |
 | `aggregateTrades(events)` | `AggregatedTrade[]`: the buyer's full amounts and fees, with `syntheticMigration` and `postComplete` |
 | `decodePumpPool(data)` | `PumpPoolState \| null` for a PumpSwap `Pool` account: `coinCreator`, signed `virtualQuoteReserves`, and the `protocolFees` / `creatorFees` v2 trades keep in the pool. Fields older, shorter pools lack read as zero |
@@ -275,221 +291,131 @@ console.log(sweep.curveCreatorFee.toString(), sweep.poolCreatorFee.toString(), s
 
 ---
 
-## `formatter/` — Telegram Message Formatting
+## Formatting
 
-### `formatClaim(event): string`
+Templates return HTML for Telegram's `parse_mode: 'HTML'`. Every helper
+escapes its text argument, so compose helpers by concatenating their output,
+not by nesting one inside another.
 
 ```typescript
 import { formatClaim } from '@pumpkit/core';
 
 const html = formatClaim({
-  wallet: new PublicKey('...'),
-  mint: new PublicKey('...'),
-  amount: new BN(2_500_000_000), // 2.5 SOL
-  tokenName: 'PumpCoin',
-  tokenSymbol: 'PUMP',
+  type: 'claim',
+  signature,
+  slot,
+  blockTime: null,
+  claimerWallet: wallet,
+  amountLamports: 2_500_000_000n,   // number or bigint
+  claimType: 'creator_fee',
+  tokenMint: mint,                  // optional
+  tokenName: 'PumpCoin',            // optional, escaped
 });
-// Returns HTML string with bold title, amount, links
 ```
 
-### `formatLaunch(event): string`
-### `formatGraduation(event): string`
-### `formatWhaleTrade(event): string`
-### `formatCTO(event): string`
-### `formatFeeDistribution(event): string`
-
-All formatters return HTML strings compatible with Telegram's `parse_mode: 'HTML'`.
-
-### `link(label, url): string`
-
-```typescript
-import { link, solscanTx, solscanAccount, pumpFunToken } from '@pumpkit/core';
-
-link('View TX', 'https://...');              // <a href="...">View TX</a>
-solscanTx(signature);                        // Solscan transaction link
-solscanAccount(address);                     // Solscan account link
-pumpFunToken(mint);                          // pump.fun token page link
-```
+Also: `formatLaunch`, `formatGraduation`, `formatWhaleTrade`, `formatCTO`,
+`formatFeeDistribution`, and the helpers `link`, `bold`, `code`, `italic`,
+`solscanTx`, `solscanAccount`, `pumpFunToken`, `dexScreenerToken`,
+`shortenAddress`, `formatSol`, `formatQuoteAmount`, `formatNumber`,
+`escapeHtml`, `safeHttpUrl`.
 
 ---
 
-## `storage/` — Persistence
+## Fetching untrusted URLs
 
-### `FileStore`
+```typescript
+import { fetchPublic, fetchPublicJson, UnsafeUrlError, HttpLimitError } from '@pumpkit/core';
 
-JSON file persistence. Atomic writes. Survives restarts.
+const metadata = await fetchPublicJson(uri, { timeoutMs: 5_000, maxBytes: 256 * 1024 });
+const res = await fetchPublic(webhookUrl, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } });
+```
+
+Only http(s); every resolved address must be public (checked at connect
+time); redirects are not followed; one deadline (default 10 s) covers the
+whole exchange; bodies are capped (default 1 MiB). `allowPrivateNetwork: true`
+is for hosts the operator configured, never for chain or user input.
+
+---
+
+## Storage
+
+### `FileStore<T>`
+
+One JSON document, written atomically (temp file + rename).
 
 ```typescript
 import { FileStore } from '@pumpkit/core';
 
-interface Watch { wallet: string; chatId: number; addedAt: number; }
-
-const store = new FileStore<Watch[]>({
-  path: 'data/watches.json',
-  defaultValue: [],
-});
-
-const watches = store.read();
-store.write([...watches, { wallet: '...', chatId: 123, addedAt: Date.now() }]);
+const store = new FileStore<string[]>({ path: 'data/watches.json', defaultValue: [] });
+store.write([...store.read(), wallet]);
 ```
 
 ### `SqliteStore`
 
-SQLite adapter using better-sqlite3.
+Thin `better-sqlite3` wrapper with WAL enabled.
 
 ```typescript
 import { SqliteStore } from '@pumpkit/core';
 
 const db = new SqliteStore('data/bot.sqlite');
-db.exec(`CREATE TABLE IF NOT EXISTS calls (...)`);
-const calls = db.query('SELECT * FROM calls WHERE group_id = ?', [groupId]);
+db.exec('CREATE TABLE IF NOT EXISTS calls (mint TEXT, group_id INTEGER)');
+const calls = db.query<{ mint: string }>('SELECT mint FROM calls WHERE group_id = ?', [groupId]);
 db.close();
 ```
 
 ---
 
-## `config/` — Configuration
+## Configuration
 
-### `loadConfig(schema): Config`
-
-Loads environment variables with type coercion, defaults, and validation.
+Importing the config module loads `.env` from the working directory.
 
 ```typescript
-import { loadConfig, configSchema } from '@pumpkit/core';
+import { requireEnv, optionalEnv, parseIntEnv, parseListEnv } from '@pumpkit/core';
 
-const config = loadConfig({
-  TELEGRAM_BOT_TOKEN: { type: 'string', required: true },
-  SOLANA_RPC_URL: { type: 'string', required: true },
-  FEED_CLAIMS: { type: 'boolean', default: true },
-  WHALE_THRESHOLD_SOL: { type: 'number', default: 100 },
-  API_PORT: { type: 'number', default: 3000 },
-  ADMIN_CHAT_IDS: { type: 'string[]', default: [], separator: ',' },
+const token = requireEnv('TELEGRAM_BOT_TOKEN');   // throws when unset or empty
+const rpc = optionalEnv('RPC_URL', 'https://api.mainnet-beta.solana.com');
+const port = parseIntEnv('PORT', 3000);           // default when unset or not a number
+const chats = parseListEnv('CHAT_IDS');           // comma-separated, trimmed
+```
+
+---
+
+## Health and shutdown
+
+```typescript
+import { startHealthServer, stopHealthServer, onShutdown, installShutdownHandlers } from '@pumpkit/core';
+
+startHealthServer({ startedAt: Date.now(), getStats: () => ({ monitor: monitor.status() }) });
+// GET /health → 200 { status: 'ok', uptime, uptimeMs, ...stats }; 503 when stats.degraded is truthy
+// Port: PORT, then HEALTH_PORT, then 3000.
+
+onShutdown(() => monitor.stop());
+onShutdown(stopHealthServer);
+installShutdownHandlers();   // SIGINT / SIGTERM run the handlers in order, then exit
+```
+
+---
+
+## Logging
+
+```typescript
+import { log, setLogLevel } from '@pumpkit/core';
+
+setLogLevel('debug');                    // default 'info'; the logger does not read LOG_LEVEL itself
+log.info('Processing %s', signature);    // printf-style placeholders via util.format
+```
+
+---
+
+## Retry
+
+```typescript
+import { retry, isTransientError } from '@pumpkit/core';
+
+const result = await retry(() => connection.getSlot(), {
+  maxAttempts: 5,
+  initialDelayMs: 250,
+  shouldRetry: isTransientError,   // the default: 429, 5xx, timeouts, resets
+  label: 'getSlot',
 });
-```
-
----
-
-## `health/` — Health Checks
-
-### `createHealthServer(options): http.Server`
-
-```typescript
-import { createHealthServer } from '@pumpkit/core';
-
-createHealthServer({
-  port: 3000,
-  getStats: () => ({
-    monitors: monitor.status(),
-    watches: store.read().length,
-  }),
-});
-
-// GET /health → { status: 'ok', uptime: '3600s', monitors: {...} }
-```
-
----
-
-## `logger/` — Logging
-
-### `log`
-
-```typescript
-import { log } from '@pumpkit/core';
-
-log.debug('Verbose info');
-log.info('Normal operation');
-log.warn('Something unusual');
-log.error('Something broke', error);
-```
-
-Set log level via `LOG_LEVEL` env var: `debug`, `info`, `warn`, `error`.
-
----
-
-## `api/` — REST API Layer
-
-### `createApiServer(options): Express`
-
-Optional REST API with SSE streaming and webhooks.
-
-```typescript
-import { createApiServer } from '@pumpkit/core';
-
-const api = createApiServer({
-  port: 3000,
-  authToken: process.env.API_AUTH_TOKEN,
-  routes: (app) => {
-    app.get('/claims', (req, res) => res.json(recentClaims));
-    app.get('/status', (req, res) => res.json(monitor.status()));
-  },
-  sse: {
-    path: '/stream',
-    events: eventBus,   // Subscribe to monitor events
-  },
-  webhooks: {
-    path: '/webhooks',
-    store: webhookStore,
-  },
-});
-```
-
----
-
-## `social/` — Social Integrations
-
-### `TwitterClient`
-
-```typescript
-import { TwitterClient } from '@pumpkit/core';
-
-const twitter = new TwitterClient({ bearerToken: process.env.TWITTER_BEARER_TOKEN! });
-const { followers, followsInfluencers } = await twitter.getUserInfo('@handle');
-```
-
-### `GitHubClient`
-
-```typescript
-import { GitHubClient } from '@pumpkit/core';
-
-const github = new GitHubClient({ token: process.env.GITHUB_TOKEN });
-const socialFeePda = await github.lookupSocialFee(mint);
-```
-
----
-
-## Types
-
-### Core Event Types
-
-```typescript
-import type {
-  ClaimEvent,
-  LaunchEvent,
-  GraduationEvent,
-  WhaleTradeEvent,
-  CTOEvent,
-  FeeDistEvent,
-  PumpEvent,
-} from '@pumpkit/core';
-```
-
-### Monitor Types
-
-```typescript
-import type {
-  MonitorOptions,
-  MonitorStatus,
-  BaseMonitorConfig,
-} from '@pumpkit/core';
-```
-
-### Config Types
-
-```typescript
-import type {
-  BotConfig,
-  MonitorConfig,
-  TrackerConfig,
-  ConfigSchema,
-} from '@pumpkit/core';
 ```

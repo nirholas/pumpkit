@@ -9,12 +9,12 @@ strip the parts you don't need, and ship.
 | Primitive                  | Where it's used                                            |
 | -------------------------- | ---------------------------------------------------------- |
 | `createBot`                | grammy scaffold with `/start`, `/help`, `/watch`, `/list`  |
-| `ClaimMonitor`             | Subscribes to PumpFun fee-claim events                     |
-| `FileStore`                | JSON-backed persistence of watched mints                   |
+| `ClaimMonitor`             | Decodes Pump, PumpSwap and PumpFees fee-claim events       |
+| `FileStore`                | JSON-backed persistence of watched wallets                 |
 | `createRpcConnection`      | RPC client with automatic failover between endpoints       |
-| `retry` + `isTransientError` | Webhook delivery with exponential backoff + jitter        |
+| `retry`                    | Webhook delivery with exponential backoff + jitter         |
 | `formatClaim`              | HTML message builder for Telegram `parse_mode: 'HTML'`    |
-| `installShutdownHandlers`  | Clean SIGINT/SIGTERM teardown — flushes the store + bot   |
+| `installShutdownHandlers`  | SIGINT/SIGTERM teardown: stops the monitor and the bot     |
 
 ## Setup
 
@@ -33,11 +33,15 @@ npm run dev --workspace=@pumpkit/example-claim-alert
 You should see:
 
 ```
-[INFO] Claim alert bot online — watching 0 token(s)
+[INFO] Claim alert bot online — watching 0 wallet(s)
 ```
 
-DM the bot `/start` in Telegram, then `/watch <mint>` with a token address.
-Claim events for that mint will be posted to `CHAT_ID`.
+DM the bot `/start` in Telegram, then `/watch <wallet>` with a creator or
+claimer address. Claims received by that wallet are posted to `CHAT_ID`.
+
+Creator fees accrue in a vault per creator, not per coin, so on-chain claim
+events name the wallet that received the funds but not a mint. That is why
+this example watches wallets.
 
 ## Commands
 
@@ -45,12 +49,12 @@ Claim events for that mint will be posted to `CHAT_ID`.
 | -------------------- | ----------------------------------------------- |
 | `/start`             | Welcome message + brief usage                   |
 | `/help`              | Command reference                               |
-| `/watch <mint>`      | Add a mint to the watchlist                     |
-| `/unwatch <mint>`    | Remove a mint                                   |
-| `/list`              | Show all currently watched mints                |
+| `/watch <wallet>`    | Add a wallet to the watchlist                   |
+| `/unwatch <wallet>`  | Remove a wallet                                 |
+| `/list`              | Show all currently watched wallets              |
 
 If the watchlist is empty, the bot broadcasts **every** claim event. As soon
-as you `/watch` at least one mint, it filters to the watchlist.
+as you `/watch` at least one wallet, it filters to the watchlist.
 
 ## Webhook mode
 
@@ -62,6 +66,9 @@ If `WEBHOOK_URL` is set, every claim event is also POSTed there as JSON:
   "event": { /* ClaimEvent fields — see @pumpkit/core types/events */ }
 }
 ```
+
+`event.amount` is a decimal string of base units (lamports for SOL), since
+JSON has no 64-bit integer type.
 
 Delivery is retried up to 4 times with exponential backoff (500ms → 1s →
 2s → 4s, ±50% jitter). Retries happen on:
@@ -92,17 +99,15 @@ repo root, so the file won't accidentally land in commits.
 
 A few common reshapes:
 
-- **Different event type** — swap `ClaimMonitor` for `LaunchMonitor`,
-  `GraduationMonitor`, `WhaleMonitor`, `CTOMonitor`, or `FeeDistMonitor`.
-  Same callback shape, just a different event type.
+- **Different event type** — swap `ClaimMonitor` for `LaunchMonitor`
+  (`onLaunch`), `GraduationMonitor` (`onGraduation`), `WhaleMonitor`
+  (`onWhaleTrade`), `CTOMonitor` (`onCTO`) or `FeeDistMonitor` (`onFeeDist`).
 - **Multiple chats** — replace `CHAT_ID` with a `Set<string>` and
   broadcast to each.
 - **Channel mode** — add the bot as a channel administrator and set
   `CHAT_ID` to the channel's `@username` or numeric ID.
-- **SQLite persistence** — swap `FileStore` for `SqliteStore` if you
-  need queries (e.g. "show me all claims for mint X in the last hour").
-- **Programmatic API** — drop the Telegram parts and instead expose an
-  HTTP/SSE endpoint via `@pumpkit/core`'s `createHealthServer` + your
-  own router.
+- **SQLite persistence** — `SqliteStore` is a thin `better-sqlite3` wrapper
+  (`exec`, typed queries) for when you need SQL over stored claims instead of
+  one JSON document.
 
 For a fuller example covering all monitor types, see [`@pumpkit/monitor`](../../packages/monitor/).

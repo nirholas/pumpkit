@@ -21,10 +21,11 @@ function tokenLabel(mint: string, name?: string, symbol?: string): string {
 export interface ClaimEventData extends PumpEvent {
     type: 'claim';
     claimerWallet: string;
-    tokenMint: string;
+    /** Absent for creator-vault and cashback claims, which are per wallet rather than per coin. */
+    tokenMint?: string;
     tokenName?: string;
     tokenSymbol?: string;
-    amountLamports: number;
+    amountLamports: number | bigint;
     claimType: 'creator_fee' | 'cashback' | 'social_fee';
     /** Optional quote mint (V2 events). When set, `amountLamports` is interpreted
      *  in base units of this mint — micro-USDC for USDC, lamports for SOL. */
@@ -50,7 +51,7 @@ export interface GraduationEventData extends PumpEvent {
 export interface WhaleTradeEventData extends PumpEvent {
     type: 'whale';
     direction: 'buy' | 'sell';
-    amountLamports: number;
+    amountLamports: number | bigint;
     tokenMint: string;
     tokenName?: string;
     tokenSymbol?: string;
@@ -71,8 +72,8 @@ export interface FeeDistEventData extends PumpEvent {
     tokenMint: string;
     tokenName?: string;
     tokenSymbol?: string;
-    shareholders: Array<{ address: string; amountLamports: number }>;
-    totalLamports: number;
+    shareholders: Array<{ address: string; amountLamports: number | bigint }>;
+    totalLamports: number | bigint;
     /** Optional quote mint (V2 events). Interprets shareholder/total amounts. */
     quoteMint?: string;
 }
@@ -84,14 +85,15 @@ export function formatClaim(event: ClaimEventData): string {
         event.claimType === 'cashback' ? '💸 Cashback' :
         '🤝 Social Fee';
 
+    const mint = event.tokenMint;
     const lines = [
         bold(`💰 Fee Claimed — ${formatQuoteAmount(event.amountLamports, event.quoteMint)}`),
         '',
         `${typeLabel}`,
-        `Token: ${escapeHtml(event.tokenName ?? 'Unknown')} (${code(event.tokenSymbol ?? event.tokenMint)})`,
+        ...(mint ? [`Token: ${escapeHtml(event.tokenName ?? 'Unknown')} (${code(event.tokenSymbol ?? mint)})`] : []),
         `Claimer: ${code(shortenAddress(event.claimerWallet))}`,
         '',
-        `${pumpFunToken(event.tokenMint)} · ${solscanTx(event.signature)}`,
+        mint ? `${pumpFunToken(mint)} · ${solscanTx(event.signature)}` : solscanTx(event.signature),
     ];
     return lines.join('\n');
 }

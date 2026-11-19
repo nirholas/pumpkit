@@ -165,4 +165,15 @@ describe('formatter/templates', () => {
         });
         expect(html).toContain('https://solscan.io/account/Pool1');
     });
+
+    it('formatClaim() omits the token line and coin link for a per-wallet claim', () => {
+        const html = formatClaim({
+            ...BASE, type: 'claim', claimerWallet: '7xKpR3nRm4qZ5bN2cW8dF1eG9hJk', amountLamports: 1_000_000_000n,
+            claimType: 'creator_fee',
+        });
+        expect(html).not.toContain('Token:');
+        expect(html).not.toContain('pump.fun/coin');
+        expect(html).toContain('1.00 SOL');
+        expect(html).toContain('solscan.io/tx/sig123');
+    });
 });

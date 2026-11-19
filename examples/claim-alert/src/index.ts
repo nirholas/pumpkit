@@ -10,8 +10,8 @@
  * primitives into a working Telegram bot:
  *
  *   - createBot           — grammy scaffold with /start, /help, /watch, /list
- *   - ClaimMonitor        — subscribes to PumpFun fee claim events
- *   - FileStore           — JSON-backed persistence for watched tokens
+ *   - ClaimMonitor        — decodes Pump, PumpSwap and PumpFees fee claim events
+ *   - FileStore           — JSON-backed persistence for watched wallets
  *   - createRpcConnection — RPC client with automatic failover
  *   - retry               — wraps webhook delivery with exponential backoff
  *   - formatClaim         — HTML message builder for Telegram
@@ -60,13 +60,13 @@ const FALLBACK_RPC_URLS = parseListEnv('FALLBACK_RPC_URL');
 const WEBHOOK_URL = optionalEnv('WEBHOOK_URL', '');
 const STORE_PATH = optionalEnv('STORE_PATH', './data/watched.json');
 
-interface WatchedTokens {
-  mints: string[];
+interface WatchedWallets {
+  wallets: string[];
 }
 
-const store = new FileStore<WatchedTokens>({
+const store = new FileStore<WatchedWallets>({
   path: STORE_PATH,
-  defaultValue: { mints: [] },
+  defaultValue: { wallets: [] },
 });
 
 const rpc = createRpcConnection({
@@ -80,16 +80,16 @@ const bot = createBot({
   commands: {
     start: async (ctx: Context) => {
       await ctx.reply(
-        'PumpKit Claim Alert bot online. Use /watch <mint> to track a token, /list to see what I am watching.',
+        'PumpKit Claim Alert bot online. Use /watch <wallet> to track a claimer, /list to see what I am watching.',
       );
     },
     help: async (ctx: Context) => {
       await ctx.reply(
         [
           'Commands:',
-          '/watch <mint>   — start receiving alerts for a token',
-          '/unwatch <mint> — stop receiving alerts',
-          '/list           — show watched mints',
+          '/watch <wallet>   — alert when this wallet claims fees',
+          '/unwatch <wallet> — stop alerting for it',
+          '/list             — show watched wallets',
         ].join('\n'),
       );
     },
@@ -97,52 +97,54 @@ const bot = createBot({
 });
 
 bot.command('watch', async (ctx: Context) => {
-  const mint = typeof ctx.match === 'string' ? ctx.match.trim() : '';
-  if (!mint) return ctx.reply('Usage: /watch <mint-address>');
+  const wallet = typeof ctx.match === 'string' ? ctx.match.trim() : '';
+  if (!wallet) return ctx.reply('Usage: /watch <wallet-address>');
   const state = store.read();
-  if (state.mints.includes(mint)) return ctx.reply(`Already watching ${mint}`);
-  store.write({ mints: [...state.mints, mint] });
-  return ctx.reply(`Watching ${mint}`);
+  if (state.wallets.includes(wallet)) return ctx.reply(`Already watching ${wallet}`);
+  store.write({ wallets: [...state.wallets, wallet] });
+  return ctx.reply(`Watching ${wallet}`);
 });
 
 bot.command('unwatch', async (ctx: Context) => {
-  const mint = typeof ctx.match === 'string' ? ctx.match.trim() : '';
-  if (!mint) return ctx.reply('Usage: /unwatch <mint-address>');
+  const wallet = typeof ctx.match === 'string' ? ctx.match.trim() : '';
+  if (!wallet) return ctx.reply('Usage: /unwatch <wallet-address>');
   const state = store.read();
-  const next = state.mints.filter((m: string) => m !== mint);
-  if (next.length === state.mints.length) return ctx.reply(`Not watching ${mint}`);
-  store.write({ mints: next });
-  return ctx.reply(`Stopped watching ${mint}`);
+  const next = state.wallets.filter((w: string) => w !== wallet);
+  if (next.length === state.wallets.length) return ctx.reply(`Not watching ${wallet}`);
+  store.write({ wallets: next });
+  return ctx.reply(`Stopped watching ${wallet}`);
 });
 
 bot.command('list', async (ctx: Context) => {
-  const { mints } = store.read();
-  if (mints.length === 0) return ctx.reply('Not watching any tokens yet. Use /watch <mint>.');
-  return ctx.reply(`Watching ${mints.length} token(s):\n${mints.map((m: string) => `• ${m}`).join('\n')}`);
+  const { wallets } = store.read();
+  if (wallets.length === 0) return ctx.reply('Not watching any wallets yet. Use /watch <wallet>.');
+  return ctx.reply(`Watching ${wallets.length} wallet(s):\n${wallets.map((w: string) => `• ${w}`).join('\n')}`);
 });
 
 function toClaimEventData(e: ClaimEvent): ClaimEventData {
   return {
     type: 'claim',
     signature: e.signature,
-    slot: 0,
-    blockTime: e.timestamp || null,
+    slot: e.slot,
+    blockTime: Math.floor(e.timestamp / 1000),
     claimerWallet: e.wallet,
-    tokenMint: e.mint,
-    tokenName: e.tokenName,
-    tokenSymbol: e.tokenSymbol,
     amountLamports: e.amount,
-    claimType: 'creator_fee',
+    claimType: e.kind === 'amm_creator_fee' ? 'creator_fee' : e.kind,
+    ...(e.quoteMint ? { quoteMint: e.quoteMint } : {}),
   };
+}
+
+/** JSON body for the webhook. Amounts are bigints, which JSON.stringify cannot encode. */
+function webhookBody(event: ClaimEvent): string {
+  return JSON.stringify({ type: 'claim', event: { ...event, amount: event.amount.toString() } });
 }
 
 const monitor = new ClaimMonitor({
   connection: rpc.getConnection(),
   onClaim: async (event: ClaimEvent) => {
-    const { mints } = store.read();
-    const isWatched = mints.length === 0 || mints.includes(event.mint);
-    if (!isWatched) {
-      log.debug('Ignoring claim for unwatched mint %s', event.mint);
+    const { wallets } = store.read();
+    if (wallets.length > 0 && !wallets.includes(event.wallet)) {
+      log.debug('Ignoring claim by unwatched wallet %s', event.wallet);
       return;
     }
 
@@ -162,7 +164,8 @@ const monitor = new ClaimMonitor({
             const res = await fetch(WEBHOOK_URL, {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ type: 'claim', event }),
+              body: webhookBody(event),
+              signal: AbortSignal.timeout(10_000),
             });
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
           },
@@ -184,4 +187,4 @@ installShutdownHandlers();
 
 monitor.start();
 await bot.start();
-log.info('Claim alert bot online — watching %d token(s)', store.read().mints.length);
+log.info('Claim alert bot online — watching %d wallet(s)', store.read().wallets.length);

@@ -5,12 +5,16 @@
 /**
  * @pumpkit/core: Pump event decoders
  *
- * Dependency-free, length-tolerant decoders for the Pump and PumpSwap events
- * a bot needs to follow trades and fees after the October 2026 upgrade:
+ * Dependency-free, length-tolerant decoders for the Pump, PumpSwap and
+ * PumpFees events a bot needs after the October 2026 upgrade:
  *
  *   - TradeEvent (every bonding curve trade: legacy, v2, v3, multi-hop hops)
  *   - PostCompleteBuyEvent (pool part of a buy that emptied the curve)
- *   - CompleteEvent
+ *   - CreateEvent, CompleteEvent, CompletePumpAmmMigrationEvent
+ *   - SetCreatorEvent / AdminCtoEvent / MigrateBondingCurveCreatorEvent
+ *   - CollectCreatorFeeEvent, CollectCoinCreatorFeeEvent, ClaimCashbackEvent,
+ *     SocialFeePdaClaimed (fee claims)
+ *   - DistributeCreatorFeesEvent (fee sharing payouts)
  *   - SweepBondingCurveFeeEvent / SweepPoolFeeEvent (fee sweeps)
  *
  * Every decoder reads a fixed prefix and treats later fields as optional, so
@@ -22,12 +26,23 @@
 import { PublicKey } from '@solana/web3.js';
 
 import {
+    ADMIN_CTO_EVENT_DISCRIMINATOR,
+    CLAIM_CASHBACK_EVENT_DISCRIMINATOR,
+    COLLECT_COIN_CREATOR_FEE_EVENT_DISCRIMINATOR,
+    COLLECT_CREATOR_FEE_EVENT_DISCRIMINATOR,
+    COMPLETE_AMM_MIGRATION_EVENT_DISCRIMINATOR,
     COMPLETE_EVENT_DISCRIMINATOR,
+    CREATE_EVENT_DISCRIMINATOR,
+    DISTRIBUTE_CREATOR_FEES_EVENT_DISCRIMINATOR,
     FEE_KEPT_ON_CURVE_RECIPIENT,
+    MIGRATE_BONDING_CURVE_CREATOR_EVENT_DISCRIMINATOR,
     POST_COMPLETE_BUY_EVENT_DISCRIMINATOR,
     PUMP_AMM_POOL_ACCOUNT_DISCRIMINATOR,
     PUMP_AMM_PROGRAM_ID,
+    PUMP_FEE_PROGRAM_ID,
     PUMP_PROGRAM_ID,
+    SET_CREATOR_EVENT_DISCRIMINATOR,
+    SOCIAL_FEE_PDA_CLAIMED_EVENT_DISCRIMINATOR,
     SWEEP_BONDING_CURVE_FEE_EVENT_DISCRIMINATOR,
     SWEEP_POOL_FEE_EVENT_DISCRIMINATOR,
     TRADE_EVENT_DISCRIMINATOR,
@@ -350,13 +365,254 @@ export function decodeSweepPoolFeeEvent(bytes: Buffer): SweepFeeEvent | null {
     }
 }
 
+// ── CreateEvent ──────────────────────────────────────────────────────
+
+export interface PumpCreateEvent {
+    name: string;
+    symbol: string;
+    uri: string;
+    mint: string;
+    bondingCurve: string;
+    /** Signer that paid for the create. */
+    user: string;
+    /** Creator that earns creator fees. */
+    creator: string;
+    timestamp: bigint;
+    /** `null` when the event predates the field. */
+    tokenProgram: string | null;
+    isMayhemMode: boolean;
+    isCashbackEnabled: boolean;
+    /** `null` when the event predates the field. */
+    quoteMint: string | null;
+}
+
+export function decodeCreateEvent(bytes: Buffer): PumpCreateEvent | null {
+    if (!hasDiscriminator(bytes, CREATE_EVENT_DISCRIMINATOR)) return null;
+    const r = new ByteReader(bytes);
+    let event: PumpCreateEvent;
+    try {
+        event = {
+            name: r.string(),
+            symbol: r.string(),
+            uri: r.string(),
+            mint: r.pubkey(),
+            bondingCurve: r.pubkey(),
+            user: r.pubkey(),
+            creator: r.pubkey(),
+            timestamp: r.i64(),
+            tokenProgram: null,
+            isMayhemMode: false,
+            isCashbackEnabled: false,
+            quoteMint: null,
+        };
+    } catch {
+        return null;
+    }
+    // virtual_token_reserves, virtual_sol_reserves, real_token_reserves, token_total_supply
+    if (!r.has(8 * 4 + 32)) return event;
+    r.skip(8 * 4);
+    event.tokenProgram = r.pubkey();
+    if (!r.has(2)) return event;
+    event.isMayhemMode = r.bool();
+    event.isCashbackEnabled = r.bool();
+    if (r.has(32)) event.quoteMint = r.pubkey();
+    return event;
+}
+
+// ── CompletePumpAmmMigrationEvent ────────────────────────────────────
+
+export interface PumpAmmMigrationEvent {
+    user: string;
+    mint: string;
+    mintAmount: bigint;
+    solAmount: bigint;
+    poolMigrationFee: bigint;
+    bondingCurve: string;
+    timestamp: bigint;
+    pool: string;
+    /** `null` when the event predates the field. */
+    quoteMint: string | null;
+}
+
+export function decodeAmmMigrationEvent(bytes: Buffer): PumpAmmMigrationEvent | null {
+    if (!hasDiscriminator(bytes, COMPLETE_AMM_MIGRATION_EVENT_DISCRIMINATOR)) return null;
+    const r = new ByteReader(bytes);
+    try {
+        const event: PumpAmmMigrationEvent = {
+            user: r.pubkey(),
+            mint: r.pubkey(),
+            mintAmount: r.u64(),
+            solAmount: r.u64(),
+            poolMigrationFee: r.u64(),
+            bondingCurve: r.pubkey(),
+            timestamp: r.i64(),
+            pool: r.pubkey(),
+            quoteMint: null,
+        };
+        if (r.has(32)) event.quoteMint = r.pubkey();
+        return event;
+    } catch {
+        return null;
+    }
+}
+
+// ── Creator changes ──────────────────────────────────────────────────
+
+export type CreatorChangeKind = 'set_creator' | 'admin_cto' | 'migrate_to_sharing_config';
+
+export interface CreatorChangeEvent {
+    kind: CreatorChangeKind;
+    timestamp: bigint;
+    mint: string;
+    bondingCurve: string;
+    /** `null` for `set_creator`, whose event does not carry the previous creator. */
+    oldCreator: string | null;
+    newCreator: string;
+}
+
+export function decodeCreatorChangeEvent(bytes: Buffer): CreatorChangeEvent | null {
+    if (bytes.length < 8) return null;
+    const r = new ByteReader(bytes);
+    try {
+        if (hasDiscriminator(bytes, SET_CREATOR_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            const mint = r.pubkey();
+            const bondingCurve = r.pubkey();
+            const newCreator = r.pubkey();
+            return { kind: 'set_creator', timestamp, mint, bondingCurve, oldCreator: null, newCreator };
+        }
+        if (hasDiscriminator(bytes, ADMIN_CTO_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            r.skip(32); // authority
+            const mint = r.pubkey();
+            const bondingCurve = r.pubkey();
+            const oldCreator = r.pubkey();
+            const newCreator = r.pubkey();
+            return { kind: 'admin_cto', timestamp, mint, bondingCurve, oldCreator, newCreator };
+        }
+        if (hasDiscriminator(bytes, MIGRATE_BONDING_CURVE_CREATOR_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            const mint = r.pubkey();
+            const bondingCurve = r.pubkey();
+            r.skip(32); // sharing_config
+            const oldCreator = r.pubkey();
+            const newCreator = r.pubkey();
+            return { kind: 'migrate_to_sharing_config', timestamp, mint, bondingCurve, oldCreator, newCreator };
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+// ── Fee claims ───────────────────────────────────────────────────────
+
+export type FeeClaimKind = 'creator_fee' | 'amm_creator_fee' | 'cashback' | 'social_fee';
+
+export interface FeeClaimEvent {
+    kind: FeeClaimKind;
+    program: 'pump' | 'pump-amm' | 'pump-fees';
+    /** Wallet that received the funds. */
+    wallet: string;
+    /** Amount claimed, in base units of `quoteMint` (lamports when it is SOL or unknown). */
+    amount: bigint;
+    /** `null` when the event does not say (cashback, PumpSwap creator fees, older events). */
+    quoteMint: string | null;
+    timestamp: bigint;
+}
+
+type ClaimProgram = FeeClaimEvent['program'];
+
+export function decodeFeeClaimEvent(bytes: Buffer, program: ClaimProgram): FeeClaimEvent | null {
+    if (bytes.length < 8) return null;
+    const r = new ByteReader(bytes);
+    try {
+        if (program === 'pump' && hasDiscriminator(bytes, COLLECT_CREATOR_FEE_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            const wallet = r.pubkey();
+            const amount = r.u64();
+            const quoteMint = r.has(32) ? r.pubkey() : null;
+            return { kind: 'creator_fee', program, wallet, amount, quoteMint, timestamp };
+        }
+        if (program === 'pump-amm' && hasDiscriminator(bytes, COLLECT_COIN_CREATOR_FEE_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            const wallet = r.pubkey();
+            const amount = r.u64();
+            return { kind: 'amm_creator_fee', program, wallet, amount, quoteMint: null, timestamp };
+        }
+        if (program !== 'pump-fees' && hasDiscriminator(bytes, CLAIM_CASHBACK_EVENT_DISCRIMINATOR)) {
+            const wallet = r.pubkey();
+            const amount = r.u64();
+            const timestamp = r.i64();
+            return { kind: 'cashback', program, wallet, amount, quoteMint: null, timestamp };
+        }
+        if (program === 'pump-fees' && hasDiscriminator(bytes, SOCIAL_FEE_PDA_CLAIMED_EVENT_DISCRIMINATOR)) {
+            const timestamp = r.i64();
+            r.string(); // user_id
+            r.skip(1 + 32); // platform, social_fee_pda
+            const wallet = r.pubkey(); // recipient
+            r.skip(32); // social_claim_authority
+            const amount = r.u64();
+            // claimable_before, lifetime_claimed, recipient_balance_before, recipient_balance_after
+            const quoteMint = r.has(8 * 4 + 32) ? (r.skip(8 * 4), r.pubkey()) : null;
+            return { kind: 'social_fee', program, wallet, amount, quoteMint, timestamp };
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+// ── DistributeCreatorFeesEvent ───────────────────────────────────────
+
+export interface CreatorFeeDistributionEvent {
+    timestamp: bigint;
+    mint: string;
+    bondingCurve: string;
+    sharingConfig: string;
+    admin: string;
+    shareholders: Array<{ address: string; shareBps: number }>;
+    /** Total paid out, in base units of `quoteMint` (lamports when `null`). */
+    distributed: bigint;
+    /** `null` when the event predates the field. */
+    quoteMint: string | null;
+}
+
+export function decodeCreatorFeeDistributionEvent(bytes: Buffer): CreatorFeeDistributionEvent | null {
+    if (!hasDiscriminator(bytes, DISTRIBUTE_CREATOR_FEES_EVENT_DISCRIMINATOR)) return null;
+    const r = new ByteReader(bytes);
+    try {
+        const timestamp = r.i64();
+        const mint = r.pubkey();
+        const bondingCurve = r.pubkey();
+        const sharingConfig = r.pubkey();
+        const admin = r.pubkey();
+        const count = r.u32();
+        if (!r.has(count * (32 + 2))) return null;
+        const shareholders: CreatorFeeDistributionEvent['shareholders'] = [];
+        for (let i = 0; i < count; i++) {
+            shareholders.push({ address: r.pubkey(), shareBps: r.u16() });
+        }
+        const distributed = r.u64();
+        const quoteMint = r.has(32) ? r.pubkey() : null;
+        return { timestamp, mint, bondingCurve, sharingConfig, admin, shareholders, distributed, quoteMint };
+    } catch {
+        return null;
+    }
+}
+
 // ── Log parsing ──────────────────────────────────────────────────────
 
 export type PumpLogEvent =
     | { type: 'trade'; data: PumpTradeEvent }
     | { type: 'postCompleteBuy'; data: PostCompleteBuyEvent }
     | { type: 'complete'; data: PumpCompleteEvent }
-    | { type: 'sweep'; data: SweepFeeEvent };
+    | { type: 'sweep'; data: SweepFeeEvent }
+    | { type: 'create'; data: PumpCreateEvent }
+    | { type: 'ammMigration'; data: PumpAmmMigrationEvent }
+    | { type: 'creatorChange'; data: CreatorChangeEvent }
+    | { type: 'feeClaim'; data: FeeClaimEvent }
+    | { type: 'creatorFeeDistribution'; data: CreatorFeeDistributionEvent };
 
 const PROGRAM_INVOKE = /^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) invoke \[\d+\]$/;
 const PROGRAM_EXIT = /^Program [1-9A-HJ-NP-Za-km-z]{32,44} (success|failed)/;
@@ -392,7 +648,13 @@ function decodeForProgram(bytes: Buffer, programId: string | undefined): PumpLog
     if (bytes.length < 8) return null;
     if (programId === PUMP_AMM_PROGRAM_ID) {
         const sweep = decodeSweepPoolFeeEvent(bytes);
-        return sweep ? { type: 'sweep', data: sweep } : null;
+        if (sweep) return { type: 'sweep', data: sweep };
+        const claim = decodeFeeClaimEvent(bytes, 'pump-amm');
+        return claim ? { type: 'feeClaim', data: claim } : null;
+    }
+    if (programId === PUMP_FEE_PROGRAM_ID) {
+        const claim = decodeFeeClaimEvent(bytes, 'pump-fees');
+        return claim ? { type: 'feeClaim', data: claim } : null;
     }
     if (programId !== undefined && programId !== PUMP_PROGRAM_ID) return null;
     const trade = decodeTradeEvent(bytes);
@@ -402,7 +664,17 @@ function decodeForProgram(bytes: Buffer, programId: string | undefined): PumpLog
     const complete = decodeCompleteEvent(bytes);
     if (complete) return { type: 'complete', data: complete };
     const sweep = decodeSweepBondingCurveFeeEvent(bytes);
-    return sweep ? { type: 'sweep', data: sweep } : null;
+    if (sweep) return { type: 'sweep', data: sweep };
+    const create = decodeCreateEvent(bytes);
+    if (create) return { type: 'create', data: create };
+    const migration = decodeAmmMigrationEvent(bytes);
+    if (migration) return { type: 'ammMigration', data: migration };
+    const creatorChange = decodeCreatorChangeEvent(bytes);
+    if (creatorChange) return { type: 'creatorChange', data: creatorChange };
+    const claim = decodeFeeClaimEvent(bytes, 'pump');
+    if (claim) return { type: 'feeClaim', data: claim };
+    const distribution = decodeCreatorFeeDistributionEvent(bytes);
+    return distribution ? { type: 'creatorFeeDistribution', data: distribution } : null;
 }
 
 // ── Trade aggregation ────────────────────────────────────────────────

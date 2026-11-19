@@ -178,3 +178,30 @@ export const PUMP_AMM_POOL_ACCOUNT_DISCRIMINATOR = hex('f19a6d0411b16dbc');
 /** PumpSwap BuyEvent / SellEvent discriminators. */
 export const AMM_BUY_EVENT_DISCRIMINATOR = hex('67f4521f2cf57777');
 export const AMM_SELL_EVENT_DISCRIMINATOR = hex('3e2f370aa503dc2a');
+
+/** CreateEvent discriminator (Pump `create` / `create_v2`). */
+export const CREATE_EVENT_DISCRIMINATOR = hex('1b72a94ddeeb6376');
+
+/** SetCreatorEvent discriminator (Pump `set_creator`). */
+export const SET_CREATOR_EVENT_DISCRIMINATOR = hex('ed347b25f5fb48d2');
+
+/** AdminCtoEvent discriminator (Pump admin creator takeover). */
+export const ADMIN_CTO_EVENT_DISCRIMINATOR = hex('6e7ce262aaff1178');
+
+/** MigrateBondingCurveCreatorEvent discriminator (creator moved to a fee sharing config). */
+export const MIGRATE_BONDING_CURVE_CREATOR_EVENT_DISCRIMINATOR = hex('9ba768dcd56cf303');
+
+/** CollectCreatorFeeEvent discriminator (Pump creator vault claim). */
+export const COLLECT_CREATOR_FEE_EVENT_DISCRIMINATOR = hex('7a027f010ebf0caf');
+
+/** CollectCoinCreatorFeeEvent discriminator (PumpSwap creator vault claim). */
+export const COLLECT_COIN_CREATOR_FEE_EVENT_DISCRIMINATOR = hex('e8f5c2eeeada3a59');
+
+/** ClaimCashbackEvent discriminator (same layout on Pump and PumpSwap). */
+export const CLAIM_CASHBACK_EVENT_DISCRIMINATOR = hex('e2d6f62107f293e5');
+
+/** DistributeCreatorFeesEvent discriminator (Pump fee sharing payout). */
+export const DISTRIBUTE_CREATOR_FEES_EVENT_DISCRIMINATOR = hex('a537817004b3ca28');
+
+/** SocialFeePdaClaimed discriminator (PumpFees social fee claim). */
+export const SOCIAL_FEE_PDA_CLAIMED_EVENT_DISCRIMINATOR = hex('3212c141edd2eaec');

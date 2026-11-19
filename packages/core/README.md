@@ -32,37 +32,40 @@ npm install grammy @solana/web3.js better-sqlite3
 
 ```typescript
 import {
-  createBot, broadcast, setupShutdown,
-  ClaimMonitor, createRpcConnection,
-  formatClaim, log, requireEnv,
-  startHealthServer, installShutdownHandlers,
+  ClaimMonitor, createBot, createRpcConnection, formatClaim,
+  installShutdownHandlers, log, onShutdown, requireEnv, startHealthServer, stopHealthServer,
 } from '@pumpkit/core';
 
-const token = requireEnv('TELEGRAM_BOT_TOKEN');
+const bot = createBot({ token: requireEnv('TELEGRAM_BOT_TOKEN') });
 const chatId = requireEnv('CHAT_ID');
-const connection = createRpcConnection();
-
-const bot = createBot({ token, commands: [] });
+const rpc = createRpcConnection({ url: requireEnv('RPC_URL') });
 
 const monitor = new ClaimMonitor({
-  connection,
-  programId: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
-  onClaim: async (event) => {
+  connection: rpc.getConnection(),
+  onClaim: async (claim) => {
     const html = formatClaim({
-      wallet: event.wallet,
-      tokenName: event.tokenName ?? 'Unknown',
-      amount: event.amount,
-      signature: event.signature,
+      type: 'claim',
+      signature: claim.signature,
+      slot: claim.slot,
+      blockTime: Math.floor(claim.timestamp / 1000),
+      claimerWallet: claim.wallet,
+      amountLamports: claim.amount,
+      claimType: claim.kind === 'amm_creator_fee' ? 'creator_fee' : claim.kind,
+      ...(claim.quoteMint ? { quoteMint: claim.quoteMint } : {}),
     });
-    await broadcast(bot, [chatId], html);
+    await bot.api.sendMessage(chatId, html, { parse_mode: 'HTML' });
   },
 });
 
+onShutdown(async () => {
+  monitor.stop();
+  await bot.stop();
+  await stopHealthServer();
+});
 installShutdownHandlers();
 startHealthServer({ startedAt: Date.now() });
-setupShutdown(bot, () => monitor.stop());
 monitor.start();
-bot.start();
+void bot.start();
 log.info('Bot running');
 ```
 
@@ -81,18 +84,24 @@ await broadcast(bot, [chatId], '<b>Hello!</b>');
 
 ### `monitor/` — Event Monitors
 
-Six real-time monitors for on-chain PumpFun events via WebSocket subscriptions:
+Six monitors that follow program logs over the RPC websocket and decode each
+event from its `Program data:` payload. Callbacks receive decoded fields only;
+nothing is filled with placeholders. Amounts are `bigint` base units.
 
-| Monitor | Detects | Program |
-|---------|---------|---------|
-| `ClaimMonitor` | Fee claims | PumpFees |
-| `LaunchMonitor` | Token creates (`Create`/`CreateV2`) | Pump |
-| `GraduationMonitor` | Bonding curve → AMM migration | Pump |
-| `WhaleMonitor` | Large buys/sells (configurable threshold) | Pump |
-| `CTOMonitor` | Creator authority transfers | Pump |
-| `FeeDistMonitor` | Fee distribution events | PumpFees |
+| Monitor | Callback | Events decoded | Programs |
+|---------|----------|----------------|----------|
+| `ClaimMonitor` | `onClaim` | CollectCreatorFeeEvent, CollectCoinCreatorFeeEvent, ClaimCashbackEvent, SocialFeePdaClaimed | Pump, PumpSwap, PumpFees |
+| `LaunchMonitor` | `onLaunch` | CreateEvent (`create` / `create_v2`) | Pump |
+| `GraduationMonitor` | `onGraduation` | CompleteEvent, CompletePumpAmmMigrationEvent | Pump |
+| `WhaleMonitor` | `onWhaleTrade` | TradeEvent (+ PostCompleteBuyEvent), SOL-quoted, above `minSol` | Pump |
+| `CTOMonitor` | `onCTO` | SetCreatorEvent, AdminCtoEvent, MigrateBondingCurveCreatorEvent | Pump |
+| `FeeDistMonitor` | `onFeeDist` | DistributeCreatorFeesEvent | Pump |
 
-All monitors extend `BaseMonitor` and provide `.start()`, `.stop()`, and `.status()`.
+All monitors extend `LogsMonitor` (itself a `BaseMonitor`) and provide
+`.start()`, `.stop()` and `.status()`. web3.js reconnects the websocket and
+re-subscribes on its own. On-chain events do not carry token names for
+claims, graduations or trades; look those up when a message needs them, and
+escape any metadata string before sending it.
 
 ### `solana/` — RPC Connection & Program IDs
 
@@ -102,8 +111,11 @@ import {
   PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID,
 } from '@pumpkit/core';
 
-const conn = createRpcConnection(); // uses RPC_URL env var
-const fallback = new RpcFallback(['https://rpc1.example.com', 'https://rpc2.example.com']);
+const rpc = createRpcConnection({
+  url: 'https://rpc1.example.com',
+  fallbackUrls: ['https://rpc2.example.com'],
+});
+const connection = rpc.getConnection();
 const wsUrl = deriveWsUrl('https://api.mainnet-beta.solana.com');
 ```
 
@@ -114,13 +126,13 @@ Dependency-free decoders for the events the October 2026 upgrade changed or adde
 ```typescript
 import { parsePumpLogEvents, aggregateTrades, decodePumpPool, effectivePoolQuoteReserves } from '@pumpkit/core';
 
-const events = parsePumpLogEvents(tx.meta.logMessages); // trade | postCompleteBuy | complete | sweep
+const events = parsePumpLogEvents(tx.meta.logMessages); // trade, create, complete, feeClaim, sweep, ...
 const trades = aggregateTrades(events);                 // a buy that completed the curve, folded into one trade
 
 const pool = decodePumpPool(poolAccount.data);          // coinCreator, signed virtualQuoteReserves, kept fees
 ```
 
-Single decoders: `decodeTradeEvent`, `decodePostCompleteBuyEvent`, `decodeCompleteEvent`, `decodeSweepBondingCurveFeeEvent`, `decodeSweepPoolFeeEvent`. The v3 / v2 trade, multi-hop and sweep instruction discriminators and the new error codes are exported as constants.
+Single decoders: `decodeTradeEvent`, `decodePostCompleteBuyEvent`, `decodeCompleteEvent`, `decodeCreateEvent`, `decodeAmmMigrationEvent`, `decodeCreatorChangeEvent`, `decodeFeeClaimEvent`, `decodeCreatorFeeDistributionEvent`, `decodeSweepBondingCurveFeeEvent`, `decodeSweepPoolFeeEvent`. The v3 / v2 trade, multi-hop and sweep instruction discriminators and the new error codes are exported as constants.
 
 ### `solana/sdk-bridge` — Pump SDK Wrappers
 
@@ -135,10 +147,26 @@ import {
 
 ### `formatter/` — Telegram HTML Templates
 
-Pre-built notification templates for all event types, plus link helpers.
+Notification templates for each event type, plus link helpers. Every helper
+escapes its text, so token names and URLs from chain metadata cannot inject
+markup. `escapeHtml()` and `safeHttpUrl()` are exported for hand-built
+messages.
 
 ```typescript
-import { formatLaunch, formatWhaleTrade, solscanTx, shortenAddress } from '@pumpkit/core';
+import { formatLaunch, formatWhaleTrade, solscanTx, shortenAddress, escapeHtml } from '@pumpkit/core';
+```
+
+### `net/http` — Fetching Untrusted URLs
+
+`fetchPublic()` / `fetchPublicJson()` fetch metadata URIs and webhook targets
+safely: http(s) only, public addresses only (checked at connect time, so DNS
+rebinding does not get around it), no redirects, one deadline for the whole
+exchange and a body size cap.
+
+```typescript
+import { fetchPublicJson } from '@pumpkit/core/http';
+
+const metadata = await fetchPublicJson(uri, { timeoutMs: 5_000, maxBytes: 256 * 1024 });
 ```
 
 ### `storage/` — Persistent Storage
@@ -147,7 +175,7 @@ import { formatLaunch, formatWhaleTrade, solscanTx, shortenAddress } from '@pump
 import { FileStore, SqliteStore } from '@pumpkit/core';
 
 // JSON file persistence with atomic writes
-const fileStore = new FileStore<string[]>('./data/seen.json', []);
+const fileStore = new FileStore<string[]>({ path: './data/seen.json', defaultValue: [] });
 
 // SQLite with WAL mode
 const db = new SqliteStore('./data/bot.db');
@@ -162,7 +190,7 @@ import { requireEnv, optionalEnv, parseIntEnv, parseListEnv } from '@pumpkit/cor
 const token = requireEnv('BOT_TOKEN');          // throws if missing
 const rpc = optionalEnv('RPC_URL', 'https://api.mainnet-beta.solana.com');
 const port = parseIntEnv('PORT', 3000);
-const chats = parseListEnv('CHAT_IDS', []);     // comma-separated → string[]
+const chats = parseListEnv('CHAT_IDS');         // comma-separated → string[]
 ```
 
 ### `health/` — Health Check Server
@@ -182,6 +210,14 @@ setLogLevel('debug');
 log.info('Bot started');
 log.debug('Processing event %s', signature);
 ```
+
+## Subpath Imports
+
+The root entry loads every module, including the optional peers `grammy`,
+`@solana/web3.js` and `better-sqlite3`. Import a subpath to load only what
+you use: `@pumpkit/core/logger`, `/config`, `/health`, `/shutdown`,
+`/formatter`, `/http`, `/util` (no peers), and `/events`, `/programs`
+(`@solana/web3.js`).
 
 ## Configuration Schema
 

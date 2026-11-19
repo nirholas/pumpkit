@@ -17,3 +17,5 @@ export {
   type RetryOptions,
   type RetryEvent,
 } from './retry.js';
+
+export { BoundedSet } from './bounded-set.js';

@@ -48,14 +48,22 @@ export {
     SWEEP_BONDING_CURVE_FEE_EVENT_DISCRIMINATOR, SWEEP_POOL_FEE_EVENT_DISCRIMINATOR,
     AMM_BUY_EVENT_DISCRIMINATOR, AMM_SELL_EVENT_DISCRIMINATOR,
     PUMP_AMM_POOL_ACCOUNT_DISCRIMINATOR,
+    CREATE_EVENT_DISCRIMINATOR, SET_CREATOR_EVENT_DISCRIMINATOR, ADMIN_CTO_EVENT_DISCRIMINATOR,
+    MIGRATE_BONDING_CURVE_CREATOR_EVENT_DISCRIMINATOR, COLLECT_CREATOR_FEE_EVENT_DISCRIMINATOR,
+    COLLECT_COIN_CREATOR_FEE_EVENT_DISCRIMINATOR, CLAIM_CASHBACK_EVENT_DISCRIMINATOR,
+    DISTRIBUTE_CREATOR_FEES_EVENT_DISCRIMINATOR, SOCIAL_FEE_PDA_CLAIMED_EVENT_DISCRIMINATOR,
 } from './solana/programs.js';
 export {
     decodeTradeEvent, decodePostCompleteBuyEvent, decodeCompleteEvent,
     decodeSweepBondingCurveFeeEvent, decodeSweepPoolFeeEvent, decodePumpPool,
+    decodeCreateEvent, decodeAmmMigrationEvent, decodeCreatorChangeEvent,
+    decodeFeeClaimEvent, decodeCreatorFeeDistributionEvent,
     parsePumpLogEvents, aggregateTrades, effectivePoolQuoteReserves, isSolQuoteMint,
     type PumpTradeEvent, type PostCompleteBuyEvent, type PumpCompleteEvent,
     type SweepFeeEvent, type SweepBucket, type PumpLogEvent, type AggregatedTrade,
-    type PumpPoolState,
+    type PumpPoolState, type PumpCreateEvent, type PumpAmmMigrationEvent,
+    type CreatorChangeEvent, type CreatorChangeKind, type FeeClaimEvent, type FeeClaimKind,
+    type CreatorFeeDistributionEvent,
 } from './solana/events.js';
 export {
     createRpcConnection, deriveWsUrl, RpcFallback, type RpcOptions,
@@ -87,6 +95,7 @@ export { SqliteStore } from './storage/SqliteStore.js';
 // Monitors
 export {
     BaseMonitor, type MonitorStatus,
+    LogsMonitor, type LogsMonitorOptions,
     ClaimMonitor, type ClaimMonitorOptions,
     LaunchMonitor, type LaunchMonitorOptions,
     GraduationMonitor, type GraduationMonitorOptions,
@@ -108,6 +117,7 @@ export {
 } from './net/http.js';
 
 // Utilities — retry/backoff and friends
+export { BoundedSet } from './util/bounded-set.js';
 export {
     retry,
     isTransientError,

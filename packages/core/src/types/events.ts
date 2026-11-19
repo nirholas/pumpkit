@@ -1,47 +1,73 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2025-2026 nirholas (nichxbt)
 // Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
-//  
+//
 
 /**
  * @pumpkit/core — Pump Protocol Event Types
  *
- * Typed event interfaces for all on-chain events detected by PumpKit monitors.
+ * Events delivered by the PumpKit monitors. Every field is decoded from the
+ * program's own event; nothing is filled with placeholders. Token names and
+ * symbols are not part of most on-chain events, so look them up separately
+ * when a message needs them. Amounts are `bigint` base units of `quoteMint`
+ * (lamports when the quote is SOL or unknown). Timestamps are unix ms taken
+ * from the event's block time.
  */
 
-/** Fee claim event from Pump or PumpSwap programs */
-export interface ClaimEvent {
+import type { CreatorChangeKind, FeeClaimKind } from '../solana/events.js';
+
+interface ChainEvent {
   signature: string;
-  wallet: string;
-  mint: string;
-  amount: number;
-  tokenName?: string;
-  tokenSymbol?: string;
+  slot: number;
+  /** Unix ms, from the timestamp the program wrote into the event. */
   timestamp: number;
 }
 
+/** A fee claim: creator vault collection, cashback or social fee. */
+export interface ClaimEvent extends ChainEvent {
+  kind: FeeClaimKind;
+  program: 'pump' | 'pump-amm' | 'pump-fees';
+  /** Wallet that received the funds. */
+  wallet: string;
+  amount: bigint;
+  /** `null` when the event does not name it (cashback, PumpSwap creator fees). */
+  quoteMint: string | null;
+}
+
 /** New token creation event */
-export interface LaunchEvent {
-  signature: string;
+export interface LaunchEvent extends ChainEvent {
   mint: string;
+  bondingCurve: string;
+  /** Creator that earns creator fees. */
   creator: string;
+  /** Signer that paid for the create. */
+  user: string;
+  /** Raw on-chain strings. Escape before putting them in a message. */
   name: string;
   symbol: string;
   uri: string;
   isMayhemMode: boolean;
   hasCashback: boolean;
-  timestamp: number;
+  quoteMint: string | null;
 }
 
-/** Token graduation from bonding curve to AMM */
-export interface GraduationEvent {
-  signature: string;
+/**
+ * A bonding curve completing and/or migrating to its PumpSwap pool. A buy
+ * that empties the curve now migrates in the same transaction; older coins
+ * complete in one transaction and migrate in a later one, so the same mint
+ * can produce one event with `curveCompleted` and a later one with only
+ * `poolAddress`.
+ */
+export interface GraduationEvent extends ChainEvent {
   mint: string;
-  tokenName: string;
-  tokenSymbol: string;
-  poolAddress: string;
-  finalMcap?: number;
-  timestamp: number;
+  bondingCurve: string;
+  /** Signer of the transaction that completed or migrated the curve. */
+  user: string;
+  /** True when this transaction emitted the CompleteEvent. */
+  curveCompleted: boolean;
+  /** PumpSwap pool, when this transaction migrated the curve. */
+  poolAddress: string | null;
+  quoteMint: string | null;
 }
 
 /** Large trade (whale) event */
@@ -63,22 +89,23 @@ export interface WhaleTradeEvent {
   syntheticMigration?: boolean;
 }
 
-/** Creator transfer / takeover event */
-export interface CTOEvent {
-  signature: string;
+/** A coin's fee-earning creator changed. */
+export interface CTOEvent extends ChainEvent {
+  kind: CreatorChangeKind;
   mint: string;
-  oldCreator: string;
+  bondingCurve: string;
+  /** `null` for `set_creator`, whose event does not carry the previous creator. */
+  oldCreator: string | null;
   newCreator: string;
-  timestamp: number;
 }
 
-/** Fee distribution event */
-export interface FeeDistEvent {
-  signature: string;
+/** Creator fees paid out to a coin's fee sharing shareholders. */
+export interface FeeDistEvent extends ChainEvent {
   mint: string;
-  totalAmount: number;
-  shareholders: Array<{ address: string; amount: number }>;
-  timestamp: number;
+  sharingConfig: string;
+  totalAmount: bigint;
+  quoteMint: string | null;
+  shareholders: Array<{ address: string; shareBps: number }>;
 }
 
 /** Union of all Pump protocol events */

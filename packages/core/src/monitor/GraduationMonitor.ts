@@ -1,104 +1,54 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2025-2026 nirholas (nichxbt)
 // Developed by nirholas / nichxbt — https://x.com/nichxbt | https://github.com/nirholas
-//  
+//
 
 /**
  * @pumpkit/core — Graduation Monitor
  *
- * Detects token graduation events (bonding curve → AMM pool migration).
- * Listens for CompleteEvent discriminator in Pump program logs.
+ * Reports bonding curves that complete (CompleteEvent) and curves that
+ * migrate to a PumpSwap pool (CompletePumpAmmMigrationEvent). When both
+ * happen in one transaction they are merged into a single event per mint.
  */
 
-import { PublicKey, type Connection } from '@solana/web3.js';
-import { BaseMonitor } from './BaseMonitor.js';
 import { PUMP_PROGRAM_ID } from '../solana/programs.js';
+import type { PumpLogEvent } from '../solana/events.js';
 import type { GraduationEvent } from '../types/events.js';
+import { LogsMonitor, type LogsMonitorOptions } from './LogsMonitor.js';
 
-export interface GraduationMonitorOptions {
-  connection: Connection;
+export interface GraduationMonitorOptions extends LogsMonitorOptions {
   onGraduation: (event: GraduationEvent) => void | Promise<void>;
 }
 
-export class GraduationMonitor extends BaseMonitor {
-  private readonly connection: Connection;
+export class GraduationMonitor extends LogsMonitor {
   private readonly onGraduation: GraduationMonitorOptions['onGraduation'];
-  private subscriptionId: number | null = null;
-  private readonly seen = new Set<string>();
-  private reconnectDelay = 1000;
-  private readonly maxReconnectDelay = 30_000;
 
   constructor(options: GraduationMonitorOptions) {
-    super('GraduationMonitor');
-    this.connection = options.connection;
+    super('GraduationMonitor', [PUMP_PROGRAM_ID], options);
     this.onGraduation = options.onGraduation;
   }
 
-  start(): void {
-    if (this._running) return;
-    this._running = true;
-    this.log.info('Starting...');
-    this.subscribe();
-  }
-
-  stop(): void {
-    this._running = false;
-    if (this.subscriptionId !== null) {
-      this.connection.removeOnLogsListener(this.subscriptionId).catch(() => {});
-      this.subscriptionId = null;
+  protected handleEvents(signature: string, slot: number, events: readonly PumpLogEvent[]): void {
+    const byMint = new Map<string, GraduationEvent>();
+    for (const event of events) {
+      if (event.type !== 'complete' && event.type !== 'ammMigration') continue;
+      const e = event.data;
+      const current = byMint.get(e.mint) ?? {
+        signature,
+        slot,
+        timestamp: Number(e.timestamp) * 1000,
+        mint: e.mint,
+        bondingCurve: e.bondingCurve,
+        user: e.user,
+        curveCompleted: false,
+        poolAddress: null,
+        quoteMint: e.quoteMint,
+      };
+      if (event.type === 'complete') current.curveCompleted = true;
+      else current.poolAddress = event.data.pool;
+      current.quoteMint ??= e.quoteMint;
+      byMint.set(e.mint, current);
     }
-    this.log.info('Stopped');
-  }
-
-  private subscribe(): void {
-    try {
-      this.subscriptionId = this.connection.onLogs(
-        new PublicKey(PUMP_PROGRAM_ID),
-        (logInfo) => {
-          if (logInfo.err) return;
-          const sig = logInfo.signature;
-          if (this.seen.has(sig)) return;
-          this.seen.add(sig);
-          if (this.seen.size > 10_000) {
-            const entries = [...this.seen];
-            for (let i = 0; i < 5_000; i++) this.seen.delete(entries[i]!);
-          }
-
-          // Graduation = CompleteEvent — bonding curve is marked complete
-          const isGraduation = logInfo.logs.some(
-            (l) => l.includes('CompleteEvent') || l.includes('Program log: complete'),
-          );
-          if (!isGraduation) return;
-
-          const event: GraduationEvent = {
-            signature: sig,
-            mint: '',
-            tokenName: '',
-            tokenSymbol: '',
-            poolAddress: '',
-            timestamp: Date.now(),
-          };
-          this.recordEvent();
-          this.reconnectDelay = 1000;
-          Promise.resolve(this.onGraduation(event)).catch((err) =>
-            this.log.error('onGraduation callback error: %s', err),
-          );
-        },
-        'confirmed',
-      );
-      this.log.info('WebSocket subscription active');
-    } catch (err) {
-      this.log.warn('WebSocket failed, will retry: %s', err);
-      this.scheduleReconnect();
-    }
-  }
-
-  private scheduleReconnect(): void {
-    if (!this._running) return;
-    this.log.info('Reconnecting in %dms…', this.reconnectDelay);
-    setTimeout(() => {
-      if (this._running) this.subscribe();
-    }, this.reconnectDelay);
-    this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
+    for (const graduation of byMint.values()) this.emit(this.onGraduation, graduation);
   }
 }

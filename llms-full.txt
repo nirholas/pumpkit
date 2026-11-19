@@ -179,7 +179,9 @@ npm run dev --workspace=@pumpkit/monitor
 ### Build your own bot
 
 ```typescript
-import { createBot, ClaimMonitor, formatClaim, createHealthServer } from '@pumpkit/core';
+import {
+  broadcast, ClaimMonitor, createBot, createRpcConnection, formatClaim, startHealthServer,
+} from '@pumpkit/core';
 
 const bot = createBot({
   token: process.env.BOT_TOKEN!,
@@ -188,17 +190,23 @@ const bot = createBot({
     help: (ctx) => ctx.reply('I monitor PumpFun fee claims.'),
   },
 });
+const chatIds = [Number(process.env.CHAT_ID)];
+const rpc = createRpcConnection({ url: process.env.SOLANA_RPC_URL! });
 
 const monitor = new ClaimMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onClaim: async (event) => {
-    await bot.broadcast(formatClaim(event));
+  connection: rpc.getConnection(),
+  onClaim: async (claim) => {
+    await broadcast(bot, chatIds, formatClaim({
+      type: 'claim', signature: claim.signature, slot: claim.slot, blockTime: null,
+      claimerWallet: claim.wallet, amountLamports: claim.amount,
+      claimType: claim.kind === 'amm_creator_fee' ? 'creator_fee' : claim.kind,
+    }));
   },
 });
 
-createHealthServer({ port: 3000, monitor });
+startHealthServer({ startedAt: Date.now(), getStats: () => ({ monitor: monitor.status() }) });
 monitor.start();
-bot.launch();
+void bot.start();
 ```
 
 ---
@@ -287,7 +295,7 @@ SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 
 ```typescript
 import 'dotenv/config';
-import { createBot, ClaimMonitor, formatClaim, log } from '@pumpkit/core';
+import { createBot, createRpcConnection, ClaimMonitor, formatClaim, log } from '@pumpkit/core';
 
 const bot = createBot({
   token: process.env.TELEGRAM_BOT_TOKEN!,
@@ -304,10 +312,16 @@ const bot = createBot({
   },
 });
 
+const rpc = createRpcConnection({ url: process.env.SOLANA_RPC_URL! });
+
 const monitor = new ClaimMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
+  connection: rpc.getConnection(),
   onClaim: async (event) => {
-    const message = formatClaim(event);
+    const message = formatClaim({
+      type: 'claim', signature: event.signature, slot: event.slot, blockTime: null,
+      claimerWallet: event.wallet, amountLamports: event.amount,
+      claimType: event.kind === 'amm_creator_fee' ? 'creator_fee' : event.kind,
+    });
     for (const chatId of getWatchers(event.wallet)) {
       await bot.api.sendMessage(chatId, message, { parse_mode: 'HTML' });
     }
@@ -342,7 +356,7 @@ bot.command('list', (ctx) => {
 });
 
 monitor.start();
-bot.launch();
+void bot.start();
 log.info('Bot running!');
 
 const shutdown = () => { monitor.stop(); bot.stop(); process.exit(0); };
@@ -361,18 +375,28 @@ npx tsx src/index.ts
 ```typescript
 import { LaunchMonitor, WhaleMonitor, formatLaunch, formatWhaleTrade } from '@pumpkit/core';
 
+const connection = rpc.getConnection();
+
 const launchMonitor = new LaunchMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onLaunch: async (event) => {
-    await bot.api.sendMessage(CHANNEL_ID, formatLaunch(event), { parse_mode: 'HTML' });
+  connection,
+  onLaunch: async (e) => {
+    const html = formatLaunch({
+      type: 'launch', signature: e.signature, slot: e.slot, blockTime: null,
+      tokenMint: e.mint, name: e.name, symbol: e.symbol, creator: e.creator,
+    });
+    await bot.api.sendMessage(CHANNEL_ID, html, { parse_mode: 'HTML' });
   },
 });
 
 const whaleMonitor = new WhaleMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  thresholdSol: 50,
-  onWhaleTrade: async (event) => {
-    await bot.api.sendMessage(CHANNEL_ID, formatWhaleTrade(event), { parse_mode: 'HTML' });
+  connection,
+  minSol: 50,
+  onWhaleTrade: async (e) => {
+    const html = formatWhaleTrade({
+      type: 'whale', signature: e.signature, slot: 0, blockTime: null, direction: e.side,
+      amountLamports: Math.round(e.solAmount * 1e9), tokenMint: e.mint, wallet: e.trader,
+    });
+    await bot.api.sendMessage(CHANNEL_ID, html, { parse_mode: 'HTML' });
   },
 });
 ```
@@ -394,10 +418,11 @@ for (const { wallet, chatId } of store.read()) {
 Health check:
 
 ```typescript
-import { createHealthServer } from '@pumpkit/core';
+import { startHealthServer } from '@pumpkit/core';
 
-createHealthServer({
-  port: 3000,
+// Listens on PORT, then HEALTH_PORT, then 3000.
+startHealthServer({
+  startedAt: Date.now(),
   getStats: () => ({
     watchers: watchers.size,
     monitoring: monitor.status(),
@@ -751,244 +776,25 @@ brew install pkg-config cairo pango libpng jpeg giflib librsvg
 
 ---
 
-## `@pumpkit/core`: Full API Reference
-
-> Shared framework modules for building PumpFun Telegram bots.
+## `@pumpkit/core` — API Reference
 
 > **Not on the npm registry yet.** See [Build a Custom Bot](#option-2--build-a-custom-bot)
 > above for the workspace install that works today.
 
-### `bot/`: Telegram Scaffolding
+The full, current reference is [docs/core-api.md](docs/core-api.md). In short:
 
-#### `createBot(options): Bot`
-
-Factory function that creates a configured grammy `Bot` with error handling, graceful shutdown, and standard middleware.
-
-```typescript
-import { createBot } from '@pumpkit/core';
-
-const bot = createBot({
-  token: process.env.TELEGRAM_BOT_TOKEN!,
-  commands: {
-    start: (ctx) => ctx.reply('Welcome!'),
-    help: (ctx) => ctx.reply('Available commands: /start, /help'),
-  },
-  onError: (err) => console.error('Bot error:', err),
-  parseMode: 'HTML',
-  adminChatIds: [123456789],
-});
-
-await bot.launch();
-```
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `token` | `string` | ✅ |: | Telegram bot token from BotFather |
-| `commands` | `Record<string, CommandHandler>` | ❌ | `{}` | Command handlers |
-| `onError` | `(err: Error) => void` | ❌ | `console.error` | Global error handler |
-| `parseMode` | `'HTML' \| 'MarkdownV2'` | ❌ | `'HTML'` | Default parse mode |
-| `adminChatIds` | `number[]` | ❌ | `[]` | Chat IDs for error notifications |
-
-```typescript
-await bot.broadcast([chatId1, chatId2], formatClaim(event)); // Auto rate-limit (30 msg/sec)
-bot.notifyAdmins('Bot restarted');
-```
-
-### `monitor/`: Event Monitors
-
-All monitors share the same lifecycle:
-
-```typescript
-monitor.start();   // Begin monitoring
-monitor.stop();    // Graceful stop
-monitor.status();  // { running, lastEvent, eventsProcessed }
-```
-
-#### `ClaimMonitor`
-
-```typescript
-const monitor = new ClaimMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  rpcFallbackUrls: ['https://backup-rpc.example.com'],
-  pollIntervalMs: 5000,
-  onClaim: async (event) => { /* ... */ },
-});
-
-interface ClaimEvent {
-  signature: string;
-  wallet: PublicKey;
-  mint: PublicKey;
-  amount: BN;
-  tokenName?: string;
-  tokenSymbol?: string;
-  timestamp: number;
-}
-```
-
-#### `LaunchMonitor`
-
-```typescript
-const monitor = new LaunchMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onLaunch: async (event) => { /* ... */ },
-});
-
-interface LaunchEvent {
-  signature: string;
-  mint: PublicKey;
-  creator: PublicKey;
-  name: string;
-  symbol: string;
-  uri: string;
-  isMayhemMode: boolean;
-  hasCashback: boolean;
-  timestamp: number;
-}
-```
-
-#### `GraduationMonitor`, `WhaleMonitor`, `CTOMonitor`, `FeeDistMonitor`
-
-Same shape: pass an `rpcUrl` and an `on...` callback. `WhaleMonitor` adds a `thresholdSol` parameter.
-
-### `solana/`: Utilities
-
-```typescript
-import {
-  createRpcConnection,
-  PUMP_PROGRAM_ID,
-  PUMP_AMM_PROGRAM_ID,
-  PUMP_FEE_PROGRAM_ID,
-  parsePumpLogEvents,
-  aggregateTrades,
-} from '@pumpkit/core';
-import { PublicKey } from '@solana/web3.js';
-
-const rpc = createRpcConnection({
-  url: process.env.SOLANA_RPC_URL!,
-  fallbackUrls: ['https://backup1.example.com'],
-  commitment: 'confirmed',
-});
-const connection = rpc.getConnection();
-
-connection.onLogs(new PublicKey(PUMP_PROGRAM_ID), (logInfo) => {
-  const events = parsePumpLogEvents(logInfo.logs);
-  for (const event of events) {
-    switch (event.type) {
-      case 'trade': /* every buy/sell version (buy_v3, sell_v3, multi-hop hops, ...) */
-      case 'postCompleteBuy': /* pool part of a buy that completed the curve */
-      case 'complete': /* graduation */
-      case 'sweep': /* fee sweep */
-    }
-  }
-  const trades = aggregateTrades(events); // synthetic-migration buys folded into one trade
-});
-```
-
-### `formatter/`: Message Formatting
-
-```typescript
-import { formatClaim, formatLaunch, formatGraduation, formatWhaleTrade, formatCTO, formatFeeDistribution,
-         link, solscanTx, solscanAccount, pumpFunToken } from '@pumpkit/core';
-
-formatClaim(claimEvent);             // returns HTML string
-formatLaunch(launchEvent);
-formatGraduation(gradEvent);
-formatWhaleTrade(whaleEvent);
-formatCTO(ctoEvent);
-formatFeeDistribution(distEvent);
-
-link('View TX', 'https://...');
-solscanTx(signature);
-solscanAccount(address);
-pumpFunToken(mint);
-```
-
-All formatters return HTML compatible with Telegram's `parse_mode: 'HTML'`.
-
-### `storage/`: Persistence
-
-```typescript
-import { FileStore, SqliteStore } from '@pumpkit/core';
-
-const store = new FileStore<Watch[]>({ path: 'data/watches.json', defaultValue: [] });
-const watches = store.read();
-store.write([...watches, newWatch]);
-
-const db = new SqliteStore('data/bot.sqlite');
-db.exec(`CREATE TABLE IF NOT EXISTS calls (...)`);
-const calls = db.query('SELECT * FROM calls WHERE group_id = ?', [groupId]);
-db.close();
-```
-
-### `config/`: Configuration Loader
-
-```typescript
-import { loadConfig } from '@pumpkit/core';
-
-const config = loadConfig({
-  TELEGRAM_BOT_TOKEN: { type: 'string', required: true },
-  SOLANA_RPC_URL: { type: 'string', required: true },
-  FEED_CLAIMS: { type: 'boolean', default: true },
-  WHALE_THRESHOLD_SOL: { type: 'number', default: 100 },
-  API_PORT: { type: 'number', default: 3000 },
-  ADMIN_CHAT_IDS: { type: 'string[]', default: [], separator: ',' },
-});
-```
-
-### `health/`: Health Checks
-
-```typescript
-createHealthServer({
-  port: 3000,
-  getStats: () => ({ monitors: monitor.status(), watches: store.read().length }),
-});
-// GET /health → { status: 'ok', uptime: '3600s', monitors: {...} }
-```
-
-### `logger/`: Logging
-
-```typescript
-import { log } from '@pumpkit/core';
-log.debug(...); log.info(...); log.warn(...); log.error(...);
-// LOG_LEVEL env var: debug | info | warn | error
-```
-
-### `api/`: REST + SSE + Webhooks
-
-```typescript
-const api = createApiServer({
-  port: 3000,
-  authToken: process.env.API_AUTH_TOKEN,
-  routes: (app) => {
-    app.get('/claims', (req, res) => res.json(recentClaims));
-    app.get('/status', (req, res) => res.json(monitor.status()));
-  },
-  sse: { path: '/stream', events: eventBus },
-  webhooks: { path: '/webhooks', store: webhookStore },
-});
-```
-
-### `social/`: Integrations
-
-```typescript
-const twitter = new TwitterClient({ bearerToken: process.env.TWITTER_BEARER_TOKEN! });
-const { followers, followsInfluencers } = await twitter.getUserInfo('@handle');
-
-const github = new GitHubClient({ token: process.env.GITHUB_TOKEN });
-const socialFeePda = await github.lookupSocialFee(mint);
-```
-
-### Types
-
-```typescript
-import type {
-  ClaimEvent, LaunchEvent, GraduationEvent, WhaleTradeEvent, CTOEvent, FeeDistEvent, PumpEvent,
-  MonitorOptions, MonitorStatus, BaseMonitorConfig,
-  BotConfig, MonitorConfig, TrackerConfig, ConfigSchema,
-} from '@pumpkit/core';
-```
-
----
+| Module | Exports |
+|--------|---------|
+| Bot | `createBot`, `broadcast` |
+| Monitors | `ClaimMonitor`, `LaunchMonitor`, `GraduationMonitor`, `WhaleMonitor`, `CTOMonitor`, `FeeDistMonitor`, `LogsMonitor` (base for your own) |
+| Decoders | `parsePumpLogEvents`, `aggregateTrades`, `decodeTradeEvent`, `decodeCreateEvent`, `decodeFeeClaimEvent`, `decodePumpPool`, ... |
+| RPC | `createRpcConnection`, `RpcFallback`, `deriveWsUrl`, program IDs and discriminators |
+| SDK bridge | `getTokenPrice`, `getBuyQuote`, `getSellQuote`, `getBuyV3Quote`, `getCreatorFeeSweepInstructions`, ... |
+| Formatting | `formatClaim`, `formatLaunch`, `formatGraduation`, `formatWhaleTrade`, `formatCTO`, `formatFeeDistribution`, `escapeHtml`, link helpers |
+| Untrusted HTTP | `fetchPublic`, `fetchPublicJson` (SSRF guard, timeout, size cap) |
+| Storage | `FileStore`, `SqliteStore` |
+| Config, health, shutdown, logging | `requireEnv`, `optionalEnv`, `parseIntEnv`, `parseListEnv`, `startHealthServer`, `onShutdown`, `installShutdownHandlers`, `log`, `setLogLevel` |
+| Utilities | `retry`, `isTransientError`, `BoundedSet` |
 
 ## Monitor Bot: Feature Specification
 

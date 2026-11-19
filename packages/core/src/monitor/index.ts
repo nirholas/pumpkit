@@ -8,6 +8,7 @@
  */
 
 export { BaseMonitor, type MonitorStatus } from './BaseMonitor.js';
+export { LogsMonitor, type LogsMonitorOptions } from './LogsMonitor.js';
 export { ClaimMonitor, type ClaimMonitorOptions } from './ClaimMonitor.js';
 export { LaunchMonitor, type LaunchMonitorOptions } from './LaunchMonitor.js';
 export { GraduationMonitor, type GraduationMonitorOptions } from './GraduationMonitor.js';
