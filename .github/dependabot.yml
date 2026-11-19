@@ -23,6 +23,12 @@ updates:
         patterns:
           - "grammy"
           - "grammy-*"
+    ignore:
+      # web3.js 2.x+ is a different API (built on @solana/kit). Both pump SDKs
+      # depend on web3.js 1.x and their types must match ours, so majors are
+      # a manual migration, not a dependency bump.
+      - dependency-name: "@solana/web3.js"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
 
