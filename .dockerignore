@@ -1,0 +1,20 @@
+# Bot images build from the repository root (see packages/*/Dockerfile).
+**/node_modules
+**/dist
+!vendor/**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+data
+**/data
+tmp
+live
+docs
+tutorials
+agent-prompts
+prompts

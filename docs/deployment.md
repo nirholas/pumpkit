@@ -83,11 +83,10 @@ Include in each bot package:
 ### Build
 
 ```bash
-# Monitor Bot
-docker build -t pumpkit-monitor packages/monitor/
-
-# Tracker Bot
-docker build -t pumpkit-tracker packages/tracker/
+# From the repository root (the images need the @pumpkit/core workspace)
+docker build -f packages/monitor/Dockerfile -t pumpkit-monitor .
+docker build -f packages/tracker/Dockerfile -t pumpkit-tracker .
+# or: make docker-monitor / make docker-tracker
 ```
 
 ### Run

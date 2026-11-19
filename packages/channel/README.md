@@ -99,11 +99,10 @@ npm start
 ### 4. Deploy with Docker
 
 ```bash
-docker build -t pumpfun-channel-bot .
-docker run -d --env-file .env pumpfun-channel-bot
+# From the repository root (the image needs the @pumpkit/core workspace)
+docker build -f packages/channel/Dockerfile -t pumpfun-channel-bot .
+docker run -d --env-file packages/channel/.env -v pumpfun-channel-data:/app/data pumpfun-channel-bot
 ```
-
-Railway deployment is also supported — see `railway.json`.
 
 ## Project Structure
 
@@ -117,10 +116,8 @@ channel-bot/
 │   ├── claim-tracker.ts   # Persistence for claim records
 │   ├── pump-client.ts     # PumpFun HTTP API client (token info, creator profiles)
 │   ├── formatters.ts      # HTML message formatting for Telegram
-│   ├── types.ts           # Program IDs, discriminators, event types
-│   └── logger.ts          # Logging utility
-├── Dockerfile             # Multi-stage Docker build
-├── railway.json           # Railway deployment config
+│   └── types.ts           # Program IDs, discriminators, event types
+├── Dockerfile             # Multi-stage build, run from the repo root
 ├── package.json
 └── tsconfig.json
 ```

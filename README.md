@@ -1873,7 +1873,7 @@ railway volume create --mount /app/data
 ### Docker / Docker Compose
 
 ```bash
-docker build -t pumpkit-monitor packages/monitor/
+docker build -f packages/monitor/Dockerfile -t pumpkit-monitor .   # from the repo root
 docker run -d --name pumpkit-monitor --restart unless-stopped \
   -e TELEGRAM_BOT_TOKEN=your-token \
   -e SOLANA_RPC_URL=https://your-rpc.com \

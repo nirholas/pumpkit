@@ -91,8 +91,9 @@ ENABLE_API=true API_ONLY=true npm run dev
 ## Docker
 
 ```bash
-docker build -t pumpkit-monitor .
-docker run -d --env-file .env -p 3000:3000 pumpkit-monitor
+# From the repository root (the image needs the @pumpkit/core workspace)
+docker build -f packages/monitor/Dockerfile -t pumpkit-monitor .
+docker run -d --env-file packages/monitor/.env -p 3000:3000 -v pumpkit-monitor-data:/app/data pumpkit-monitor
 ```
 
 ## License

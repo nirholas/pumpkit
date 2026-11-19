@@ -1,38 +1,42 @@
+# Build from the repository root so the @pumpkit/core workspace is available:
+#   docker build -f packages/tracker/Dockerfile -t pumpkit-tracker .
+
 # ── Build stage ────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 
 # Native deps for better-sqlite3 and canvas
-RUN apk add --no-cache python3 make g++ cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev
+RUN apk add --no-cache python3 make g++ cairo-dev pango-dev jpeg-dev giflib-dev librsvg-dev pixman-dev
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
-
-COPY tsconfig.json ./
-COPY src/ src/
-RUN npm run build
+COPY . .
+RUN npm ci
+RUN npx turbo build --filter=@pumpkit/tracker
+RUN npm prune --omit=dev
 
 # ── Production stage ──────────────────────────────────────────────────────────
-FROM node:20-alpine
+FROM node:24-alpine
 
 LABEL org.opencontainers.image.title="PumpKit Tracker Bot"
 LABEL org.opencontainers.image.description="Telegram call-tracking bot with leaderboards and PNL cards"
 
-# Runtime deps for canvas and better-sqlite3
-RUN apk add --no-cache cairo pango jpeg giflib librsvg
+# Runtime libraries for canvas
+RUN apk add --no-cache cairo pango jpeg giflib librsvg pixman
 
 WORKDIR /app
 
 RUN addgroup -S bot && adduser -S bot -G bot
 
-COPY package.json ./
-RUN apk add --no-cache python3 make g++ && \
-    npm install --omit=dev && \
-    npm cache clean --force && \
-    apk del python3 make g++
+COPY --from=build /app/package.json ./
+COPY --from=build /app/node_modules node_modules/
+# node_modules/bigint-buffer links to the patched copy in vendor/
+COPY --from=build /app/vendor vendor/
+COPY --from=build /app/packages/core/package.json packages/core/
+COPY --from=build /app/packages/core/dist packages/core/dist/
+COPY --from=build /app/packages/tracker/package.json packages/tracker/
+COPY --from=build /app/packages/tracker/dist packages/tracker/dist/
 
-COPY --from=build /app/dist dist/
+WORKDIR /app/packages/tracker
 
 # Writable data directory for SQLite database
 RUN mkdir -p /app/data && chown bot:bot /app/data

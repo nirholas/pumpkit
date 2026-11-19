@@ -86,13 +86,10 @@ Token: PUMP (PumpToken) · $127.5K mcap
 ### Docker
 
 ```bash
-docker build -t pumpfun-claim-bot .
-docker run --env-file .env pumpfun-claim-bot
+# From the repository root (the image needs the @pumpkit/core workspace)
+docker build -f packages/claim/Dockerfile -t pumpfun-claim-bot .
+docker run --env-file packages/claim/.env -v pumpfun-claim-data:/app/data pumpfun-claim-bot
 ```
-
-### Railway
-
-Click "Deploy" in the Railway dashboard — `railway.json` is pre-configured.
 
 ## Architecture
 
@@ -107,12 +104,10 @@ claim-bot/
 │   ├── pump-client.ts    # PumpFun API client for token enrichment
 │   ├── twitter-client.ts # Twitter/X API client for follower tracking
 │   ├── formatters.ts     # HTML message formatters
-│   ├── logger.ts         # Structured logger
 │   └── types.ts          # Type definitions & program constants
 ├── package.json
 ├── tsconfig.json
-├── Dockerfile
-├── railway.json
+├── Dockerfile        # Build from the repo root: docker build -f packages/claim/Dockerfile .
 └── .env.example
 ```
 

@@ -71,8 +71,7 @@ outsiders-bot/
 │   ├── token-service.ts  # DexScreener API — token price/mcap
 │   ├── ath-tracker.ts    # Polls active calls to update ATH
 │   ├── formatters.ts     # HTML message formatting
-│   ├── pnl-card.ts       # Canvas-based PNL image generator
-│   └── logger.ts         # Leveled logger
+│   └── pnl-card.ts       # Canvas-based PNL image generator (not yet wired to a command)
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
