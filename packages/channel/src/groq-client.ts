@@ -10,7 +10,7 @@
  * using Groq's fast inference API (llama-3.3-70b-versatile).
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY ?? '';

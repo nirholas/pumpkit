@@ -9,7 +9,7 @@
  * Fetches follower counts and checks if influencers follow a user.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { TwitterUserInfo } from './types.js';
 
 const TWITTER_API_BASE = 'https://api.twitter.com/2';

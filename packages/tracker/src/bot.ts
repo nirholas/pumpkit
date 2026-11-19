@@ -6,7 +6,7 @@
 // ── Outsiders Bot — Telegram Bot (grammy) ──────────────────────────
 
 import { Bot, InlineKeyboard, type Context } from 'grammy';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import * as db from './db.js';
 import { parseTokenInput, fetchTokenInfo } from './token-service.js';
 import {

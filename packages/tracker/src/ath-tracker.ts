@@ -8,7 +8,7 @@
 
 import { getActiveCalls, updateCallAth, finalizeCall } from './db.js';
 import { fetchTokenInfo } from './token-service.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const MAX_TRACK_HOURS = 48; // stop tracking after 48h
 

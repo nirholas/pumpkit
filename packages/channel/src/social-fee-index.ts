@@ -41,7 +41,7 @@
 
 import { PublicKey } from '@solana/web3.js';
 import type { RpcFallback } from './rpc-fallback.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 

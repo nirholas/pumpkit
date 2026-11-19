@@ -10,7 +10,7 @@
  * for GitHub URLs found in token descriptions.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? '';

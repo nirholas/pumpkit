@@ -5,7 +5,7 @@
 
 // ── Outsiders Bot — Token Price Service (DexScreener) ──────────────
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { Chain, TokenInfo } from './types.js';
 
 let apiBase = 'https://api.dexscreener.com';

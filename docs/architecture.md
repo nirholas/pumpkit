@@ -24,12 +24,15 @@ pumpkit/
 
 ```
 @pumpkit/monitor ──→ @pumpkit/core   (logger, escapeHtml, fetchPublic)
+@pumpkit/channel ──→ @pumpkit/core   (logger)
+@pumpkit/claim   ──→ @pumpkit/core   (logger)
+@pumpkit/tracker ──→ @pumpkit/core   (logger)
 examples/claim-alert ──→ @pumpkit/core
 ```
 
 `@pumpkit/channel`, `@pumpkit/claim` and `@pumpkit/tracker` predate core and
-still carry their own logger, config and Pump client code. Moving them onto
-core is tracked in [ROADMAP.md](../ROADMAP.md). Core has no internal
+still carry their own config loaders, formatters and Pump API clients.
+Moving those onto core is tracked in [ROADMAP.md](../ROADMAP.md). Core has no internal
 dependencies; its heavier dependencies (`grammy`, `@solana/web3.js`,
 `better-sqlite3`, the Pump SDKs) are optional peers.
 

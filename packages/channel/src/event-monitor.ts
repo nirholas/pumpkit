@@ -42,7 +42,7 @@ import {
 } from '@solana/web3.js';
 
 import type { ChannelBotConfig } from './config.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import { RpcFallback } from './rpc-fallback.js';
 import type {
     FeeDistributionEvent,

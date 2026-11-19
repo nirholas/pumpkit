@@ -10,7 +10,7 @@
  * for enriching claim notifications.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { TwitterUserInfo } from './types.js';
 
 const PUMPFUN_API = 'https://frontend-api-v3.pump.fun';

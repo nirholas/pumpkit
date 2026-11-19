@@ -13,7 +13,7 @@
  * No external dependency needed — just fetch + public bearer token + auth cookie.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const X_AUTH_TOKEN = process.env.X_AUTH_TOKEN ?? '';
 const X_CT0_TOKEN = process.env.X_CT0_TOKEN ?? '';

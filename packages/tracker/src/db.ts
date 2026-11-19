@@ -6,7 +6,7 @@
 // ── Outsiders Bot — Database (SQLite) ──────────────────────────────
 
 import Database from 'better-sqlite3';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type {
   CallMode,
   CallType,

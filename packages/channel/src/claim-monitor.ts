@@ -21,7 +21,7 @@ import {
 import bs58 from 'bs58';
 
 import type { ChannelBotConfig } from './config.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import { RpcFallback } from './rpc-fallback.js';
 import {
     SocialFeeIndex,

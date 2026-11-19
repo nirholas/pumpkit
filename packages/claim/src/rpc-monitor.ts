@@ -29,7 +29,7 @@ import {
     QUOTE_MINT_INFO,
     WSOL_MINT,
 } from './types.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // Known system accounts to skip when looking for token mint
 const SYSTEM_ACCOUNTS = new Set([

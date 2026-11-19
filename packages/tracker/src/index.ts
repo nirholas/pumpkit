@@ -7,7 +7,7 @@
 
 import { loadConfig } from './config.js';
 import { initDb, closeDb, getActiveCalls } from './db.js';
-import { setLogLevel, log } from './logger.js';
+import { setLogLevel, log } from '@pumpkit/core/logger';
 import { setApiBase } from './token-service.js';
 import { createBot } from './bot.js';
 import { startAthTracker, stopAthTracker } from './ath-tracker.js';

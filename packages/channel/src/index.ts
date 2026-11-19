@@ -26,7 +26,7 @@ import { fetchGitHubUserById, fetchRepoFromUrls } from './github-client.js';
 import { fetchXProfile } from './x-client.js';
 import { formatGitHubClaimFeed, formatCreatorClaimFeed, formatGraduationFeed } from './formatters.js';
 import type { ClaimFeedContext, CreatorClaimContext } from './formatters.js';
-import { log, setLogLevel } from './logger.js';
+import { log, setLogLevel } from '@pumpkit/core/logger';
 import { startHealthServer, stopHealthServer } from './health.js';
 import { maskUrl } from './rpc-fallback.js';
 import type { FeeClaimEvent, GraduationEvent } from './types.js';

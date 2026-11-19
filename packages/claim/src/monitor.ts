@@ -16,7 +16,7 @@
 import WebSocket from 'ws';
 
 import type { BotConfig, FeeClaimEvent } from './types.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // ============================================================================
 // Relay message types (subset — we only care about fee-claim and status)

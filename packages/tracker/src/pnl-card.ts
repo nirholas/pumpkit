@@ -6,7 +6,7 @@
 // ── Outsiders Bot — PNL Card Generator (canvas) ───────────────────
 // Generates shareable PNL images. Falls back to text if canvas unavailable.
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { PnlCardData } from './types.js';
 
 let canvasAvailable = false;

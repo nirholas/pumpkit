@@ -11,7 +11,7 @@
  */
 
 import { Connection, type ConnectionConfig } from '@solana/web3.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const MAX_CONSECUTIVE_FAILS = 3;
 const COOLDOWN_MS = 60_000;

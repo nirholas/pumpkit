@@ -22,7 +22,7 @@ import { createBot, createClaimHandler, registerStatusCommand } from './bot.js';
 import { ClaimMonitor } from './monitor.js';
 import { RpcClaimMonitor } from './rpc-monitor.js';
 import { loadTracked } from './store.js';
-import { log, setLogLevel } from './logger.js';
+import { log, setLogLevel } from '@pumpkit/core/logger';
 
 async function main(): Promise<void> {
     const config = loadConfig();

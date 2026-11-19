@@ -10,7 +10,7 @@
  * from the PumpFun public HTTP API for rich channel feed messages.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const PUMPFUN_API = 'https://frontend-api-v3.pump.fun';
 const LAMPORTS_PER_SOL = 1_000_000_000;

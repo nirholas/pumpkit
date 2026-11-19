@@ -38,7 +38,7 @@ import {
     isAlreadyTracked,
     removeTrackedByValue,
 } from './store.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 /**
  * Minimal monitor surface used by the /status command. Both ClaimMonitor (relay)
  * and RpcClaimMonitor (direct Solana) satisfy this structurally, so /status works

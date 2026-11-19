@@ -11,7 +11,7 @@
  */
 
 import { createServer, type Server } from 'node:http';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 const DEFAULT_PORT = 3000;
 

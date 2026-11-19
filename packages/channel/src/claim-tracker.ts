@@ -15,7 +15,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 export interface ClaimRecord {
     /** Total number of claims by this wallet for this token */
