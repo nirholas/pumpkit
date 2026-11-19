@@ -59,7 +59,7 @@ describe('formatCallSimple()', () => {
       liquidity: 0, volume24h: 0, pairAge: null,
     };
     const html = formatCallSimple(token, 'alpha', '<b>bob</b>');
-    expect(html).toContain('&lt;a href="x"&gt;Kitty&lt;/a&gt;');
+    expect(html).toContain('&lt;a href=&quot;x&quot;&gt;Kitty&lt;/a&gt;');
     expect(html).toContain('K&amp;T');
     expect(html).toContain('&lt;b&gt;bob&lt;/b&gt;');
     expect(html).toContain('<code>Mint&lt;1&gt;</code>');

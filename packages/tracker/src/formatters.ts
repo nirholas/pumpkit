@@ -7,13 +7,10 @@
 
 import type { DbCall, LeaderboardEntry, TokenInfo } from './types.js';
 import { calcRank } from './types.js';
+import { escapeHtml as esc } from '@pumpkit/core/formatter';
 import type { HardcoreStatus, UserStats } from './db.js';
 
 // ── Helpers ────────────────────────────────────────────────────────
-
-function esc(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 function fmtNum(n: number, decimals = 2): string {
   if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(decimals)}B`;

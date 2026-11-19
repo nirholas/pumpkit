@@ -35,8 +35,8 @@ For *current* state and architecture, see [docs/architecture.md](docs/architectu
 ### One shared core
 
 - [x] `@pumpkit/monitor` uses `@pumpkit/core` for logging, HTML escaping and untrusted-URL fetching
-- [x] `@pumpkit/channel`, `@pumpkit/claim` and `@pumpkit/tracker` use the core logger
-- [ ] Move their config loaders, HTML formatters and Pump API clients onto `@pumpkit/core`
+- [x] `@pumpkit/channel`, `@pumpkit/claim` and `@pumpkit/tracker` use the core logger and `escapeHtml`; monitor and claim persist through `FileStore`
+- [ ] Move their config loaders, message templates and Pump API clients onto `@pumpkit/core`
 
 ### Launch / trade primitives
 

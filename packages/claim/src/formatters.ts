@@ -9,6 +9,7 @@
  * Rich HTML message formatting for Telegram.
  */
 
+import { escapeHtml } from '@pumpkit/core/formatter';
 import type { FeeClaimEvent } from './types.js';
 import type { TrackedItem } from './types.js';
 import type { TokenInfo } from './pump-client.js';
@@ -18,13 +19,7 @@ import { formatFollowerCount } from './twitter-client.js';
 // Helpers
 // ============================================================================
 
-export function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
+export { escapeHtml };
 
 function shortAddr(addr: string): string {
     if (addr.length <= 12) return addr;

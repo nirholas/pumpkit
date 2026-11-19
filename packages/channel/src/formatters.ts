@@ -21,6 +21,7 @@ import type {
 } from './types.js';
 import type { XProfile } from './x-client.js';
 import { getInfluencerTier, formatFollowerCount, influencerLabel } from './x-client.js';
+import { escapeHtml as esc } from '@pumpkit/core/formatter';
 
 // ============================================================================
 // GitHub Social Fee Claim Card
@@ -995,13 +996,6 @@ export function shortAddr(addr: string): string {
     return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
-export function esc(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
 
 function formatTime(unixSeconds: number): string {
     if (!unixSeconds || unixSeconds < 1_000_000) return 'unknown';
