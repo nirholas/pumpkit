@@ -7,11 +7,37 @@
  * @pumpkit/core — Link & Format Helpers
  *
  * Common link generators and text formatters for Telegram HTML messages.
+ *
+ * Every helper takes plain text and escapes it, so token names, symbols and
+ * URLs read from chain metadata cannot inject markup into a message. Compose
+ * helpers by concatenating their output, not by nesting one inside another.
  */
+
+const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+
+/** Escape text for Telegram's HTML parse mode (element content and attribute values). */
+export function escapeHtml(text: string): string {
+    return text.replace(/[&<>"]/g, (ch) => HTML_ESCAPES[ch]!);
+}
+
+/**
+ * Return `raw` as a normalised URL when it is an absolute http(s) URL, else
+ * `null`. Telegram rejects the whole message when an `href` uses any other
+ * scheme, and metadata links are attacker-controlled.
+ */
+export function safeHttpUrl(raw: string): string | null {
+    let url: URL;
+    try {
+        url = new URL(raw.trim());
+    } catch {
+        return null;
+    }
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : null;
+}
 
 /** Telegram HTML anchor tag */
 export function link(label: string, url: string): string {
-    return `<a href="${url}">${label}</a>`;
+    return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`;
 }
 
 /** Solscan transaction link */
@@ -36,17 +62,17 @@ export function dexScreenerToken(mint: string, chain = 'solana'): string {
 
 /** Telegram HTML bold tag */
 export function bold(text: string): string {
-    return `<b>${text}</b>`;
+    return `<b>${escapeHtml(text)}</b>`;
 }
 
 /** Telegram HTML code tag */
 export function code(text: string): string {
-    return `<code>${text}</code>`;
+    return `<code>${escapeHtml(text)}</code>`;
 }
 
 /** Telegram HTML italic tag */
 export function italic(text: string): string {
-    return `<i>${text}</i>`;
+    return `<i>${escapeHtml(text)}</i>`;
 }
 
 /** Shorten a Solana address: 7xKp...3nRm */
@@ -79,10 +105,14 @@ export const QUOTE_MINT_INFO: Record<string, { ticker: string; decimals: number;
  * Quote-mint-aware amount formatter. Converts a `u64` base-units amount
  * (lamports / micro-USDC / etc.) into a display string with the right ticker.
  *
- * Defaults to SOL when `quoteMint` is omitted, preserving V1 behavior.
+ * Defaults to SOL when `quoteMint` is omitted, preserving V1 behavior. A quote
+ * mint whose decimals are unknown is shown in raw base units rather than
+ * being priced as SOL.
  */
 export function formatQuoteAmount(baseUnits: number | bigint, quoteMint?: string): string {
-    const info = QUOTE_MINT_INFO[quoteMint ?? WSOL_MINT] ?? QUOTE_MINT_INFO[WSOL_MINT]!;
+    const mint = quoteMint ?? WSOL_MINT;
+    const info = QUOTE_MINT_INFO[mint];
+    if (!info) return `${baseUnits.toString()} base units of ${shortenAddress(mint)}`;
     const amount = Number(baseUnits) / Math.pow(10, info.decimals);
     const precision = info.isStable ? 2 : (amount < 1 ? 4 : 2);
     return `${amount.toFixed(precision)} ${info.ticker}`;

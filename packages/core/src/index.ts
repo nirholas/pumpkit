@@ -19,7 +19,7 @@ export type { BaseBotConfig, ShutdownHandler, PumpEvent, TokenInfo } from './typ
 // Formatter — link helpers + notification templates
 export {
     link, solscanTx, solscanAccount, pumpFunToken, dexScreenerToken,
-    bold, code, italic, shortenAddress, formatSol, formatNumber,
+    bold, code, italic, escapeHtml, safeHttpUrl, shortenAddress, formatSol, formatNumber,
     formatQuoteAmount, USDC_MINT, QUOTE_MINT_INFO,
     formatClaim, formatLaunch, formatGraduation, formatWhaleTrade, formatCTO, formatFeeDistribution,
 } from './formatter/index.js';

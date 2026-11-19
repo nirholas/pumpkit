@@ -16,6 +16,8 @@ export {
     bold,
     code,
     italic,
+    escapeHtml,
+    safeHttpUrl,
     shortenAddress,
     formatSol,
     formatNumber,

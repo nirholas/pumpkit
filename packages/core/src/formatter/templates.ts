@@ -10,7 +10,13 @@
  */
 
 import type { PumpEvent } from '../types.js';
-import { bold, code, formatQuoteAmount, formatSol, link, pumpFunToken, shortenAddress, solscanTx } from './links.js';
+import { bold, code, escapeHtml, formatQuoteAmount, formatSol, link, pumpFunToken, shortenAddress, solscanTx } from './links.js';
+
+/** `Name ($SYMBOL)` with the name escaped, or the shortened mint when the name is unknown. */
+function tokenLabel(mint: string, name?: string, symbol?: string): string {
+    if (!name) return code(shortenAddress(mint));
+    return `${escapeHtml(name)} (${code(`$${symbol ?? '???'}`)})`;
+}
 
 export interface ClaimEventData extends PumpEvent {
     type: 'claim';
@@ -82,7 +88,7 @@ export function formatClaim(event: ClaimEventData): string {
         bold(`💰 Fee Claimed — ${formatQuoteAmount(event.amountLamports, event.quoteMint)}`),
         '',
         `${typeLabel}`,
-        `Token: ${event.tokenName ?? 'Unknown'} (${code(event.tokenSymbol ?? event.tokenMint)})`,
+        `Token: ${escapeHtml(event.tokenName ?? 'Unknown')} (${code(event.tokenSymbol ?? event.tokenMint)})`,
         `Claimer: ${code(shortenAddress(event.claimerWallet))}`,
         '',
         `${pumpFunToken(event.tokenMint)} · ${solscanTx(event.signature)}`,
@@ -95,7 +101,7 @@ export function formatLaunch(event: LaunchEventData): string {
     const lines = [
         bold(`🚀 New Token Launch`),
         '',
-        `${bold(event.name)} (${code(`$${event.symbol}`)}`,
+        `${bold(event.name)} (${code(`$${event.symbol}`)})`,
         `Creator: ${code(shortenAddress(event.creator))}`,
         `Mint: ${code(shortenAddress(event.tokenMint))}`,
         '',
@@ -107,7 +113,7 @@ export function formatLaunch(event: LaunchEventData): string {
 /** Format a graduation notification */
 export function formatGraduation(event: GraduationEventData): string {
     const poolLink = event.pool
-        ? link('View Pool', `https://pump.fun/coin/${event.tokenMint}`)
+        ? link('View Pool', `https://solscan.io/account/${event.pool}`)
         : pumpFunToken(event.tokenMint);
 
     const lines = [
@@ -125,14 +131,12 @@ export function formatGraduation(event: GraduationEventData): string {
 export function formatWhaleTrade(event: WhaleTradeEventData): string {
     const emoji = event.direction === 'buy' ? '🟢' : '🔴';
     const action = event.direction === 'buy' ? 'Buy' : 'Sell';
-    const tokenLabel = event.tokenName
-        ? `${event.tokenName} (${code(`$${event.tokenSymbol}`)})`
-        : code(shortenAddress(event.tokenMint));
+    const token = tokenLabel(event.tokenMint, event.tokenName, event.tokenSymbol);
 
     const lines = [
         bold(`🐋 Whale ${action} — ${formatSol(event.amountLamports)}`),
         '',
-        `${emoji} ${action} on ${tokenLabel}`,
+        `${emoji} ${action} on ${token}`,
         `Wallet: ${code(shortenAddress(event.wallet))}`,
         '',
         `${pumpFunToken(event.tokenMint)} · ${solscanTx(event.signature)}`,
@@ -142,14 +146,12 @@ export function formatWhaleTrade(event: WhaleTradeEventData): string {
 
 /** Format a creator transfer (CTO) notification */
 export function formatCTO(event: CTOEventData): string {
-    const tokenLabel = event.tokenName
-        ? `${event.tokenName} (${code(`$${event.tokenSymbol}`)})`
-        : code(shortenAddress(event.tokenMint));
+    const token = tokenLabel(event.tokenMint, event.tokenName, event.tokenSymbol);
 
     const lines = [
         bold(`👑 Creator Transfer`),
         '',
-        `Token: ${tokenLabel}`,
+        `Token: ${token}`,
         `From: ${code(shortenAddress(event.oldCreator))}`,
         `  To: ${code(shortenAddress(event.newCreator))}`,
         '',
@@ -160,9 +162,7 @@ export function formatCTO(event: CTOEventData): string {
 
 /** Format a fee distribution notification */
 export function formatFeeDistribution(event: FeeDistEventData): string {
-    const tokenLabel = event.tokenName
-        ? `${event.tokenName} (${code(`$${event.tokenSymbol}`)})`
-        : code(shortenAddress(event.tokenMint));
+    const token = tokenLabel(event.tokenMint, event.tokenName, event.tokenSymbol);
 
     const shareholderLines = event.shareholders.map(
         (s) => `  • ${code(shortenAddress(s.address))}: ${formatQuoteAmount(s.amountLamports, event.quoteMint)}`
@@ -171,7 +171,7 @@ export function formatFeeDistribution(event: FeeDistEventData): string {
     const lines = [
         bold(`💎 Fee Distribution — ${formatQuoteAmount(event.totalLamports, event.quoteMint)}`),
         '',
-        `Token: ${tokenLabel}`,
+        `Token: ${token}`,
         '',
         bold('Shareholders:'),
         ...shareholderLines,

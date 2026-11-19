@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest';
 import {
     link, solscanTx, solscanAccount, pumpFunToken, dexScreenerToken,
     bold, code, italic, shortenAddress, formatSol, formatNumber,
+    escapeHtml, safeHttpUrl, formatQuoteAmount, USDC_MINT,
 } from '../formatter/links.js';
 
 describe('formatter/links', () => {
@@ -25,6 +26,39 @@ describe('formatter/links', () => {
 
         it('italic() wraps in <i>', () => {
             expect(italic('bar')).toBe('<i>bar</i>');
+        });
+
+        it('escapes markup in every helper', () => {
+            expect(bold('<a href="x">pwn</a>')).toBe('<b>&lt;a href=&quot;x&quot;&gt;pwn&lt;/a&gt;</b>');
+            expect(code('a & b')).toBe('<code>a &amp; b</code>');
+            expect(italic('<i>')).toBe('<i>&lt;i&gt;</i>');
+            expect(link('<b>', 'https://e.com/?a=1&b="2"')).toBe(
+                '<a href="https://e.com/?a=1&amp;b=&quot;2&quot;">&lt;b&gt;</a>',
+            );
+        });
+    });
+
+    describe('escapeHtml()', () => {
+        it('escapes the four characters Telegram HTML treats specially', () => {
+            expect(escapeHtml('&<>"')).toBe('&amp;&lt;&gt;&quot;');
+        });
+
+        it('leaves other text untouched', () => {
+            expect(escapeHtml("PumpKitty 🐱 it's")).toBe("PumpKitty 🐱 it's");
+        });
+    });
+
+    describe('safeHttpUrl()', () => {
+        it('accepts http and https URLs', () => {
+            expect(safeHttpUrl('https://x.com/pump')).toBe('https://x.com/pump');
+            expect(safeHttpUrl(' http://example.com ')).toBe('http://example.com/');
+        });
+
+        it('rejects other schemes and garbage', () => {
+            expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
+            expect(safeHttpUrl('tg://resolve?domain=x')).toBeNull();
+            expect(safeHttpUrl('x.com/pump')).toBeNull();
+            expect(safeHttpUrl('')).toBeNull();
         });
     });
 
@@ -79,6 +113,16 @@ describe('formatter/links', () => {
 
         it('formatSol() uses 4 decimals for small amounts', () => {
             expect(formatSol(500_000)).toBe('0.0005 SOL');
+        });
+
+        it('formatQuoteAmount() uses the quote mint decimals', () => {
+            expect(formatQuoteAmount(2_500_000_000n)).toBe('2.50 SOL');
+            expect(formatQuoteAmount(1_234_567n, USDC_MINT)).toBe('1.23 USDC');
+        });
+
+        it('formatQuoteAmount() shows raw base units for an unknown quote mint', () => {
+            const mint = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
+            expect(formatQuoteAmount(1_000_000n, mint)).toBe('1000000 base units of Es9v...wNYB');
         });
 
         it('formatNumber() adds commas', () => {

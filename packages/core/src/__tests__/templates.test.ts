@@ -135,4 +135,34 @@ describe('formatter/templates', () => {
         expect(html).toContain('3.00 SOL');
         expect(html).toContain('2.00 SOL');
     });
+
+    it('escapes attacker-controlled token names and symbols', () => {
+        const evil = '<a href="https://phish.example">Claim airdrop</a>';
+        const html = [
+            formatLaunch({ ...BASE, type: 'launch', tokenMint: 'Mint1', name: evil, symbol: evil, creator: 'C1' }),
+            formatClaim({
+                ...BASE, type: 'claim', claimerWallet: 'W1', tokenMint: 'Mint1', tokenName: evil, tokenSymbol: evil,
+                amountLamports: 1, claimType: 'cashback',
+            }),
+            formatWhaleTrade({
+                ...BASE, type: 'whale', direction: 'buy', amountLamports: 1, tokenMint: 'Mint1',
+                tokenName: evil, tokenSymbol: evil, wallet: 'W1',
+            }),
+            formatGraduation({ ...BASE, type: 'graduation', tokenMint: 'Mint1', tokenName: evil, tokenSymbol: evil }),
+        ].join('\n');
+        expect(html).not.toContain('phish.example">');
+        expect(html).toContain('&lt;a href=&quot;https://phish.example&quot;&gt;');
+    });
+
+    it('formatLaunch() closes the symbol parenthesis', () => {
+        const html = formatLaunch({ ...BASE, type: 'launch', tokenMint: 'Mint1', name: 'A', symbol: 'B', creator: 'C1' });
+        expect(html).toContain('<b>A</b> (<code>$B</code>)');
+    });
+
+    it('formatGraduation() links the pool account when one is given', () => {
+        const html = formatGraduation({
+            ...BASE, type: 'graduation', tokenMint: 'Mint1', tokenName: 'A', tokenSymbol: 'B', pool: 'Pool1',
+        });
+        expect(html).toContain('https://solscan.io/account/Pool1');
+    });
 });
