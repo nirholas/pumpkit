@@ -14,6 +14,17 @@
     "url": "https://github.com/nirholas/pumpkit/issues"
   },
   "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pumpkit-channel": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/__tests__",
+    ".env.example",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22.0.0"
   },
