@@ -95,6 +95,18 @@ export {
     FeeDistMonitor, type FeeDistMonitorOptions,
 } from './monitor/index.js';
 
+// Outbound HTTP for untrusted URLs (metadata URIs, webhooks)
+export {
+    fetchPublic,
+    fetchPublicJson,
+    isPublicAddress,
+    parseHttpUrl,
+    UnsafeUrlError,
+    HttpLimitError,
+    type FetchPublicOptions,
+    type PublicResponse,
+} from './net/http.js';
+
 // Utilities — retry/backoff and friends
 export {
     retry,
