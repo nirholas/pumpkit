@@ -10,6 +10,7 @@
  */
 
 import type { CreatorChangeEvent, FeeClaimEvent, FeeDistributionEvent, GraduationEvent, MonitorState, PumpEventMonitorState, TokenLaunchEvent, TokenLaunchMonitorState, TradeAlertEvent, WatchEntry } from './types.js';
+import { escapeHtml, safeHttpUrl } from '@pumpkit/core/formatter';
 import type { FeeTierInfo, PumpTokenInfo, QuoteResult } from './pump-client.js';
 import { formatSol, formatTokenAmount, fetchTokenInfo } from './pump-client.js';
 
@@ -465,12 +466,15 @@ export function formatGraduationNotification(event: GraduationEvent, token?: Pum
     // ━━ SOCIALS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     if (token) {
         const socials: string[] = [];
-        if (token.website) socials.push(`<a href="${escapeHtml(token.website)}">Website</a>`);
+        const website = externalLink(token.website, 'Website');
+        if (website) socials.push(website);
         if (token.twitter) {
             const handle = token.twitter.replace(/.*twitter\.com\/|.*x\.com\//, '').replace(/\/+$/, '');
-            socials.push(`<a href="${escapeHtml(token.twitter)}">𝕏 @${escapeHtml(handle)}</a>`);
+            const twitter = externalLink(token.twitter, `𝕏 @${handle}`);
+            if (twitter) socials.push(twitter);
         }
-        if (token.telegram) socials.push(`<a href="${escapeHtml(token.telegram)}">Telegram</a>`);
+        const telegram = externalLink(token.telegram, 'Telegram');
+        if (telegram) socials.push(telegram);
         if (socials.length > 0) {
             L.push(`🔗 <b>Socials:</b> ${socials.join(' · ')}`);
         }
@@ -655,10 +659,14 @@ export function formatTokenPrice(token: PumpTokenInfo): string {
         ? `$${token.usdMarketCap >= 1000 ? `${(token.usdMarketCap / 1000).toFixed(1)}K` : token.usdMarketCap.toFixed(0)}`
         : `~${token.marketCapSol.toFixed(2)} SOL`;
 
-    let socialLinks = '';
-    if (token.twitter) socialLinks += ` · <a href="${token.twitter}">Twitter</a>`;
-    if (token.telegram) socialLinks += ` · <a href="${token.telegram}">Telegram</a>`;
-    if (token.website) socialLinks += ` · <a href="${token.website}">Website</a>`;
+    const socialLinks = [
+        externalLink(token.twitter, 'Twitter'),
+        externalLink(token.telegram, 'Telegram'),
+        externalLink(token.website, 'Website'),
+    ]
+        .filter((l): l is string => l !== null)
+        .map((l) => ` · ${l}`)
+        .join('');
 
     const graduatedLine = token.complete
         ? `\n\u2705 <b>Graduated</b> — Trading on AMM${token.raydiumPool ? ` (<code>${shortAddr(token.raydiumPool)}</code>)` : ''}`
@@ -764,12 +772,12 @@ export function shortAddr(addr: string): string {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 }
 
-export function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+export { escapeHtml };
+
+/** `<a>` for an attacker-supplied URL, or nothing when it is not http(s). */
+function externalLink(url: string | undefined, label: string): string | null {
+    const safe = url ? safeHttpUrl(url) : null;
+    return safe ? `<a href="${escapeHtml(safe)}">${escapeHtml(label)}</a>` : null;
 }
 
 function formatTime(unixSeconds: number): string {

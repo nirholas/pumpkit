@@ -226,9 +226,9 @@ packages/tracker/
 
 | outsiders-bot file | → tracker-bot location | Changes |
 |-------------------|----------------------|---------|
-| `index.ts` | `src/index.ts` | Use `@pumpkit/core` config + health |
-| `bot.ts` | `src/bot.ts` | Use `@pumpkit/core` createBot |
-| `config.ts` | `src/config.ts` | Use `@pumpkit/core` loadConfig |
+| `index.ts` | `src/index.ts` | Own health server (not yet on `@pumpkit/core`) |
+| `bot.ts` | `src/bot.ts` | grammy bot (not yet on `@pumpkit/core`) |
+| `config.ts` | `src/config.ts` | Own env parsing (not yet on `@pumpkit/core`) |
 | `types.ts` | `src/types.ts` | Minor cleanup |
 | `db.ts` | `src/db.ts` | Keep as-is (SQLite logic is specialized) |
 | `token-service.ts` | `src/token-service.ts` | Keep as-is |

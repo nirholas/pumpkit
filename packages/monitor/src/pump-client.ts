@@ -16,7 +16,7 @@
  *   - Fee tier estimation
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // ============================================================================
 // Constants

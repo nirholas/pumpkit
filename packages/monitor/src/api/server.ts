@@ -24,7 +24,7 @@
  */
 
 import { createServer, type Server } from 'node:http';
-import { log } from '../logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { PumpFunMonitor } from '../monitor.js';
 import { findMatchingWatches as findMatchingBotWatches } from '../store.js';
 import type { FeeClaimEvent } from '../types.js';
@@ -36,6 +36,7 @@ import {
     getApiWatchesForClient,
     getClientWatchCount,
     loadApiWatches,
+    migrateApiWatchClientIds,
     removeApiWatch,
     updateApiWatch,
 } from './apiStore.js';
@@ -52,6 +53,7 @@ import type {
     UpdateWatchBody,
     WatchResponse,
 } from './types.js';
+import { authenticate, clientIdForKey, legacyClientIdForKey } from './auth.js';
 import { dispatchWebhooks } from './webhooks.js';
 
 // ============================================================================
@@ -92,6 +94,12 @@ export class PumpFunApi {
 
         // Load persisted API watches
         loadApiWatches();
+        migrateApiWatchClientIds(
+            new Map(config.apiKeys.map((key) => [legacyClientIdForKey(key), clientIdForKey(key)])),
+        );
+        if (config.apiKeys.length === 0) {
+            log.warn('API_KEYS is empty: the REST API accepts unauthenticated requests from anyone who can reach it');
+        }
     }
 
     /**
@@ -219,7 +227,7 @@ export class PumpFunApi {
         }
 
         // ── Auth ────────────────────────────────────────────────────────
-        const clientId = this.authenticate(req);
+        const clientId = authenticate(req.headers, this.config.apiKeys);
         if (!clientId) {
             return this.sendJson(res, 401, {
                 code: 'UNAUTHORIZED',
@@ -286,40 +294,6 @@ export class PumpFunApi {
     // ════════════════════════════════════════════════════════════════════
     // Auth
     // ════════════════════════════════════════════════════════════════════
-
-    private authenticate(req: import('node:http').IncomingMessage): string | null {
-        // If no API keys configured, allow all with a default client ID
-        if (this.config.apiKeys.length === 0) {
-            return 'default';
-        }
-
-        // Check X-API-Key header
-        const apiKey = req.headers['x-api-key'] as string | undefined;
-        if (apiKey && this.config.apiKeys.includes(apiKey)) {
-            return this.hashKey(apiKey);
-        }
-
-        // Check Authorization: Bearer <key>
-        const auth = req.headers.authorization;
-        if (auth?.startsWith('Bearer ')) {
-            const token = auth.slice(7).trim();
-            if (this.config.apiKeys.includes(token)) {
-                return this.hashKey(token);
-            }
-        }
-
-        return null;
-    }
-
-    /** Simple hash of API key for use as client ID (don't store raw keys). */
-    private hashKey(key: string): string {
-        let hash = 0;
-        for (let i = 0; i < key.length; i++) {
-            const char = key.charCodeAt(i);
-            hash = ((hash << 5) - hash + char) | 0;
-        }
-        return `client_${Math.abs(hash).toString(36)}`;
-    }
 
     // ════════════════════════════════════════════════════════════════════
     // Handlers

@@ -13,7 +13,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { WatchEntry } from './types.js';
 
 const DATA_FILE = resolve(process.cwd(), 'data', 'watches.json');

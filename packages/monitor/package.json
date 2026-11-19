@@ -36,11 +36,13 @@
         "api": "ENABLE_API=true API_ONLY=true tsx src/index.ts",
         "api:dev": "ENABLE_API=true API_ONLY=true tsx watch src/index.ts",
         "dev:full": "ENABLE_API=true tsx watch src/index.ts",
-        "build": "tsc",
+        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc --noEmit",
-        "lint": "node ../../tools/lint-check.mjs ."
+        "lint": "node ../../tools/lint-check.mjs .",
+        "test": "vitest run"
     },
     "dependencies": {
+        "@pumpkit/core": "^1.0.0",
         "@solana/web3.js": "^1.99.0",
         "bs58": "^6.0.0",
         "dotenv": "^18.0.9",
@@ -49,6 +51,7 @@
     "devDependencies": {
         "@types/node": "^26.6.6",
         "tsx": "^4.19.0",
-        "typescript": "^7.0.2"
+        "typescript": "^7.0.2",
+        "vitest": "^5.1.0"
     }
 }

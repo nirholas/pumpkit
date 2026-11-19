@@ -10,7 +10,7 @@
  * Simple in-memory Map — no persistence needed.
  */
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // ============================================================================
 // Types

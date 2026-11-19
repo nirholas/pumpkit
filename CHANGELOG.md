@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - **Telegram HTML injection in `@pumpkit/core` formatters.** `bold`, `code`, `italic`, `link` and every notification template inserted token names, symbols and URLs from chain metadata unescaped, so a coin name could carry a working phishing link or break the message. They now escape their input; `escapeHtml` and `safeHttpUrl` are exported.
+- **Monitor bot SSRF, link injection and API auth.** Token metadata URIs and webhook targets are fetched through `fetchPublic`, so a coin's metadata URI or an API client's webhook can no longer reach private addresses (opt back in for webhooks with `WEBHOOK_ALLOW_PRIVATE=true`). Social links in `/price` and graduation posts are escaped and limited to http(s). API keys are compared in constant time, and client IDs come from SHA-256 instead of a 32-bit hash under which two keys could share watches; persisted watches are moved to the new IDs on startup. Webhook URLs are logged by origin only, since they often embed a secret.
 - **`fetchPublic` / `fetchPublicJson`** fetch untrusted URLs (metadata URIs, webhooks) with an SSRF guard checked at connect time, no redirects, one deadline covering the body, and a body size cap.
 
 ### Changed

@@ -38,47 +38,11 @@ npm run dev --workspace=@pumpkit/monitor
 
 ### Build a custom bot with core
 
-```typescript
-import { createBot, ClaimMonitor, formatClaim, createHealthServer } from '@pumpkit/core';
-
-const bot = createBot({
-  token: process.env.BOT_TOKEN!,
-  commands: {
-    start: (ctx) => ctx.reply('Welcome!'),
-  },
-});
-
-const monitor = new ClaimMonitor({
-  rpcUrl: process.env.SOLANA_RPC_URL!,
-  onClaim: async (event) => {
-    await bot.broadcast(formatClaim(event));
-  },
-});
-
-createHealthServer({ port: 3000, monitor });
-monitor.start();
-bot.launch();
-```
-
-### Use a pre-built bot programmatically
-
-```typescript
-import { MonitorBot } from '@pumpkit/monitor';
-
-const bot = new MonitorBot({
-  telegramToken: process.env.BOT_TOKEN!,
-  solanaRpcUrl: process.env.SOLANA_RPC_URL!,
-  channelId: process.env.CHANNEL_ID!,
-  feeds: {
-    claims: true,
-    launches: true,
-    graduations: true,
-    whales: true,
-  },
-});
-
-await bot.start();
-```
+See the runnable [examples/claim-alert](../examples/claim-alert/) bot and the
+[core API reference](core-api.md). The pre-built bots (`@pumpkit/monitor`,
+`@pumpkit/channel`, `@pumpkit/claim`, `@pumpkit/tracker`) are applications
+configured through environment variables, not libraries with a programmatic
+API.
 
 ## Current Usage (Monorepo)
 
@@ -98,12 +62,13 @@ npm run build
 
 ## Workspace References
 
-Within the monorepo, packages reference each other via workspace protocol:
+Within the monorepo, packages depend on each other by version range and npm
+links the local workspace (npm does not support the `workspace:` protocol):
 
 ```json
 {
   "dependencies": {
-    "@pumpkit/core": "workspace:*"
+    "@pumpkit/core": "^1.0.0"
   }
 }
 ```

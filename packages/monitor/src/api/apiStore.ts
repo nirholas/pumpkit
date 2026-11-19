@@ -15,7 +15,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { log } from '../logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { WatchEntry } from '../types.js';
 import type { ApiWatchEntry } from './types.js';
 
@@ -51,6 +51,26 @@ export function loadApiWatches(): void {
     } catch {
         log.info('No existing API watch data found — starting fresh');
     }
+}
+
+/**
+ * Re-key watches whose client ID was derived with the legacy 32-bit hash.
+ * `idMap` maps each legacy ID to the ID of the key that produced it.
+ */
+export function migrateApiWatchClientIds(idMap: ReadonlyMap<string, string>): number {
+    let moved = 0;
+    for (const entry of apiWatches.values()) {
+        const next = idMap.get(entry.clientId);
+        if (next && next !== entry.clientId) {
+            entry.clientId = next;
+            moved++;
+        }
+    }
+    if (moved > 0) {
+        saveApiWatches();
+        log.info('Moved %d API watches to SHA-256 client IDs', moved);
+    }
+    return moved;
 }
 
 export function saveApiWatches(): void {

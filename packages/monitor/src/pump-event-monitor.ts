@@ -28,7 +28,7 @@ import {
     type SignaturesForAddressOptions,
 } from '@solana/web3.js';
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type {
     BotConfig,
     FeeDistributionEvent,

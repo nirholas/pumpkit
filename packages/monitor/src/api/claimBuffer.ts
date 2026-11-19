@@ -14,7 +14,7 @@
  * For horizontal scaling, replace with Redis Streams or a message queue.
  */
 
-import { log } from '../logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { FeeClaimEvent } from '../types.js';
 import type { ClaimResponse } from './types.js';
 

@@ -26,7 +26,8 @@ import {
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 
-import { log } from './logger.js';
+import { fetchPublicJson } from '@pumpkit/core/http';
+import { log } from '@pumpkit/core/logger';
 import type { BotConfig, TokenLaunchEvent, TokenLaunchMonitorState } from './types.js';
 import {
     CREATE_V2_DISCRIMINATOR,
@@ -40,6 +41,9 @@ import {
 
 /** Metadata fetch timeout in milliseconds */
 const METADATA_FETCH_TIMEOUT_MS = 5_000;
+
+/** Token metadata JSON is a few hundred bytes; refuse anything far larger. */
+const METADATA_MAX_BYTES = 256 * 1024;
 
 /** Minimum interval between metadata fetches (ms) — rate limiter */
 const METADATA_FETCH_INTERVAL_MS = 200;
@@ -672,55 +676,38 @@ export class TokenLaunchMonitor {
         this.lastMetadataFetchTime = Date.now();
 
         // ── Rewrite IPFS URIs through the configured gateway ─────────────
+        // The gateway is operator-configured and may be on a private network;
+        // any other URI comes from the coin creator and must be public.
         let fetchUrl = uri;
+        let viaGateway = false;
         if (uri.startsWith('ipfs://')) {
-            const cid = uri.slice('ipfs://'.length);
-            fetchUrl = `${this.config.ipfsGateway}${cid}`;
+            fetchUrl = `${this.config.ipfsGateway}${uri.slice('ipfs://'.length)}`;
+            viaGateway = true;
         } else if (uri.includes('/ipfs/') && this.config.ipfsGateway) {
-            // Rewrite known IPFS gateways to the configured one
-            const ipfsIdx = uri.indexOf('/ipfs/');
-            const path = uri.slice(ipfsIdx + '/ipfs/'.length);
+            const path = uri.slice(uri.indexOf('/ipfs/') + '/ipfs/'.length);
             fetchUrl = `${this.config.ipfsGateway}${path}`;
+            viaGateway = true;
         }
 
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(
-                () => controller.abort(),
-                METADATA_FETCH_TIMEOUT_MS,
-            );
-
-            const response = await fetch(fetchUrl, {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'PumpFun-Monitor/1.0',
-                },
-                signal: controller.signal,
+            const json = await fetchPublicJson(fetchUrl, {
+                timeoutMs: METADATA_FETCH_TIMEOUT_MS,
+                maxBytes: METADATA_MAX_BYTES,
+                headers: { 'User-Agent': 'PumpFun-Monitor/1.0' },
+                allowPrivateNetwork: viaGateway,
             });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                log.debug(
-                    'Metadata fetch failed for %s: HTTP %d',
-                    fetchUrl.slice(0, 80),
-                    response.status,
-                );
+            if (json === null) {
+                log.debug('Metadata fetch failed for %s: non-2xx status', fetchUrl.slice(0, 80));
                 return null;
             }
-
-            const json = (await response.json()) as Record<string, unknown>;
-            return json;
+            if (typeof json !== 'object' || Array.isArray(json)) return null;
+            return json as Record<string, unknown>;
         } catch (err) {
-            if (err instanceof Error && err.name === 'AbortError') {
-                log.debug('Metadata fetch timed out for %s', fetchUrl.slice(0, 80));
-            } else {
-                log.debug(
-                    'Metadata fetch error for %s: %s',
-                    fetchUrl.slice(0, 80),
-                    err instanceof Error ? err.message : String(err),
-                );
-            }
+            log.debug(
+                'Metadata fetch error for %s: %s',
+                fetchUrl.slice(0, 80),
+                err instanceof Error ? err.message : String(err),
+            );
             return null;
         }
     }

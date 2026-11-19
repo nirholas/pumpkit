@@ -37,7 +37,7 @@ import {
     isMonitorActive,
     updateAlerts,
 } from './launch-store.js';
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 import type { PumpFunMonitor } from './monitor.js';
 import {
     fetchTokenInfo,
@@ -849,10 +849,3 @@ export function createCreatorChangeHandler(bot: Bot) {
         }
     };
 }
-
-// ============================================================================
-// Utility
-// ============================================================================
-
-// NOTE: escapeHtml is imported from formatters.ts — no duplicate needed here
-

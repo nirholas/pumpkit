@@ -26,7 +26,7 @@ import {
 } from '@solana/web3.js';
 import bs58 from 'bs58';
 
-import { log } from './logger.js';
+import { log } from '@pumpkit/core/logger';
 
 // ============================================================================
 // RPC Rate Limiter — concurrency + token-bucket throttle

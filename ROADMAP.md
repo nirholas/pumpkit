@@ -32,6 +32,11 @@ For *current* state and architecture, see [docs/architecture.md](docs/architectu
 
 ## Next (1–3 months out)
 
+### One shared core
+
+- `@pumpkit/monitor` uses `@pumpkit/core` for logging, HTML escaping and untrusted-URL fetching
+- Move `@pumpkit/channel`, `@pumpkit/claim` and `@pumpkit/tracker` onto `@pumpkit/core` too; each still carries its own logger, config loader and Pump API client
+
 ### Launch / trade primitives
 
 - Atomic launch+buy helper in `@pumpkit/core` that uses a Jito bundle by default

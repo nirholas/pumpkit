@@ -16,13 +16,30 @@
  */
 
 import { createHmac } from 'node:crypto';
-import { log } from '../logger.js';
+import { fetchPublic, UnsafeUrlError } from '@pumpkit/core/http';
+import { log } from '@pumpkit/core/logger';
 import type { FeeClaimEvent } from '../types.js';
 import type { ApiWatchEntry, ClaimResponse } from './types.js';
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1_000;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
+/**
+ * Webhook URLs are supplied by API clients, so by default they may only
+ * resolve to public addresses. Set WEBHOOK_ALLOW_PRIVATE=true when every API
+ * client is trusted and webhooks target your own network.
+ */
+const WEBHOOK_ALLOW_PRIVATE = process.env.WEBHOOK_ALLOW_PRIVATE === 'true';
+const WEBHOOK_TIMEOUT_MS = 10_000;
+
+/** Webhook URLs often embed a secret in the path or query; log only the origin. */
+export function webhookOrigin(url: string): string {
+    try {
+        return new URL(url).origin;
+    } catch {
+        return '<invalid url>';
+    }
+}
 
 /** Dispatch a claim event to all matching webhook URLs. */
 export async function dispatchWebhooks(
@@ -78,24 +95,30 @@ async function deliverWithRetry(
             headers['X-PumpFun-Signature'] = `sha256=${sig}`;
         }
 
-        const response = await fetch(url, {
+        const response = await fetchPublic(url, {
             method: 'POST',
             headers,
             body,
-            signal: AbortSignal.timeout(10_000),
+            timeoutMs: WEBHOOK_TIMEOUT_MS,
+            maxBytes: 64 * 1024,
+            allowPrivateNetwork: WEBHOOK_ALLOW_PRIVATE,
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`HTTP ${response.status}`);
         }
 
-        log.debug('Webhook delivered to %s', url);
+        log.debug('Webhook delivered to %s', webhookOrigin(url));
     } catch (err) {
+        if (err instanceof UnsafeUrlError) {
+            log.warn('Webhook to %s refused: %s', webhookOrigin(url), err.message);
+            return;
+        }
         if (attempt < MAX_RETRIES) {
             const delay = BASE_DELAY_MS * 2 ** attempt;
             log.warn(
                 'Webhook to %s failed (attempt %d/%d), retrying in %dms: %s',
-                url,
+                webhookOrigin(url),
                 attempt + 1,
                 MAX_RETRIES,
                 delay,
@@ -104,7 +127,7 @@ async function deliverWithRetry(
             await new Promise((r) => setTimeout(r, delay));
             return deliverWithRetry(url, payload, attempt + 1);
         }
-        log.error('Webhook to %s failed after %d retries: %s', url, MAX_RETRIES, err);
+        log.error('Webhook to %s failed after %d retries: %s', webhookOrigin(url), MAX_RETRIES, err);
     }
 }
 

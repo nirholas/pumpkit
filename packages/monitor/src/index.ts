@@ -26,7 +26,7 @@ import {
 } from './formatters.js';
 import type { TokenLaunchEvent, GraduationEvent, TradeAlertEvent, FeeDistributionEvent } from './types.js';
 import { getActiveMonitors } from './launch-store.js';
-import { log, setLogLevel } from './logger.js';
+import { log, setLogLevel } from '@pumpkit/core/logger';
 import { PumpFunMonitor } from './monitor.js';
 import { loadWatches } from './store.js';
 import { loadApiConfig, PumpFunApi } from './api/index.js';

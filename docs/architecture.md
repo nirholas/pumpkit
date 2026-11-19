@@ -4,88 +4,67 @@
 
 ## Overview
 
-PumpKit is a monorepo containing 3 packages:
+PumpKit is an npm-workspaces monorepo, orchestrated by Turborepo:
 
 ```
 pumpkit/
 ├── packages/
-│   ├── core/              @pumpkit/core — shared framework
-│   ├── monitor/           @pumpkit/monitor — monitoring bot
-│   └── tracker/           @pumpkit/tracker — group tracker bot
+│   ├── core/              @pumpkit/core — shared framework (library)
+│   ├── monitor/           @pumpkit/monitor — DM bot + REST API + SSE (app, private)
+│   ├── channel/           @pumpkit/channel — read-only channel feed (app)
+│   ├── claim/             @pumpkit/claim — fee claim tracker (app)
+│   ├── tracker/           @pumpkit/tracker — group call tracker (app)
+│   └── web/               @pumpkit/web — dashboard and docs site (private)
+├── examples/claim-alert/  minimal bot built on @pumpkit/core
 ├── docs/                  documentation
-├── examples/              starter templates
 └── turbo.json             monorepo config
 ```
 
 ## Package Dependencies
 
 ```
-@pumpkit/monitor ──→ @pumpkit/core
-@pumpkit/tracker ──→ @pumpkit/core
+@pumpkit/monitor ──→ @pumpkit/core   (logger, escapeHtml, fetchPublic)
+examples/claim-alert ──→ @pumpkit/core
 ```
 
-Both bots depend on `@pumpkit/core`. The core package has zero internal dependencies — it only depends on external npm packages.
+`@pumpkit/channel`, `@pumpkit/claim` and `@pumpkit/tracker` predate core and
+still carry their own logger, config and Pump client code. Moving them onto
+core is tracked in [ROADMAP.md](../ROADMAP.md). Core has no internal
+dependencies; its heavier dependencies (`grammy`, `@solana/web3.js`,
+`better-sqlite3`, the Pump SDKs) are optional peers.
 
 ## @pumpkit/core — Module Map
 
 ```
-@pumpkit/core/
-├── bot/
-│   ├── createBot.ts          Grammy bot factory with error handling
-│   ├── commandRouter.ts      Command registration + help generation
-│   └── middleware.ts         Rate limiting, logging, auth middleware
-│
+packages/core/src/
+├── index.ts                  Barrel export (loads every module)
+├── bot/index.ts              createBot, broadcast (grammy)
 ├── monitor/
-│   ├── EventMonitor.ts       Base class: WebSocket + HTTP polling
-│   ├── ClaimMonitor.ts       Fee claim event detection
-│   ├── LaunchMonitor.ts      New token mint detection
-│   ├── GraduationMonitor.ts  Bonding curve completion detection
-│   ├── WhaleMonitor.ts       Large trade detection (configurable threshold)
-│   ├── CTOMonitor.ts         Creator Takeover detection
-│   └── FeeDistMonitor.ts     Fee distribution event detection
-│
+│   ├── BaseMonitor.ts        status() and prefixed logging
+│   ├── LogsMonitor.ts        logsSubscribe per program, signature de-dup, callback isolation
+│   ├── ClaimMonitor.ts       creator fee, PumpSwap creator fee, cashback, social fee claims
+│   ├── LaunchMonitor.ts      CreateEvent
+│   ├── GraduationMonitor.ts  CompleteEvent + CompletePumpAmmMigrationEvent
+│   ├── WhaleMonitor.ts       TradeEvent above a SOL threshold
+│   ├── CTOMonitor.ts         SetCreator / AdminCto / MigrateBondingCurveCreator events
+│   └── FeeDistMonitor.ts     DistributeCreatorFeesEvent
 ├── solana/
-│   ├── rpc.ts                Connection factory + RPC fallback rotation
-│   ├── programs.ts           Program IDs (Pump, PumpAMM, PumpFees)
-│   ├── decoders.ts           Instruction + event log decoders
-│   ├── pdas.ts               PDA derivation helpers
-│   └── types.ts              On-chain account types
-│
+│   ├── programs.ts           Program IDs, discriminators, error codes
+│   ├── events.ts             Dependency-free event decoders + log parser
+│   ├── rpc.ts                createRpcConnection, RpcFallback, deriveWsUrl
+│   ├── sdk-bridge.ts         Quotes and sweeps via the Pump SDKs
+│   └── funding-source.ts     detectSeededByPump
 ├── formatter/
-│   ├── html.ts               Telegram HTML message builder
-│   ├── templates.ts          Pre-built notification templates
-│   └── links.ts              Solscan, pump.fun, explorer link generators
-│
-├── storage/
-│   ├── FileStore.ts          JSON file persistence (watches, config)
-│   ├── SqliteStore.ts        better-sqlite3 adapter (calls, leaderboards)
-│   └── types.ts              Storage interface (pluggable)
-│
-├── config/
-│   ├── loadConfig.ts         Typed env loader with defaults + validation
-│   └── schema.ts             Config schemas for each bot type
-│
-├── health/
-│   └── server.ts             HTTP health check endpoint
-│
-├── logger/
-│   └── index.ts              Leveled console logger (debug/info/warn/error)
-│
-├── api/
-│   ├── server.ts             Express HTTP server factory
-│   ├── sse.ts                Server-Sent Events streaming
-│   ├── webhooks.ts           Outbound webhook dispatch
-│   └── rateLimiter.ts        Per-user rate limiting
-│
-├── social/
-│   ├── twitter.ts            Twitter/X v2 API client
-│   ├── github.ts             GitHub API (social fee PDA lookup)
-│   └── types.ts              Social integration types
-│
-└── types/
-    ├── events.ts             Claim, launch, graduation, trade event types
-    ├── programs.ts           Pump program discriminators + account types
-    └── common.ts             Shared utility types
+│   ├── links.ts              Escaping link/text helpers, amount formatting
+│   └── templates.ts          Notification templates
+├── net/http.ts               fetchPublic: SSRF-safe fetch for untrusted URLs
+├── storage/                  FileStore (JSON), SqliteStore (better-sqlite3)
+├── util/                     retry/backoff, BoundedSet
+├── config.ts                 requireEnv, optionalEnv, parseIntEnv, parseListEnv
+├── health.ts                 GET /health server
+├── shutdown.ts               onShutdown, installShutdownHandlers
+├── logger.ts                 Leveled logger
+└── types/                    Event and config types
 ```
 
 ## Data Flow
