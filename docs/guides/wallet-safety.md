@@ -36,14 +36,11 @@ Common file names to watch for:
 
 ## Rule 1 — Never commit a keypair file
 
-The repo's `.gitignore` is the first line of defense. PumpKit already ignores
-several keypair patterns under `tmp/`:
+The repo's `.gitignore` is the first line of defense. PumpKit ignores the
+whole `tmp/` scratch directory, which is where keypairs belong:
 
 ```gitignore
-tmp/leaked-launch/funder.json
-tmp/leaked-launch/mint.json
-tmp/leaked-launch/*.keypair.json
-tmp/vanity-usdc/*.json
+tmp/
 ```
 
 When adding a new script directory, **always** add a matching `.gitignore`

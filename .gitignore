@@ -6,9 +6,5 @@ dist/
 data/
 *.tsbuildinfo
 .turbo/
-tmp/leaked-launch/funder.json
-tmp/leaked-launch/mint.json
-tmp/leaked-launch/*.keypair.json
-tmp/vanity-usdc/*.json
-tmp/usdc-launch/
-.gitignore
+# Ephemeral scratch (docs/adr/0003-tmp-scratch-policy.md). Keypairs live here.
+tmp/
