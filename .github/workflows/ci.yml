@@ -6,12 +6,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        # vitest 5 and vite 8 need Node 22.12+; Node 20 reached end of life in April 2026.
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v6
@@ -25,11 +29,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build
+        run: npm run build
+
       - name: Type check
         run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Test
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: Check publishable tarballs
+        run: |
+          for ws in @pumpkit/core @pumpkit/channel @pumpkit/claim @pumpkit/tracker; do
+            npm pack --dry-run --workspace "$ws" > /dev/null
+          done

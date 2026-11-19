@@ -96,9 +96,9 @@ Follow [SECURITY.md](SECURITY.md). Briefly:
 
 | Tool | Minimum version | Notes |
 |---|---|---|
-| Node | 20 | Locked via `.nvmrc`, engines in [package.json](package.json) |
-| npm | 10 | Comes with Node 20 |
-| TypeScript | 5.7+ | Repo-wide via [tsconfig.base.json](tsconfig.base.json) |
+| Node | 22 | `engines` in [package.json](package.json); CI runs 22 and 24 |
+| npm | 10 | `packageManager` pins npm@10.8.2, which wrote the lockfile |
+| TypeScript | 7 | Repo-wide via [tsconfig.base.json](tsconfig.base.json) |
 | solana-keygen | any recent | Required for vanity work |
 | Rust + cargo | optional | Only for `tools/test-rust.sh` and the Rust vanity deep-dive |
 

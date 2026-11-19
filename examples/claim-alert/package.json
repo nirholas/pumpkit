@@ -16,7 +16,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "node ../../tools/lint-check.mjs ."
   },
   "dependencies": {
     "@pumpkit/core": "*",

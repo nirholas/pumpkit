@@ -41,7 +41,7 @@
     "bigint-buffer": "file:vendor/bigint-buffer"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "packageManager": "npm@10.8.2",
   "overrides": {

@@ -218,7 +218,7 @@ void bot.start();
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
 - A Solana RPC URL (free tier: [Helius](https://helius.dev), [QuickNode](https://quicknode.com), or public `https://api.mainnet-beta.solana.com`)
 
@@ -516,7 +516,7 @@ Specialized fee-claim tracker. Subscribe by token contract address or by X/Twitt
 
 ## Tech Stack
 
-- **Runtime:** Node.js 20+
+- **Runtime:** Node.js 22+
 - **Language:** TypeScript (ES modules, strict mode)
 - **Telegram:** grammy v1.35+
 - **Solana:** @solana/web3.js v1.98+

@@ -28,7 +28,7 @@ npm run dev --workspace=@pumpkit/monitor   # run one package in watch mode
 
 Or via `make` — [Makefile](Makefile) has shortcuts for each bot (`make dev-monitor`, `make docker-tracker`, etc.).
 
-**Node >= 20** is required. Tools/scripts may also call `npx tsx` for TS files.
+**Node >= 22** is required (CI runs 22 and 24). Tools/scripts may also call `npx tsx` for TS files.
 
 ## Conventions
 

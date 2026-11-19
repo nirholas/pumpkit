@@ -1,8 +1,11 @@
 name: Release
 
+# Manual only. Changesets is not set up yet (no @changesets/cli, no
+# .changeset/config.json), and `npx changeset` without the CLI installed
+# resolves to an unrelated npm package named "changeset". Add the config,
+# then run this workflow from the Actions tab.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,9 +20,6 @@ jobs:
   release:
     name: Changesets release
     runs-on: ubuntu-latest
-    # Skip if there are no changesets to consume — Changesets handles this internally,
-    # but we also skip the job entirely on dependabot pushes.
-    if: github.actor != 'dependabot[bot]'
 
     steps:
       - name: Checkout
@@ -27,10 +27,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Require a Changesets config
+        run: |
+          test -f .changeset/config.json || {
+            echo "::error::.changeset/config.json is missing; run 'npx @changesets/cli init' and commit it first"
+            exit 1
+          }
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           registry-url: "https://registry.npmjs.org"
 
@@ -48,8 +55,8 @@ jobs:
       - name: Create Release PR or publish to npm
         uses: changesets/action@v2
         with:
-          publish: npx changeset publish
-          version: npx changeset version
+          publish: npx --yes --package=@changesets/cli@2.29.7 changeset publish
+          version: npx --yes --package=@changesets/cli@2.29.7 changeset version
           commit: "chore: release packages"
           title: "chore: release packages"
         env:
