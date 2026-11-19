@@ -18,16 +18,60 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "import": "./dist/logger.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js"
+    },
+    "./health": {
+      "types": "./dist/health.d.ts",
+      "import": "./dist/health.js"
+    },
+    "./shutdown": {
+      "types": "./dist/shutdown.d.ts",
+      "import": "./dist/shutdown.js"
+    },
+    "./formatter": {
+      "types": "./dist/formatter/index.d.ts",
+      "import": "./dist/formatter/index.js"
+    },
+    "./http": {
+      "types": "./dist/net/http.d.ts",
+      "import": "./dist/net/http.js"
+    },
+    "./events": {
+      "types": "./dist/solana/events.d.ts",
+      "import": "./dist/solana/events.js"
+    },
+    "./programs": {
+      "types": "./dist/solana/programs.d.ts",
+      "import": "./dist/solana/programs.js"
+    },
+    "./util": {
+      "types": "./dist/util/index.d.ts",
+      "import": "./dist/util/index.js"
+    },
+    "./package.json": "./package.json"
   },
+  "files": [
+    "dist",
+    "src",
+    "!src/__tests__",
+    "!src/vitest-env.d.ts",
+    "README.md"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "node ../../tools/lint-check.mjs .",
     "test": "vitest run",
@@ -35,6 +79,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "bn.js": "^5.2.2",
     "dotenv": "^18.0.9"
   },
   "peerDependencies": {
@@ -45,23 +90,24 @@
     "grammy": "^1.46.0"
   },
   "peerDependenciesMeta": {
-    "grammy": {
+    "@nirholas/pump-sdk": {
+      "optional": true
+    },
+    "@pump-fun/pump-sdk": {
       "optional": true
     },
     "@solana/web3.js": {
       "optional": true
     },
-    "@nirholas/pump-sdk": {
-      "optional": true
-    },
     "better-sqlite3": {
       "optional": true
     },
-    "@pump-fun/pump-sdk": {
+    "grammy": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@nirholas/pump-sdk": "^3.0.0",
     "@pump-fun/pump-sdk": "^4.0.0",
     "@solana/web3.js": "^1.99.0",
     "@types/better-sqlite3": "^9.6.0",
