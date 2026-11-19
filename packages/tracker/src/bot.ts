@@ -20,7 +20,7 @@ import {
   formatPnlText,
   formatSettings,
 } from './formatters.js';
-import type { BotConfig, CallType, LeaderboardTimeframe } from './types.js';
+import type { BotConfig, CallType, Chain, LeaderboardTimeframe } from './types.js';
 
 // ── Pending auto-calls (token address → timeout handle) ────────────
 const pendingAutoCalls = new Map<string, ReturnType<typeof setTimeout>>();
@@ -252,7 +252,7 @@ export function createBot(config: BotConfig): Bot {
     const group = db.getGroup(ctx.chat.id);
     if (!group) return;
     const newMode = group.call_mode === 'auto' ? 'button' : 'auto';
-    db.updateGroupSettings(ctx.chat.id, { call_mode: newMode as any });
+    db.updateGroupSettings(ctx.chat.id, { call_mode: newMode });
     await ctx.answerCallbackQuery({ text: `Call mode → ${newMode}` });
     await ctx.editMessageText(`✅ Call mode set to <b>${newMode}</b>`, { parse_mode: 'HTML' });
   });
@@ -262,7 +262,7 @@ export function createBot(config: BotConfig): Bot {
     const group = db.getGroup(ctx.chat.id);
     if (!group) return;
     const newMode = group.display_mode === 'simple' ? 'advanced' : 'simple';
-    db.updateGroupSettings(ctx.chat.id, { display_mode: newMode as any });
+    db.updateGroupSettings(ctx.chat.id, { display_mode: newMode });
     await ctx.answerCallbackQuery({ text: `Display → ${newMode}` });
     await ctx.editMessageText(`✅ Display mode set to <b>${newMode}</b>`, { parse_mode: 'HTML' });
   });
@@ -272,7 +272,7 @@ export function createBot(config: BotConfig): Bot {
     const group = db.getGroup(ctx.chat.id);
     if (!group) return;
     const newVal = !group.hardcore_enabled;
-    db.updateGroupSettings(ctx.chat.id, { hardcore_enabled: newVal as any });
+    db.updateGroupSettings(ctx.chat.id, { hardcore_enabled: newVal });
     if (newVal) db.startHardcoreRound(ctx.chat.id);
     await ctx.answerCallbackQuery({ text: `Hardcore ${newVal ? 'ON' : 'OFF'}` });
     await ctx.editMessageText(`⚔️ Hardcore mode <b>${newVal ? 'enabled' : 'disabled'}</b>`, { parse_mode: 'HTML' });
@@ -345,7 +345,7 @@ export function createBot(config: BotConfig): Bot {
     if (group.call_mode === 'auto') {
       await handleAutoCall(ctx, parsed.address, parsed.chain);
     } else {
-      await handleButtonCall(ctx, parsed.address, parsed.chain);
+      await handleButtonCall(ctx, parsed.address);
     }
   });
 
@@ -430,7 +430,7 @@ async function handleManualCall(ctx: Context, callType: CallType): Promise<void>
   await registerCall(ctx, parsed.address, callType, parsed.chain);
 }
 
-async function handleAutoCall(ctx: Context, address: string, chain: string): Promise<void> {
+async function handleAutoCall(ctx: Context, address: string, chain: Chain): Promise<void> {
   const key = `${ctx.chat!.id}:${address}`;
 
   const kb = new InlineKeyboard().text('🔍 Just Scanning', `cancel_call:${address}`);
@@ -442,7 +442,7 @@ async function handleAutoCall(ctx: Context, address: string, chain: string): Pro
 
   const timer = setTimeout(async () => {
     pendingAutoCalls.delete(key);
-    await registerCall(ctx, address, 'alpha', chain as any);
+    await registerCall(ctx, address, 'alpha', chain);
     try {
       await ctx.api.deleteMessage(ctx.chat!.id, msg.message_id);
     } catch { /* message may already be gone */ }
@@ -451,7 +451,7 @@ async function handleAutoCall(ctx: Context, address: string, chain: string): Pro
   pendingAutoCalls.set(key, timer);
 }
 
-async function handleButtonCall(ctx: Context, address: string, chain: string): Promise<void> {
+async function handleButtonCall(ctx: Context, address: string): Promise<void> {
   const kb = new InlineKeyboard()
     .text('🔵 Alpha', `call:alpha:${address}`)
     .text('🎰 Gamble', `call:gamble:${address}`)
@@ -467,10 +467,10 @@ async function registerCall(
   ctx: Context,
   address: string,
   callType: CallType,
-  chain?: string,
+  chain?: Chain,
 ): Promise<void> {
   try {
-    const token = await fetchTokenInfo(address, chain as any);
+    const token = await fetchTokenInfo(address, chain);
     if (!token || token.mcap <= 0) {
       await ctx.reply('❌ Could not fetch token data. Try again later.');
       return;

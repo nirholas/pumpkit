@@ -122,17 +122,22 @@ export function getGroup(telegramId: number): DbGroup | undefined {
   return db.prepare('SELECT * FROM groups WHERE telegram_id = ?').get(telegramId) as DbGroup | undefined;
 }
 
-export function updateGroupSettings(
-  groupTgId: number,
-  settings: Partial<Pick<DbGroup, 'call_mode' | 'display_mode' | 'hardcore_enabled' | 'hardcore_min_wr' | 'hardcore_min_calls' | 'call_channel_id' | 'call_channel_filter'>>,
-): void {
-  const fields = Object.entries(settings)
-    .filter(([, v]) => v !== undefined)
-    .map(([k]) => `${k} = @${k}`);
+export type GroupSettingsUpdate = Partial<
+  Pick<DbGroup, 'call_mode' | 'display_mode' | 'hardcore_min_wr' | 'hardcore_min_calls' | 'call_channel_id' | 'call_channel_filter'>
+> & { hardcore_enabled?: boolean };
+
+export function updateGroupSettings(groupTgId: number, settings: GroupSettingsUpdate): void {
+  // better-sqlite3 refuses to bind booleans, so store flags as 0/1.
+  const params: Record<string, string | number | null> = {};
+  for (const [key, value] of Object.entries(settings)) {
+    if (value === undefined) continue;
+    params[key] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+  }
+  const fields = Object.keys(params).map((k) => `${k} = @${k}`);
   if (fields.length === 0) return;
 
   const sql = `UPDATE groups SET ${fields.join(', ')} WHERE telegram_id = @telegram_id`;
-  db.prepare(sql).run({ ...settings, telegram_id: groupTgId });
+  db.prepare(sql).run({ ...params, telegram_id: groupTgId });
 }
 
 // ── Calls ──────────────────────────────────────────────────────────
@@ -368,7 +373,7 @@ export function getHardcoreStatus(groupTgId: number): HardcoreStatus[] {
   const group = getGroup(groupTgId);
   if (!group || !group.hardcore_round_start) return [];
 
-  return db.prepare(`
+  const rows = db.prepare(`
     SELECT
       u.telegram_id,
       u.username,
@@ -379,14 +384,19 @@ export function getHardcoreStatus(groupTgId: number): HardcoreStatus[] {
     WHERE c.group_id = ? AND c.created_at >= ?
     GROUP BY u.id
     HAVING calls >= ?
-  `).all(group.id, group.hardcore_round_start, group.hardcore_min_calls)
-    .map((r: any) => ({
-      username: r.username ?? 'Unknown',
-      telegramId: r.telegram_id,
-      calls: r.calls,
-      winRate: r.win_rate,
-      atRisk: r.win_rate < group.hardcore_min_wr,
-    }));
+  `).all(group.id, group.hardcore_round_start, group.hardcore_min_calls) as Array<{
+    telegram_id: number;
+    username: string | null;
+    calls: number;
+    win_rate: number;
+  }>;
+  return rows.map((r) => ({
+    username: r.username ?? 'Unknown',
+    telegramId: r.telegram_id,
+    calls: r.calls,
+    winRate: r.win_rate,
+    atRisk: r.win_rate < group.hardcore_min_wr,
+  }));
 }
 
 // ── Wipe ───────────────────────────────────────────────────────────

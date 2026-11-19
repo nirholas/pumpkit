@@ -55,7 +55,7 @@ export function formatCallSimple(
     `💰 MCap: ${fmtNum(token.mcap)}`,
     `💲 Price: $${token.price.toFixed(8)}`,
     '',
-    `🧬 <b>CA:</b> <code>${token.address}</code>`,
+    `🧬 <b>CA:</b> <code>${esc(token.address)}</code>`,
   ].join('\n');
 }
 
@@ -82,7 +82,7 @@ export function formatCallAdvanced(
     `⏱ Age: ${age}`,
     `⛓ Chain: ${token.chain}`,
     '',
-    `🧬 <b>CA:</b> <code>${token.address}</code>`,
+    `🧬 <b>CA:</b> <code>${esc(token.address)}</code>`,
   ].join('\n');
 }
 

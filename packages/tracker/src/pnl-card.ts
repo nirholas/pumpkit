@@ -9,23 +9,18 @@
 import { log } from '@pumpkit/core/logger';
 import type { PnlCardData } from './types.js';
 
-let canvasAvailable = false;
-let createCanvas: any;
-let registerFont: any;
+let createCanvas: typeof import('canvas').createCanvas | null = null;
 
 // Try importing canvas — it requires native deps that may not be available
 try {
-  const canvasLib = await import('canvas');
-  createCanvas = canvasLib.createCanvas;
-  registerFont = canvasLib.registerFont;
-  canvasAvailable = true;
+  ({ createCanvas } = await import('canvas'));
   log.info('Canvas module loaded — PNL image generation enabled');
 } catch {
   log.warn('Canvas module not available — PNL will use text fallback');
 }
 
 export function isPnlImageAvailable(): boolean {
-  return canvasAvailable;
+  return createCanvas !== null;
 }
 
 function fmtNum(n: number): string {
@@ -44,7 +39,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export async function generatePnlCard(data: PnlCardData): Promise<Buffer | null> {
-  if (!canvasAvailable) return null;
+  if (!createCanvas) return null;
 
   const W = 800;
   const H = 450;

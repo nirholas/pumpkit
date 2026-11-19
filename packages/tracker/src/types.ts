@@ -37,7 +37,8 @@ export interface DbGroup {
   title: string;
   call_mode: CallMode;
   display_mode: DisplayMode;
-  hardcore_enabled: boolean;
+  /** SQLite has no boolean type: 0 or 1. */
+  hardcore_enabled: 0 | 1;
   hardcore_min_wr: number;       // percentage, default 55
   hardcore_min_calls: number;    // default 5
   hardcore_round_start: string | null;

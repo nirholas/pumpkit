@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tracker: toggling hardcore mode crashed.** `/settings` → Hardcore passed a JS boolean to better-sqlite3, which only binds numbers, strings, bigints, buffers and null, so the toggle always threw. Flags are now stored as 0/1, and `DbGroup.hardcore_enabled` is typed as such. The `as any` casts that hid this are gone, DexScreener requests time out after 10 s, and responses are typed instead of `any`.
 - **Mayhem fee tiers in the SDK bridge.** `getBuyQuote`, `getSellQuote` and `getTokenPrice` computed fee tiers from `tokenTotalSupply - virtualTokenReserves`. They now use the one-billion supply the program prices every non-mayhem curve at, and the live mint supply on mayhem curves.
 - **Live dashboards decode by event discriminator.** `live/trades.html` classified trades by `Instruction: Buy` / `Sell` log text and read every `Program data:` line as a TradeEvent, so the CompleteEvent and PostCompleteBuyEvent after a curve-completing buy overwrote the trade, and multi-hop curve hops were missed. `live/index.html` read the TradeEvent of a create-and-buy as launch data and priced USDC and pump-coin quoted launches as SOL. Both now match on the 8-byte event discriminators (checked against live mainnet transactions).
 - **Docs used a `decodePumpLogs` export that does not exist** and called `onLogs` on the `RpcFallback` returned by `createRpcConnection`. The README, `docs/core-api.md` and `docs/architecture.md` now use `parsePumpLogEvents` and `rpc.getConnection()`.

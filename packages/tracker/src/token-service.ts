@@ -65,23 +65,41 @@ function normalizeChain(raw: string): Chain {
   return 'solana';
 }
 
+/** The DexScreener pair fields PumpKit reads. Every field is optional on the wire. */
+export interface DexPair {
+  chainId?: string;
+  tokenAddress?: string;
+  baseToken?: { address?: string; name?: string; symbol?: string };
+  priceUsd?: string | number;
+  marketCap?: number;
+  fdv?: number;
+  liquidity?: { usd?: number };
+  volume?: { h24?: number };
+  pairCreatedAt?: number;
+  info?: { imageUrl?: string };
+}
+
+const REQUEST_TIMEOUT_MS = 10_000;
+
+async function getJson(url: string): Promise<unknown> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  if (!res.ok) return null;
+  return res.json() as Promise<unknown>;
+}
+
+function firstPair(list: unknown): DexPair | null {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const pair: unknown = list[0];
+  return typeof pair === 'object' && pair !== null ? (pair as DexPair) : null;
+}
+
 /** Fetch token data from DexScreener */
 export async function fetchTokenInfo(address: string, chain?: Chain): Promise<TokenInfo | null> {
   try {
     const url = `${apiBase}/tokens/v1/${chain ?? 'solana'}/${encodeURIComponent(address)}`;
     log.debug(`Fetching token info: ${url}`);
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      // Fallback: search endpoint
-      return fetchTokenBySearch(address);
-    }
-
-    const data = await res.json() as any[];
-    if (!data || data.length === 0) return fetchTokenBySearch(address);
-
-    const pair = data[0];
-    return mapPairToTokenInfo(pair);
+    const pair = firstPair(await getJson(url));
+    return pair ? mapPairToTokenInfo(pair) : fetchTokenBySearch(address);
   } catch (err) {
     log.error(`fetchTokenInfo error: ${err}`);
     return null;
@@ -90,20 +108,17 @@ export async function fetchTokenInfo(address: string, chain?: Chain): Promise<To
 
 async function fetchTokenBySearch(query: string): Promise<TokenInfo | null> {
   try {
-    const url = `${apiBase}/latest/dex/search?q=${encodeURIComponent(query)}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-
-    const data = (await res.json()) as { pairs?: any[] };
-    if (!data.pairs || data.pairs.length === 0) return null;
-
-    return mapPairToTokenInfo(data.pairs[0]);
-  } catch {
+    const data = await getJson(`${apiBase}/latest/dex/search?q=${encodeURIComponent(query)}`);
+    const pairs = typeof data === 'object' && data !== null ? (data as { pairs?: unknown }).pairs : null;
+    const pair = firstPair(pairs);
+    return pair ? mapPairToTokenInfo(pair) : null;
+  } catch (err) {
+    log.debug(`fetchTokenBySearch error: ${err}`);
     return null;
   }
 }
 
-function mapPairToTokenInfo(pair: any): TokenInfo {
+export function mapPairToTokenInfo(pair: DexPair): TokenInfo {
   return {
     address: pair.baseToken?.address ?? pair.tokenAddress ?? '',
     chain: normalizeChain(pair.chainId ?? 'solana'),
