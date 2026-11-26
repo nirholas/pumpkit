@@ -37,7 +37,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nirholas/pump-sdk": "^3.0.0",
+    "@nirholas/pump-sdk": "^3.1.0",
     "@pump-fun/pump-sdk": "^4.0.0",
     "@pumpkit/core": "^1.0.0",
     "@solana/web3.js": "^1.99.0",
